@@ -1,0 +1,183 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+<div class="n360-sidebar @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfSidebar @ref="_sidebar"
+               Type="@Type"
+               Position="@Position"
+               Width="@Width"
+               DockSize="@DockSize"
+               IsOpen="@IsOpen"
+               EnableDock="@EnableDock"
+               EnableGestures="@EnableGestures"
+               EnablePersistence="@EnablePersistence"
+               MediaQuery="@MediaQuery"
+               CssClass="@InternalCssClass"
+               Created="@OnCreated"
+               OnOpen="@OnOpenInternal"
+               OnClose="@OnCloseInternal">
+        <ChildContent>
+            @if (MenuItems != null)
+            {
+                <SfMenu TValue="MenuItem"
+                        Items="@_filteredMenuItems"
+                        Orientation="Syncfusion.Blazor.Navigations.Orientation.Vertical"
+                        CssClass="n360-sidebar__menu">
+                    <MenuFieldSettings Text="Text" IconCss="IconCss" Url="Url" Children="Children" />
+                    <MenuEvents TValue="MenuItem" ItemSelected="@OnMenuItemSelected" />
+                </SfMenu>
+            }
+            else
+            {
+                @ChildContent
+            }
+        </ChildContent>
+    </SfSidebar>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public List<MenuItem>? MenuItems { get; set; }
+    [Parameter] public SidebarType Type { get; set; } = SidebarType.Auto;
+    [Parameter] public SidebarPosition Position { get; set; } = SidebarPosition.Left;
+    [Parameter] public string Width { get; set; } = "280px";
+    [Parameter] public string DockSize { get; set; } = "50px";
+    [Parameter] public bool IsOpen { get; set; } = true;
+    [Parameter] public bool EnableDock { get; set; }
+    [Parameter] public bool EnableGestures { get; set; } = true;
+    [Parameter] public bool EnablePersistence { get; set; }
+    [Parameter] public string? MediaQuery { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<MenuItem> OnItemSelected { get; set; }
+
+    private SfSidebar? _sidebar;
+    private List<MenuItem> _filteredMenuItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterMenuItemsAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await FilterMenuItemsAsync();
+    }
+
+    private async Task FilterMenuItemsAsync()
+    {
+        if (MenuItems == null || PermissionService == null)
+        {
+            _filteredMenuItems = MenuItems ?? new List<MenuItem>();
+            return;
+        }
+
+        _filteredMenuItems = new List<MenuItem>();
+        foreach (var item in MenuItems)
+        {
+            var filteredItem = await FilterMenuItemRecursiveAsync(item);
+            if (filteredItem != null)
+            {
+                _filteredMenuItems.Add(filteredItem);
+            }
+        }
+    }
+
+    private async Task<MenuItem?> FilterMenuItemRecursiveAsync(MenuItem item)
+    {
+        // Check permission
+        if (!string.IsNullOrEmpty(item.RequiredPermission))
+        {
+            var hasPermission = await PermissionService!.HasPermissionAsync(item.RequiredPermission);
+            if (!hasPermission)
+            {
+                return null;
+            }
+        }
+
+        // Filter children
+        var filteredChildren = new List<MenuItem>();
+        if (item.Children != null)
+        {
+            foreach (var child in item.Children)
+            {
+                var filteredChild = await FilterMenuItemRecursiveAsync(child);
+                if (filteredChild != null)
+                {
+                    filteredChildren.Add(filteredChild);
+                }
+            }
+        }
+
+        return new MenuItem
+        {
+            Text = item.Text,
+            IconCss = item.IconCss,
+            Url = item.Url,
+            RequiredPermission = item.RequiredPermission,
+            Children = filteredChildren.Any() ? filteredChildren : null
+        };
+    }
+
+    private async Task OnOpenInternal()
+    {
+        await OnOpen.InvokeAsync();
+    }
+
+    private async Task OnCloseInternal()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task OnMenuItemSelected(MenuEventArgs<MenuItem> args)
+    {
+        await OnItemSelected.InvokeAsync(args.Item);
+    }
+
+    public async Task ToggleAsync()
+    {
+        // TODO: ToggleAsync method not available in current Syncfusion version
+        // if (_sidebar != null)
+        // {
+        //     await _sidebar.ToggleAsync();
+        // }
+        await Task.CompletedTask;
+    }
+
+    public async Task ShowAsync()
+    {
+        // TODO: ShowAsync method not available in current Syncfusion version
+        // if (_sidebar != null)
+        // {
+        //     await _sidebar.ShowAsync();
+        // }
+        await Task.CompletedTask;
+    }
+
+    public async Task HideAsync()
+    {
+        // TODO: HideAsync method not available in current Syncfusion version
+        // if (_sidebar != null)
+        // {
+        //     await _sidebar.HideAsync();
+        // }
+        await Task.CompletedTask;
+    }
+
+    public class MenuItem
+    {
+        public string Text { get; set; } = string.Empty;
+        public string? IconCss { get; set; }
+        public string? Url { get; set; }
+        public string? RequiredPermission { get; set; }
+        public List<MenuItem>? Children { get; set; }
+    }
+}

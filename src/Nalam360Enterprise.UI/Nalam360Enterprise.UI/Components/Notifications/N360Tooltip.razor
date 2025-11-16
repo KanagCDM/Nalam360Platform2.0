@@ -1,0 +1,81 @@
+@using Syncfusion.Blazor.Popups
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <SfTooltip @ref="_tooltip"
+               Target="@Target"
+               Content="@Content"
+               Position="@Position"
+               OpenDelay="@OpenDelay"
+               CloseDelay="@CloseDelay"
+               IsSticky="@IsSticky"
+               ShowTipPointer="@ShowTipPointer"
+               Width="@Width"
+               Height="@Height"
+               CssClass="@CssClass">
+        @ChildContent
+    </SfTooltip>
+}
+
+@code {
+    [Parameter] public string? Target { get; set; }
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public Syncfusion.Blazor.Popups.Position Position { get; set; } = Syncfusion.Blazor.Popups.Position.TopCenter;
+    [Parameter] public int OpenDelay { get; set; } = 300;
+    [Parameter] public int CloseDelay { get; set; } = 300;
+    [Parameter] public bool IsSticky { get; set; }
+    [Parameter] public bool ShowTipPointer { get; set; } = true;
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private SfTooltip? _tooltip;
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public async Task OpenAsync()
+    {
+        if (_tooltip != null)
+        {
+            await _tooltip.OpenAsync();
+        }
+    }
+
+    public async Task CloseAsync()
+    {
+        if (_tooltip != null)
+        {
+            await _tooltip.CloseAsync();
+        }
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (_tooltip != null)
+        {
+            await _tooltip.RefreshAsync();
+        }
+    }
+}

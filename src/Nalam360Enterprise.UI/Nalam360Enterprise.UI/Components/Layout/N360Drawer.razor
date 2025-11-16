@@ -1,0 +1,98 @@
+@using Syncfusion.Blazor.Navigations
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <SfSidebar @ref="_drawer"
+               Position="@Position"
+               Type="@Type"
+               Width="@Width"
+               DockSize="@DockSize"
+               EnableDock="@EnableDock"
+               IsOpen="@IsOpen"
+               ShowBackdrop="@ShowBackdrop"
+               CloseOnDocumentClick="@CloseOnDocumentClick"
+               CssClass="@CssClass">
+        <ChildContent>
+            <div class="n360-drawer__content" dir="@(IsRtl ? "rtl" : "ltr")">
+                @DrawerContent
+            </div>
+        </ChildContent>
+    </SfSidebar>
+}
+
+@code {
+    [Parameter] public SidebarPosition Position { get; set; } = SidebarPosition.Left;
+    [Parameter] public SidebarType Type { get; set; } = SidebarType.Over;
+    [Parameter] public string Width { get; set; } = "280px";
+    [Parameter] public string DockSize { get; set; } = "50px";
+    [Parameter] public bool EnableDock { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool ShowBackdrop { get; set; } = true;
+    [Parameter] public bool CloseOnDocumentClick { get; set; } = true;
+    [Parameter] public RenderFragment? DrawerContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    
+    private SfSidebar? _drawer;
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public async Task ToggleAsync()
+    {
+        if (_drawer != null)
+        {
+            // ToggleAsync not available - toggle via IsOpen
+            IsOpen = !IsOpen;
+            await IsOpenChanged.InvokeAsync(IsOpen);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "DrawerToggled",
+                    Resource = AuditResource ?? $"Drawer-{Id}",
+                    Timestamp = DateTimeOffset.UtcNow,
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["ComponentId"] = Id
+                    }
+                });
+            }
+        }
+    }
+
+    public Task ShowAsync()
+    {
+        IsOpen = true;
+        return IsOpenChanged.InvokeAsync(IsOpen);
+    }
+
+    public Task HideAsync()
+    {
+        IsOpen = false;
+        return IsOpenChanged.InvokeAsync(IsOpen);
+    }
+}

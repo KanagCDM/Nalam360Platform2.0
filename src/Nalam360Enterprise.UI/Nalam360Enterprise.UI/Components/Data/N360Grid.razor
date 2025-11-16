@@ -1,0 +1,234 @@
+@using Syncfusion.Blazor.Grids
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TValue
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-grid @CssClass">
+    <SfGrid @ref="_grid"
+            TValue="TValue"
+            DataSource="@DataSource"
+            AllowPaging="@AllowPaging"
+            AllowSorting="@AllowSorting"
+            AllowFiltering="@AllowFiltering"
+            AllowGrouping="@AllowGrouping"
+            AllowReordering="@AllowReordering"
+            AllowResizing="@AllowResizing"
+            AllowTextWrap="@AllowTextWrap"
+            EnableVirtualization="@EnableVirtualization"
+            EnableStickyHeader="@EnableStickyHeader"
+            GridLines="@GridLines"
+            Toolbar="@GetToolbar()">
+        
+        @if (AllowPaging)
+        {
+            <GridPageSettings PageSize="@PageSize" PageCount="@PageCount" />
+        }
+        
+        @if (AllowFiltering)
+        {
+            <GridFilterSettings Type="@FilterType" />
+        }
+        
+        @if (AllowGrouping)
+        {
+            <GridGroupSettings Columns="@GroupedColumns" ShowGroupedColumn="@ShowGroupedColumn" />
+        }
+        
+        @if (AllowSelection)
+        {
+            <GridSelectionSettings Type="@SelectionType" Mode="@SelectionMode" />
+        }
+        
+        <GridEvents TValue="TValue"
+                    OnActionBegin="@OnActionBeginInternal"
+                    OnActionComplete="@OnActionCompleteInternal"
+                    RowSelected="@OnRowSelectedInternal"
+                    RowDeselected="@OnRowDeselectedInternal" />
+        
+        <GridColumns>
+            @if (AllowSelection && ShowCheckboxColumn)
+            {
+                <GridColumn Type="ColumnType.CheckBox" Width="50" />
+            }
+            
+            @ChildContent
+        </GridColumns>
+    </SfGrid>
+</div>
+
+@code {
+    private SfGrid<TValue>? _grid;
+    private bool _hasPermission = true;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public IEnumerable<TValue>? DataSource { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    
+    // Paging Parameters
+    [Parameter] public bool AllowPaging { get; set; } = true;
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int PageCount { get; set; } = 8;
+    
+    // Filtering Parameters
+    [Parameter] public bool AllowFiltering { get; set; } = false;
+    [Parameter] public Syncfusion.Blazor.Grids.FilterType FilterType { get; set; } = Syncfusion.Blazor.Grids.FilterType.Menu;
+    
+    // Sorting Parameters
+    [Parameter] public bool AllowSorting { get; set; } = true;
+    
+    // Grouping Parameters
+    [Parameter] public bool AllowGrouping { get; set; } = false;
+    [Parameter] public string[] GroupedColumns { get; set; } = Array.Empty<string>();
+    [Parameter] public bool ShowGroupedColumn { get; set; } = true;
+    
+    // Selection Parameters
+    [Parameter] public bool AllowSelection { get; set; } = true;
+    [Parameter] public bool ShowCheckboxColumn { get; set; } = false;
+    [Parameter] public Syncfusion.Blazor.Grids.SelectionType SelectionType { get; set; } = Syncfusion.Blazor.Grids.SelectionType.Single;
+    [Parameter] public Syncfusion.Blazor.Grids.SelectionMode SelectionMode { get; set; } = Syncfusion.Blazor.Grids.SelectionMode.Row;
+    
+    // Other Grid Features
+    [Parameter] public bool AllowReordering { get; set; } = false;
+    [Parameter] public bool AllowResizing { get; set; } = false;
+    [Parameter] public bool AllowTextWrap { get; set; } = false;
+    [Parameter] public bool EnableVirtualization { get; set; } = false;
+    [Parameter] public bool EnableStickyHeader { get; set; } = false;
+    [Parameter] public GridLine GridLines { get; set; } = GridLine.Default;
+    
+    // Toolbar Parameters
+    [Parameter] public bool ShowToolbar { get; set; } = false;
+    [Parameter] public List<object>? ToolbarItems { get; set; }
+    
+    // Server-Side Operations
+    [Parameter] public bool ServerSideOperations { get; set; } = false;
+    [Parameter] public EventCallback<Syncfusion.Blazor.Grids.ActionEventArgs<TValue>> OnActionBegin { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Grids.ActionEventArgs<TValue>> OnActionComplete { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<RowSelectEventArgs<TValue>> OnRowSelected { get; set; }
+    [Parameter] public EventCallback<RowDeselectEventArgs<TValue>> OnRowDeselected { get; set; }
+    
+    // RBAC Parameters
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public string? EditPermission { get; set; }
+    [Parameter] public string? DeletePermission { get; set; }
+    [Parameter] public string? ExportPermission { get; set; }
+    
+    // Audit Parameters
+    [Parameter] public bool EnableAudit { get; set; } = false;
+    [Parameter] public string? AuditResource { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task OnActionBeginInternal(Syncfusion.Blazor.Grids.ActionEventArgs<TValue> args)
+    {
+        // Check permissions for specific actions
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save && !string.IsNullOrEmpty(EditPermission))
+        {
+            var hasEditPermission = await PermissionService.HasPermissionAsync(EditPermission);
+            if (!hasEditPermission)
+            {
+                args.Cancel = true;
+                return;
+            }
+        }
+
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete && !string.IsNullOrEmpty(DeletePermission))
+        {
+            var hasDeletePermission = await PermissionService.HasPermissionAsync(DeletePermission);
+            if (!hasDeletePermission)
+            {
+                args.Cancel = true;
+                return;
+            }
+        }
+
+        await OnActionBegin.InvokeAsync(args);
+
+        // Audit
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = $"Grid_{args.RequestType}",
+                Resource = AuditResource ?? "DataGrid",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["RequestType"] = args.RequestType.ToString()
+                }
+            });
+        }
+    }
+
+    private async Task OnActionCompleteInternal(Syncfusion.Blazor.Grids.ActionEventArgs<TValue> args)
+    {
+        await OnActionComplete.InvokeAsync(args);
+    }
+
+    private async Task OnRowSelectedInternal(RowSelectEventArgs<TValue> args)
+    {
+        await OnRowSelected.InvokeAsync(args);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Grid_RowSelected",
+                Resource = AuditResource ?? "DataGrid",
+                Timestamp = DateTimeOffset.UtcNow
+            });
+        }
+    }
+
+    private async Task OnRowDeselectedInternal(RowDeselectEventArgs<TValue> args)
+    {
+        await OnRowDeselected.InvokeAsync(args);
+    }
+
+    private List<object>? GetToolbar()
+    {
+        if (!ShowToolbar) return null;
+        
+        var toolbar = ToolbarItems ?? new List<object>();
+        
+        // Filter toolbar items based on permissions
+        // This is a simplified example - you'd implement more sophisticated filtering
+        
+        return toolbar;
+    }
+
+    /// <summary>
+    /// Gets the selected records from the grid
+    /// </summary>
+    public async Task<List<TValue>> GetSelectedRecordsAsync()
+    {
+        if (_grid == null) return new List<TValue>();
+        return await _grid.GetSelectedRecordsAsync();
+    }
+
+    /// <summary>
+    /// Refreshes the grid data
+    /// </summary>
+    public async Task RefreshAsync()
+    {
+        if (_grid != null)
+            await _grid.RefreshColumnsAsync();
+    }
+
+    /// <summary>
+    /// Clears all selections
+    /// </summary>
+    public async Task ClearSelectionAsync()
+    {
+        if (_grid != null)
+            await _grid.ClearSelectionAsync();
+    }
+}

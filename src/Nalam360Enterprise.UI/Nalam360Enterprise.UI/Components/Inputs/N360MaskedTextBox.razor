@@ -1,0 +1,203 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+@typeparam TValue
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-masked-textbox @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-masked-textbox__label">
+                @Label
+                @if (IsRequired)
+                {
+                    <span class="n360-masked-textbox__required" aria-label="required">*</span>
+                }
+            </label>
+        }
+
+        <SfMaskedTextBox @bind-Value="@InternalValue"
+                         Mask="@Mask"
+                         PromptChar="@PromptChar"
+                         Placeholder="@Placeholder"
+                         Enabled="@(!Disabled && _hasPermission)"
+                         ReadOnly="@ReadOnly"
+                         ShowClearButton="@ShowClearButton"
+                         FloatLabelType="@FloatLabelType"
+                         CssClass="@InternalCssClass"
+                         HtmlAttributes="@GetHtmlAttributes()"
+                         ValueChange="@OnValueChangedInternal">
+        </SfMaskedTextBox>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <div class="n360-masked-textbox__help-text">@HelpText</div>
+        }
+
+        @if (ValidationErrors.Any())
+        {
+            <div class="n360-masked-textbox__validation" role="alert">
+                @foreach (var error in ValidationErrors)
+                {
+                    <div class="n360-masked-textbox__validation-message n360-masked-textbox__validation-message--@error.Severity.ToString().ToLower()">
+                        @error.Message
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Mask { get; set; } = string.Empty;
+    [Parameter] public char PromptChar { get; set; } = '_';
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool IsRequired { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool ShowClearButton { get; set; }
+    [Parameter] public FloatLabelType FloatLabelType { get; set; } = FloatLabelType.Auto;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<TValue>>? ValidationRules { get; set; }
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool _hasPermission = true;
+    private string? _previousValue;
+    private string? InternalValue { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        InternalValue = Value?.ToString();
+        _previousValue = InternalValue;
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnValueChangedInternal(MaskChangeEventArgs args)
+    {
+        var newValue = args.Value;
+        InternalValue = newValue;
+
+        // Convert to TValue
+        TValue? typedValue = default;
+        if (!string.IsNullOrEmpty(newValue) && typeof(TValue) != typeof(string))
+        {
+            try
+            {
+                typedValue = (TValue)Convert.ChangeType(newValue, typeof(TValue));
+            }
+            catch
+            {
+                typedValue = default;
+            }
+        }
+        else if (typeof(TValue) == typeof(string))
+        {
+            typedValue = (TValue)(object)newValue;
+        }
+
+        // Validation
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(typedValue);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        // Update value
+        Value = typedValue;
+        await ValueChanged.InvokeAsync(typedValue);
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ValueChanged",
+                Resource = AuditResource ?? "MaskedTextBox",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = _previousValue ?? string.Empty,
+                    ["NewValue"] = newValue ?? string.Empty,
+                    ["ComponentId"] = "MaskedTextBox"
+                }
+            });
+        }
+
+        _previousValue = newValue;
+    }
+
+    public async Task<bool> ValidateAsync()
+    {
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(Value);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        StateHasChanged();
+        return !ValidationErrors.Any();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRequired)
+        {
+            attributes["aria-required"] = "true";
+        }
+
+        if (ValidationErrors.Any())
+        {
+            attributes["aria-invalid"] = "true";
+            attributes["aria-describedby"] = "validation-message";
+        }
+
+        return attributes;
+    }
+}

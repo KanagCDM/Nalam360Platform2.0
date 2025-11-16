@@ -1,0 +1,135 @@
+@using Syncfusion.Blazor.Popups
+
+<SfDialog @ref="_dialog"
+          Width="@Width"
+          Height="@Height"
+          IsModal="@IsModal"
+          ShowCloseIcon="@ShowCloseIcon"
+          CloseOnEscape="@CloseOnEscape"
+          CssClass="@GetDialogCssClass()"
+          Visible="@Visible"
+          Created="@OnCreated"
+          Opened="@OnOpened"
+          Closed="@OnClosed">
+    <DialogTemplates>
+        <Header>
+            @if (HeaderTemplate != null)
+            {
+                @HeaderTemplate
+            }
+            else
+            {
+                <div class="n360-dialog__header">@Title</div>
+            }
+        </Header>
+        <Content>
+            @if (ContentTemplate != null)
+            {
+                @ContentTemplate
+            }
+            else
+            {
+                <div class="n360-dialog__content">@Content</div>
+            }
+        </Content>
+        <FooterTemplate>
+            @if (FooterTemplate != null)
+            {
+                @FooterTemplate
+            }
+            else if (ShowDefaultButtons)
+            {
+                <div class="n360-dialog__footer">
+                    <button class="e-control e-btn e-lib e-flat" @onclick="@OnCancelClick">@CancelButtonText</button>
+                    <button class="e-control e-btn e-lib e-primary" @onclick="@OnOkClick">@OkButtonText</button>
+                </div>
+            }
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public string Width { get; set; } = "500px";
+    [Parameter] public string Height { get; set; } = "auto";
+    [Parameter] public bool IsModal { get; set; } = true;
+    [Parameter] public bool ShowCloseIcon { get; set; } = true;
+    [Parameter] public bool CloseOnEscape { get; set; } = true;
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public bool ShowDefaultButtons { get; set; } = true;
+    [Parameter] public string OkButtonText { get; set; } = "OK";
+    [Parameter] public string CancelButtonText { get; set; } = "Cancel";
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public DialogSize Size { get; set; } = DialogSize.Medium;
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Templates
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment? ContentTemplate { get; set; }
+    [Parameter] public RenderFragment? FooterTemplate { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback OnOpened { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+    [Parameter] public EventCallback OnOk { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private SfDialog? _dialog;
+
+    public async Task ShowAsync()
+    {
+        if (_dialog != null)
+        {
+            await _dialog.ShowAsync();
+        }
+    }
+
+    public async Task HideAsync()
+    {
+        if (_dialog != null)
+        {
+            await _dialog.HideAsync();
+        }
+    }
+
+    private async Task OnOkClick()
+    {
+        await OnOk.InvokeAsync();
+        await HideAsync();
+    }
+
+    private async Task OnCancelClick()
+    {
+        await OnCancel.InvokeAsync();
+        await HideAsync();
+    }
+
+    private string GetDialogCssClass()
+    {
+        var classes = new List<string> { "n360-dialog" };
+
+        classes.Add($"n360-dialog--{Size.ToString().ToLower()}");
+
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        if (IsRtl)
+        {
+            classes.Add("n360-dialog--rtl");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    public enum DialogSize
+    {
+        Small,
+        Medium,
+        Large,
+        Fullscreen
+    }
+}

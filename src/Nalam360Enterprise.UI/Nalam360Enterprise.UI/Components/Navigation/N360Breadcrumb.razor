@@ -1,0 +1,42 @@
+@using Syncfusion.Blazor.Navigations
+
+<div class="n360-breadcrumb @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfBreadcrumb MaxItems="@MaxItems"
+                  OverflowMode="@OverflowMode"
+                  Url="@Url"
+                  EnableNavigation="@EnableNavigation"
+                  CssClass="@InternalCssClass">", 
+        <BreadcrumbItems>
+            @foreach (var item in Items)
+            {
+                <BreadcrumbItem Text="@item.Text" Url="@item.Url" IconCss="@item.IconCss" Disabled="@item.Disabled" />
+            }
+        </BreadcrumbItems>
+        @if (ItemTemplate != null)
+        {
+            <BreadcrumbTemplates>
+                <ItemTemplate>@ItemTemplate(context)</ItemTemplate>
+            </BreadcrumbTemplates>
+        }
+    </SfBreadcrumb>
+</div>
+
+@code {
+    [Parameter] public List<BreadcrumbItemModel> Items { get; set; } = new();
+    [Parameter] public int MaxItems { get; set; } = 0;
+    [Parameter] public BreadcrumbOverflowMode OverflowMode { get; set; } = BreadcrumbOverflowMode.Menu;
+    [Parameter] public string? Url { get; set; }
+    [Parameter] public bool EnableNavigation { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment<BreadcrumbItem>? ItemTemplate { get; set; }
+
+    public class BreadcrumbItemModel
+    {
+        public string Text { get; set; } = string.Empty;
+        public string? Url { get; set; }
+        public string? IconCss { get; set; }
+        public bool Disabled { get; set; }
+    }
+}

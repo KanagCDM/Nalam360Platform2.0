@@ -1,0 +1,65 @@
+@using Syncfusion.Blazor.Layouts
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-dashboard @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfDashboardLayout @ref="_dashboard"
+                           Columns="@Columns"
+                           CellSpacing="@CellSpacing"
+                           AllowDragging="@AllowDragging"
+                           AllowResizing="@AllowResizing"
+                           AllowFloating="@AllowFloating"
+                           MediaQuery="@MediaQuery"
+                           CssClass="@InternalCssClass">
+            @ChildContent
+        </SfDashboardLayout>
+    </div>
+}
+
+@code {
+    [Parameter] public int Columns { get; set; } = 12;
+    [Parameter] public double[] CellSpacing { get; set; } = new double[] { 10, 10 };
+    [Parameter] public bool AllowDragging { get; set; } = true;
+    [Parameter] public bool AllowResizing { get; set; } = true;
+    [Parameter] public bool AllowFloating { get; set; } = true;
+    [Parameter] public string? MediaQuery { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnPanelsChanged { get; set; }
+    
+    private SfDashboardLayout? _dashboard;
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (_dashboard != null)
+        {
+            await _dashboard.RefreshAsync();
+        }
+    }
+}

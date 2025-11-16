@@ -1,0 +1,64 @@
+@typeparam TValue
+@* Note: N360TreeGrid requires Syncfusion.Blazor.TreeGrid package *@
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-treegrid @CssClass n360-treegrid__placeholder" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
+        <div class="n360-treegrid__content">
+            <p>TreeGrid Component</p>
+            <small>Requires Syncfusion.Blazor.TreeGrid package</small>
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public IEnumerable<TValue>? DataSource { get; set; }
+    [Parameter] public string IdMapping { get; set; } = "Id";
+    [Parameter] public string ParentIdMapping { get; set; } = "ParentId";
+    [Parameter] public int TreeColumnIndex { get; set; } = 0;
+    [Parameter] public bool AllowPaging { get; set; }
+    [Parameter] public bool AllowSorting { get; set; }
+    [Parameter] public bool AllowFiltering { get; set; }
+    [Parameter] public bool AllowSelection { get; set; } = true;
+    [Parameter] public bool AllowReordering { get; set; }
+    [Parameter] public bool AllowResizing { get; set; }
+    [Parameter] public bool AllowTextWrap { get; set; }
+    [Parameter] public bool EnableHover { get; set; } = true;
+    [Parameter] public string Height { get; set; } = "auto";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TValue> OnRowSelected { get; set; }
+    
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public Task RefreshAsync() => Task.CompletedTask;
+    public Task ExpandAllAsync() => Task.CompletedTask;
+    public Task CollapseAllAsync() => Task.CompletedTask;
+}

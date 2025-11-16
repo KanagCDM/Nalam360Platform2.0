@@ -1,0 +1,70 @@
+@using Syncfusion.Blazor.Diagram
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-diagram @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfDiagramComponent @ref="_diagram"
+                            Height="@Height"
+                            Width="@Width"
+                            CssClass="@InternalCssClass">
+            @ChildContent
+        </SfDiagramComponent>
+    </div>
+}
+
+@code {
+    [Parameter] public string Height { get; set; } = "600px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnNodeCreated { get; set; }
+    [Parameter] public EventCallback OnConnectorCreated { get; set; }
+    
+    private SfDiagramComponent? _diagram;
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public async Task ExportAsync(string format)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "DiagramExported",
+                Resource = AuditResource ?? $"Diagram-{Id}",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Format"] = format,
+                    ["ComponentId"] = Id
+                }
+            });
+        }
+    }
+
+    public Task ClearAsync() => Task.CompletedTask;
+}

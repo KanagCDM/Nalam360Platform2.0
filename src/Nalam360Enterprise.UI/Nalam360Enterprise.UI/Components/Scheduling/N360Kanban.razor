@@ -1,0 +1,100 @@
+@using Syncfusion.Blazor.Kanban
+
+<div class="n360-kanban @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfKanban TValue="KanbanCard"
+              @ref="_kanban"
+              KeyField="@KeyField"
+              DataSource="@DataSource"
+              AllowDragAndDrop="@AllowDragAndDrop"
+              AllowKeyboardInteraction="@AllowKeyboardInteraction"
+              CssClass="@InternalCssClass"
+              CardRendered="@OnCardRendered"
+              ActionBegin="@OnActionBegin"
+              ActionComplete="@OnActionComplete">
+        <KanbanColumns>
+            @foreach (var column in Columns)
+            {
+                <KanbanColumn HeaderText="@column.HeaderText" KeyField="@(new List<string> { column.KeyField })" AllowToggle="@column.AllowToggle" />
+            }
+        </KanbanColumns>
+        <KanbanCardSettings HeaderField="@HeaderField" ContentField="@ContentField" />
+        @* Template support commented out - context binding issue
+        @if (CardTemplate != null)
+        {
+            <KanbanCardTemplate>@CardTemplate((KanbanCard)context)</KanbanCardTemplate>
+        }
+        *@
+    </SfKanban>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<KanbanCard>? DataSource { get; set; }
+    [Parameter] public string KeyField { get; set; } = "Status";
+    [Parameter] public string HeaderField { get; set; } = "Title";
+    [Parameter] public string ContentField { get; set; } = "Summary";
+    [Parameter] public List<KanbanColumnModel> Columns { get; set; } = new();
+    [Parameter] public bool AllowDragAndDrop { get; set; } = true;
+    [Parameter] public bool AllowKeyboardInteraction { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<CardRenderedEventArgs<KanbanCard>> OnCardRendered { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Kanban.ActionEventArgs<KanbanCard>> OnActionBegin { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Kanban.ActionEventArgs<KanbanCard>> OnActionComplete { get; set; }
+
+    private SfKanban<KanbanCard>? _kanban;
+
+    public async Task RefreshAsync()
+    {
+        if (_kanban != null)
+        {
+            await _kanban.RefreshAsync();
+        }
+    }
+
+    public async Task AddCardAsync(KanbanCard card)
+    {
+        if (_kanban != null)
+        {
+            await _kanban.AddCardAsync(card);
+        }
+    }
+
+    public async Task UpdateCardAsync(KanbanCard card)
+    {
+        if (_kanban != null)
+        {
+            await _kanban.UpdateCardAsync(card, card.Id);
+        }
+    }
+
+    public async Task DeleteCardAsync(KanbanCard card)
+    {
+        if (_kanban != null)
+        {
+            await _kanban.DeleteCardAsync(card);
+        }
+    }
+
+    public class KanbanCard
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string? Priority { get; set; }
+        public string? Tags { get; set; }
+        public string? Assignee { get; set; }
+        public string? Color { get; set; }
+    }
+
+    public class KanbanColumnModel
+    {
+        public string HeaderText { get; set; } = string.Empty;
+        public string KeyField { get; set; } = string.Empty;
+        public bool AllowToggle { get; set; } = true;
+    }
+}

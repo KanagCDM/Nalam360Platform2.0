@@ -1,0 +1,91 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "Nalam360Enterprise.Samples/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components.WebAssembly.Server": "9.0.0",
+          "Nalam360Enterprise.Samples.Client": "1.0.0"
+        },
+        "runtime": {
+          "Nalam360Enterprise.Samples.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.Components.WebAssembly/9.0.0": {
+        "dependencies": {
+          "Microsoft.JSInterop.WebAssembly": "9.0.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.Components.WebAssembly.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.24.52903"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Components.WebAssembly.Server/9.0.0": {
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.Components.WebAssembly.Server.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.24.52903"
+          }
+        }
+      },
+      "Microsoft.JSInterop.WebAssembly/9.0.0": {
+        "runtime": {
+          "lib/net9.0/Microsoft.JSInterop.WebAssembly.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.24.52903"
+          }
+        }
+      },
+      "Nalam360Enterprise.Samples.Client/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components.WebAssembly": "9.0.0"
+        },
+        "runtime": {
+          "Nalam360Enterprise.Samples.Client.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Nalam360Enterprise.Samples/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Components.WebAssembly/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-RwDygFGa1NdKh7N4S6P2xgxB0LeluLss/iZRdNnmOwN1zgpdLH9AnCnTIgDBAW7rhDjcPGrcjsDLNivwDRYwEQ==",
+      "path": "microsoft.aspnetcore.components.webassembly/9.0.0",
+      "hashPath": "microsoft.aspnetcore.components.webassembly.9.0.0.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.WebAssembly.Server/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-916w5kN0c5ytEuHAk6e1W8JLixlcEhAuKJLSBGdZUaVBuz/3E6r6qnGCdR9cyPvu2D+Stkbfv60Z05gwF/JnDA==",
+      "path": "microsoft.aspnetcore.components.webassembly.server/9.0.0",
+      "hashPath": "microsoft.aspnetcore.components.webassembly.server.9.0.0.nupkg.sha512"
+    },
+    "Microsoft.JSInterop.WebAssembly/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5TjNuiavEVk+4UFTZVOKMlpq1qgYW/Vd6N7lNsHJR9kOlhP6S2GtiKdbLn//Aw/22lx3jDJTkekc54F5S8JC4g==",
+      "path": "microsoft.jsinterop.webassembly/9.0.0",
+      "hashPath": "microsoft.jsinterop.webassembly.9.0.0.nupkg.sha512"
+    },
+    "Nalam360Enterprise.Samples.Client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

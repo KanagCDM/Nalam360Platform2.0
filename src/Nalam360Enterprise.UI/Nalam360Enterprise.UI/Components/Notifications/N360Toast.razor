@@ -1,0 +1,94 @@
+@using Syncfusion.Blazor.Notifications
+
+<div class="n360-toast @CssClass">
+    <SfToast @ref="_toast"
+             Position="@Position"
+             ShowCloseButton="@ShowCloseButton"
+             NewestOnTop="@NewestOnTop"
+             TimeOut="@TimeOut"
+             CssClass="@InternalCssClass"
+             Created="@OnCreated"
+             OnClick="@OnClick"
+             OnClose="@OnClose">
+    </SfToast>
+</div>
+
+@code {
+    [Parameter] public ToastPosition Position { get; set; } = new ToastPosition { X = "Right", Y = "Top" };
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public bool NewestOnTop { get; set; } = true;
+    [Parameter] public int TimeOut { get; set; } = 5000;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback<ToastClickEventArgs> OnClick { get; set; }
+    [Parameter] public EventCallback<ToastCloseArgs> OnClose { get; set; }
+
+    private SfToast? _toast;
+
+    public async Task ShowAsync(string title, string content, ToastType type = ToastType.Info)
+    {
+        if (_toast != null)
+        {
+            var model = new ToastModel
+            {
+                Title = title,
+                Content = content,
+                CssClass = $"n360-toast--{type.ToString().ToLower()}",
+                Icon = GetIconForType(type)
+            };
+
+            await _toast.ShowAsync(model);
+        }
+    }
+
+    public async Task ShowSuccessAsync(string title, string content)
+    {
+        await ShowAsync(title, content, ToastType.Success);
+    }
+
+    public async Task ShowErrorAsync(string title, string content)
+    {
+        await ShowAsync(title, content, ToastType.Error);
+    }
+
+    public async Task ShowWarningAsync(string title, string content)
+    {
+        await ShowAsync(title, content, ToastType.Warning);
+    }
+
+    public async Task ShowInfoAsync(string title, string content)
+    {
+        await ShowAsync(title, content, ToastType.Info);
+    }
+
+    public async Task HideAsync()
+    {
+        if (_toast != null)
+        {
+            await _toast.HideAsync();
+        }
+    }
+
+    private string GetIconForType(ToastType type)
+    {
+        return type switch
+        {
+            ToastType.Success => "e-success toast-icons",
+            ToastType.Error => "e-error toast-icons",
+            ToastType.Warning => "e-warning toast-icons",
+            ToastType.Info => "e-info toast-icons",
+            _ => "e-info toast-icons"
+        };
+    }
+
+    public enum ToastType
+    {
+        Success,
+        Error,
+        Warning,
+        Info
+    }
+}

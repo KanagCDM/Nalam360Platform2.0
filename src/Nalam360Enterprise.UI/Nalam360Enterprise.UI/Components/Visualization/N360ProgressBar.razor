@@ -1,0 +1,58 @@
+@* Note: Syncfusion ProgressBar is a separate component that requires additional licensing *@
+
+<div class="n360-progressbar @GetProgressBarCssClass()" dir="@(IsRtl ? "rtl" : "ltr")">
+    <div class="n360-progressbar__track">
+        <div class="n360-progressbar__fill" style="width: @Value%"></div>
+    </div>
+    @if (!string.IsNullOrEmpty(Label) || ShowProgressValue)
+    {
+        <div class="n360-progressbar__label">
+            @if (!string.IsNullOrEmpty(Label))
+            {
+                <span>@Label</span>
+            }
+            @if (ShowProgressValue)
+            {
+                <span>@Value%</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string Height { get; set; } = "8px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public bool ShowProgressValue { get; set; } = true;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public ProgressVariant Variant { get; set; } = ProgressVariant.Primary;
+
+    private string GetProgressBarCssClass()
+    {
+        var classes = new List<string> { "n360-progressbar" };
+        classes.Add($"n360-progressbar--{Variant.ToString().ToLower()}");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        if (IsRtl)
+        {
+            classes.Add("n360-progressbar--rtl");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    public enum ProgressVariant
+    {
+        Primary,
+        Success,
+        Info,
+        Warning,
+        Danger
+    }
+}

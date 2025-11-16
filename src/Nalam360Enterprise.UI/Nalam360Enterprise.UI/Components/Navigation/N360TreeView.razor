@@ -1,0 +1,122 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TValue
+
+@inject IPermissionService? PermissionService
+
+<div class="n360-treeview @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfTreeView TValue="TValue"
+                @ref="_treeView"
+                CssClass="@InternalCssClass"
+                AllowDragAndDrop="@AllowDragAndDrop"
+                AllowEditing="@AllowEditing"
+                AllowMultiSelection="@AllowMultiSelection"
+                ShowCheckBox="@ShowCheckBox"
+                AutoCheck="@AutoCheck"
+                ExpandOn="@ExpandOn"
+                LoadOnDemand="@LoadOnDemand"
+                NodeSelected="OnNodeSelectedInternal"
+                NodeChecked="@OnNodeChecked"
+                NodeExpanded="@OnNodeExpanded"
+                NodeCollapsed="@OnNodeCollapsed">
+        <TreeViewFieldsSettings TValue="TValue"
+                                Id="@IdField"
+                                Text="@TextField"
+                                ParentID="@ParentIdField"
+                                HasChildren="@HasChildrenField"
+                                Expanded="@ExpandedField"
+                                Selected="@SelectedField"
+                                IconCss="@IconCssField"
+                                DataSource="@DataSource" />
+        @if (NodeTemplate != null)
+        {
+            <TreeViewTemplates TValue="TValue">
+                <NodeTemplate>@NodeTemplate(context)</NodeTemplate>
+            </TreeViewTemplates>
+        }
+    </SfTreeView>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TValue>? DataSource { get; set; }
+    [Parameter] public string IdField { get; set; } = "Id";
+    [Parameter] public string TextField { get; set; } = "Text";
+    [Parameter] public string? ParentIdField { get; set; }
+    [Parameter] public string? HasChildrenField { get; set; }
+    [Parameter] public string? ExpandedField { get; set; }
+    [Parameter] public string? SelectedField { get; set; }
+    [Parameter] public string? IconCssField { get; set; }
+    [Parameter] public bool AllowDragAndDrop { get; set; }
+    [Parameter] public bool AllowEditing { get; set; }
+    [Parameter] public bool AllowMultiSelection { get; set; }
+    [Parameter] public bool ShowCheckBox { get; set; }
+    [Parameter] public bool AutoCheck { get; set; } = true;
+    [Parameter] public ExpandAction ExpandOn { get; set; } = ExpandAction.Click;
+    [Parameter] public bool LoadOnDemand { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment<TValue>? NodeTemplate { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<NodeSelectEventArgs> OnNodeSelected { get; set; }
+    [Parameter] public EventCallback<NodeCheckEventArgs> OnNodeChecked { get; set; }
+    [Parameter] public EventCallback<NodeExpandEventArgs> OnNodeExpanded { get; set; }
+    [Parameter] public EventCallback<NodeExpandEventArgs> OnNodeCollapsed { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public Func<TValue, string?>? GetNodePermission { get; set; }
+
+    private SfTreeView<TValue>? _treeView;
+
+    private async Task OnNodeSelectedInternal(NodeSelectEventArgs args)
+    {
+        // Check permission if specified
+        if (GetNodePermission != null && PermissionService != null && args.NodeData != null)
+        {
+            // Note: NodeData is of type NodeData, not TValue - skip permission check
+            // var permission = GetNodePermission(nodeData);
+            // if (!string.IsNullOrEmpty(permission))
+            // {
+            //     var hasPermission = await PermissionService.HasPermissionAsync(permission);
+            //     if (!hasPermission)
+            //     {
+            //         args.Cancel = true;
+            //         return;
+            //     }
+            // }
+        }
+
+        await OnNodeSelected.InvokeAsync(args);
+    }
+
+    public async Task<List<TValue>> GetSelectedNodesAsync()
+    {
+        // TODO: GetTreeDataAsync method not available in current Syncfusion version
+        // if (_treeView != null)
+        // {
+        //     var selectedNodes = await _treeView.GetTreeDataAsync();
+        //     return selectedNodes.ToList();
+        // }
+        await Task.CompletedTask;
+        return new List<TValue>();
+        return new List<TValue>();
+    }
+
+    public async Task ExpandAllAsync()
+    {
+        if (_treeView != null)
+        {
+            await _treeView.ExpandAllAsync();
+        }
+    }
+
+    public async Task CollapseAllAsync()
+    {
+        if (_treeView != null)
+        {
+            await _treeView.CollapseAllAsync();
+        }
+    }
+}

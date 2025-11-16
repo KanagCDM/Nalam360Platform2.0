@@ -1,0 +1,161 @@
+@using Syncfusion.Blazor.Buttons
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-switch @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-switch__label">@Label</label>
+        }
+
+        <SfSwitch @bind-Checked="@Checked"
+                  OnLabel="@OnLabel"
+                  OffLabel="@OffLabel"
+                  Disabled="@(Disabled || !_hasPermission)"
+                  CssClass="@InternalCssClass"
+                  HtmlAttributes="@GetHtmlAttributes()"
+                  Changed="@OnValueChangedInternal">
+        </SfSwitch>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <div class="n360-switch__help-text">@HelpText</div>
+        }
+
+        @if (ValidationErrors.Any())
+        {
+            <div class="n360-switch__validation" role="alert">
+                @foreach (var error in ValidationErrors)
+                {
+                    <div class="n360-switch__validation-message n360-switch__validation-message--@error.Severity.ToString().ToLower()">
+                        @error.Message
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool Checked { get; set; }
+    [Parameter] public EventCallback<bool> CheckedChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string OnLabel { get; set; } = "ON";
+    [Parameter] public string OffLabel { get; set; } = "OFF";
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<bool>>? ValidationRules { get; set; }
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool _hasPermission = true;
+    private bool _previousValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        _previousValue = Checked;
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnValueChangedInternal(Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> args)
+    {
+        var newValue = args.Checked;
+
+        // Validation
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        // Update value
+        Checked = newValue;
+        await CheckedChanged.InvokeAsync(newValue);
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ValueChanged",
+                Resource = AuditResource ?? "Switch",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = _previousValue.ToString(),
+                    ["NewValue"] = newValue.ToString(),
+                    ["ComponentId"] = "Switch"
+                }
+            });
+        }
+
+        _previousValue = newValue;
+    }
+
+    public async Task<bool> ValidateAsync()
+    {
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(Checked);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        StateHasChanged();
+        return !ValidationErrors.Any();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (ValidationErrors.Any())
+        {
+            attributes["aria-invalid"] = "true";
+            attributes["aria-describedby"] = "validation-message";
+        }
+
+        return attributes;
+    }
+}

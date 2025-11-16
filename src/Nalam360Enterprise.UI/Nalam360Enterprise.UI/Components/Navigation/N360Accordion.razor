@@ -1,0 +1,107 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+<div class="n360-accordion @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfAccordion @ref="_accordion"
+                 ExpandMode="@ExpandMode"
+                 EnablePersistence="@EnablePersistence"
+                 CssClass="@InternalCssClass"
+                 Expanded="@OnExpanded"
+                 Collapsed="@OnCollapsed">
+        <AccordionItems>
+            @foreach (var item in _filteredItems)
+            {
+                <AccordionItem IconCss="@item.IconCss" Expanded="@item.Expanded" Disabled="@item.Disabled">
+                    <HeaderTemplate>@(item.HeaderTemplate ?? (RenderFragment)(@<text>@item.Header</text>))</HeaderTemplate>
+                    <ContentTemplate>@(item.ContentTemplate ?? (RenderFragment)(@<text>@item.Content</text>))</ContentTemplate>
+                </AccordionItem>
+            }
+        </AccordionItems>
+    </SfAccordion>
+</div>
+
+@code {
+    [Parameter] public List<AccordionItemModel> Items { get; set; } = new();
+    [Parameter] public ExpandMode ExpandMode { get; set; } = ExpandMode.Multiple;
+    [Parameter] public bool EnablePersistence { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<Syncfusion.Blazor.Navigations.ExpandedEventArgs> OnExpanded { get; set; }
+    [Parameter] public EventCallback<CollapsedEventArgs> OnCollapsed { get; set; }
+
+    private SfAccordion? _accordion;
+    private List<AccordionItemModel> _filteredItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    private async Task FilterItemsAsync()
+    {
+        if (PermissionService == null)
+        {
+            _filteredItems = Items;
+            return;
+        }
+
+        _filteredItems = new List<AccordionItemModel>();
+        foreach (var item in Items)
+        {
+            if (string.IsNullOrEmpty(item.RequiredPermission))
+            {
+                _filteredItems.Add(item);
+            }
+            else
+            {
+                var hasPermission = await PermissionService.HasPermissionAsync(item.RequiredPermission);
+                if (hasPermission)
+                {
+                    _filteredItems.Add(item);
+                }
+            }
+        }
+    }
+
+    public async Task ExpandItemAsync(int index)
+    {
+        // TODO: ExpandItemAsync method not available in current Syncfusion version
+        // if (_accordion != null)
+        // {
+        //     await _accordion.ExpandItemAsync(index);
+        // }
+        await Task.CompletedTask;
+    }
+
+    public async Task CollapseItemAsync(int index)
+    {
+        // TODO: CollapseItemAsync method not available in current Syncfusion version
+        // if (_accordion != null)
+        // {
+        //     await _accordion.CollapseItemAsync(index);
+        // }
+        await Task.CompletedTask;
+    }
+
+    public class AccordionItemModel
+    {
+        public string? Header { get; set; }
+        public string? Content { get; set; }
+        public string? IconCss { get; set; }
+        public bool Expanded { get; set; }
+        public bool Disabled { get; set; }
+        public RenderFragment? HeaderTemplate { get; set; }
+        public RenderFragment? ContentTemplate { get; set; }
+        public string? RequiredPermission { get; set; }
+    }
+}

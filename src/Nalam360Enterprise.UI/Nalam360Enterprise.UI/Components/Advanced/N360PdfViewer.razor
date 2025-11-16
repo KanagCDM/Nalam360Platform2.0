@@ -1,0 +1,39 @@
+@* Note: N360PdfViewer requires Syncfusion.Blazor.PdfViewerServer.Windows or Linux package *@
+@* This is a placeholder component - implement based on your platform *@
+
+<div class="n360-pdfviewer @CssClass" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
+    <div class="n360-pdfviewer__placeholder">
+        <p>PDF Viewer Component</p>
+        <p>Document: @DocumentPath</p>
+        <small>Requires platform-specific Syncfusion.Blazor.PdfViewerServer package</small>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? DocumentPath { get; set; }
+    [Parameter] public string Height { get; set; } = "100%";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public bool EnableToolbar { get; set; } = true;
+    [Parameter] public bool EnableNavigationToolbar { get; set; } = true;
+    [Parameter] public bool EnableAnnotationToolbar { get; set; } = true;
+    [Parameter] public bool EnableDownload { get; set; } = true;
+    [Parameter] public bool EnablePrint { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Placeholder methods
+    public Task LoadAsync(string documentPath)
+    {
+        DocumentPath = documentPath;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    public Task UnloadAsync()
+    {
+        DocumentPath = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

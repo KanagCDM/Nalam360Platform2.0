@@ -1,0 +1,70 @@
+@using Syncfusion.Blazor.Charts
+
+<div class="n360-chart @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfChart @ref="_chart"
+             Title="@Title"
+             Width="@Width"
+             Height="@Height"
+             Theme="@Theme"
+             CssClass="@InternalCssClass">
+        @if (PrimaryXAxis != null)
+        {
+            <ChartPrimaryXAxis ValueType="@PrimaryXAxis.ValueType" Title="@PrimaryXAxis.Title" />
+        }
+        @if (PrimaryYAxis != null)
+        {
+            <ChartPrimaryYAxis Title="@PrimaryYAxis.Title" />
+        }
+        <ChartSeriesCollection>
+            @SeriesContent
+        </ChartSeriesCollection>
+        @if (ShowLegend)
+        {
+            <ChartLegendSettings Visible="true" Position="@LegendPosition" />
+        }
+        @if (ShowTooltip)
+        {
+            <ChartTooltipSettings Enable="true" />
+        }
+    </SfChart>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Height { get; set; } = "400px";
+    [Parameter] public Syncfusion.Blazor.Theme Theme { get; set; } = Syncfusion.Blazor.Theme.Bootstrap5;
+    [Parameter] public AxisModel? PrimaryXAxis { get; set; }
+    [Parameter] public AxisModel? PrimaryYAxis { get; set; }
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public LegendPosition LegendPosition { get; set; } = LegendPosition.Bottom;
+    [Parameter] public bool ShowTooltip { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment? SeriesContent { get; set; }
+
+    private SfChart? _chart;
+
+    public async Task RefreshAsync()
+    {
+        if (_chart != null)
+        {
+            await _chart.RefreshAsync();
+        }
+    }
+
+    public async Task PrintAsync()
+    {
+        if (_chart != null)
+        {
+            await _chart.PrintAsync();
+        }
+    }
+
+    public class AxisModel
+    {
+        public Syncfusion.Blazor.Charts.ValueType ValueType { get; set; } = Syncfusion.Blazor.Charts.ValueType.Category;
+        public string? Title { get; set; }
+    }
+}

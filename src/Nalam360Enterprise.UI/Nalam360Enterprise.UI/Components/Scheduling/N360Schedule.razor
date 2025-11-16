@@ -1,0 +1,97 @@
+@using Syncfusion.Blazor.Schedule
+
+<div class="n360-schedule @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfSchedule TValue="ScheduleEvent"
+                @ref="_schedule"
+                Width="@Width"
+                Height="@Height"
+                SelectedDate="@SelectedDate"
+                CurrentView="@CurrentView"
+                CssClass="@InternalCssClass"
+                EventRendered="@OnEventRendered"
+                Created="@OnCreated"
+                ActionBegin="@OnActionBegin"
+                ActionComplete="@OnActionComplete">
+        <ScheduleViews>
+            @foreach (var view in EnabledViews)
+            {
+                <ScheduleView Option="@view" />
+            }
+        </ScheduleViews>
+        <ScheduleEventSettings TValue="ScheduleEvent" DataSource="@DataSource" />
+        @* Template support commented out - context binding issue
+        @if (EventTemplate != null)
+        {
+            <ScheduleTemplates TValue="ScheduleEvent">
+                <EventTemplate>@EventTemplate((ScheduleEvent)context)</EventTemplate>
+            </ScheduleTemplates>
+        }
+        *@
+    </SfSchedule>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<ScheduleEvent>? DataSource { get; set; }
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Height { get; set; } = "650px";
+    [Parameter] public DateTime SelectedDate { get; set; } = DateTime.Today;
+    [Parameter] public View CurrentView { get; set; } = View.Week;
+    [Parameter] public List<View> EnabledViews { get; set; } = new() { View.Day, View.Week, View.Month, View.Agenda };
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment<ScheduleEvent>? EventTemplate { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<EventRenderedArgs<ScheduleEvent>> OnEventRendered { get; set; }
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Schedule.ActionEventArgs<ScheduleEvent>> OnActionBegin { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Schedule.ActionEventArgs<ScheduleEvent>> OnActionComplete { get; set; }
+
+    private SfSchedule<ScheduleEvent>? _schedule;
+
+    public async Task RefreshAsync()
+    {
+        if (_schedule != null)
+        {
+            await _schedule.RefreshEventsAsync();
+        }
+    }
+
+    public async Task AddEventAsync(ScheduleEvent evt)
+    {
+        if (_schedule != null)
+        {
+            await _schedule.AddEventAsync(evt);
+        }
+    }
+
+    public async Task UpdateEventAsync(ScheduleEvent evt)
+    {
+        if (_schedule != null)
+        {
+            await _schedule.SaveEventAsync(evt);
+        }
+    }
+
+    public async Task DeleteEventAsync(ScheduleEvent evt)
+    {
+        if (_schedule != null)
+        {
+            await _schedule.DeleteEventAsync(evt);
+        }
+    }
+
+    public class ScheduleEvent
+    {
+        public int Id { get; set; }
+        public string Subject { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string? Location { get; set; }
+        public string? Description { get; set; }
+        public bool IsAllDay { get; set; }
+        public string? RecurrenceRule { get; set; }
+        public string? CategoryColor { get; set; }
+    }
+}

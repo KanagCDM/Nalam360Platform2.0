@@ -1,0 +1,189 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+@typeparam TValue
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-slider @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-slider__label">@Label</label>
+        }
+
+        <SfSlider TValue="TValue"
+                  @bind-Value="@Value"
+                  Min="@Convert.ToDouble(Min)"
+                  Max="@Convert.ToDouble(Max)"
+                  Step="@Convert.ToDouble(Step)"
+                  Enabled="@(!Disabled && _hasPermission)"
+                  ReadOnly="@ReadOnly"
+                  ShowButtons="@ShowButtons"
+                  Type="@SliderType"
+                  Orientation="@Orientation"
+                  CssClass="@InternalCssClass"
+                  HtmlAttributes="@GetHtmlAttributes()"
+                  ValueChange="OnValueChangedInternal">
+            @if (ShowTicks)
+            {
+                <SliderTicks Placement="@TicksPlacement" LargeStep="@LargeStep" SmallStep="@SmallStep" ShowSmallTicks="@ShowSmallTicks" />
+            }
+            @if (ShowTooltip)
+            {
+                <SliderTooltip IsVisible="true" Placement="@TooltipPlacement" ShowOn="@TooltipShowOn" />
+            }
+        </SfSlider>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <div class="n360-slider__help-text">@HelpText</div>
+        }
+
+        @if (ValidationErrors.Any())
+        {
+            <div class="n360-slider__validation" role="alert">
+                @foreach (var error in ValidationErrors)
+                {
+                    <div class="n360-slider__validation-message n360-slider__validation-message--@error.Severity.ToString().ToLower()">
+                        @error.Message
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public TValue Min { get; set; } = default!;
+    [Parameter] public TValue Max { get; set; } = default!;
+    [Parameter] public TValue Step { get; set; } = default!;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool ShowButtons { get; set; }
+    [Parameter] public SliderType SliderType { get; set; } = SliderType.Default;
+    [Parameter] public SliderOrientation Orientation { get; set; } = SliderOrientation.Horizontal;
+    [Parameter] public bool ShowTicks { get; set; }
+    [Parameter] public Placement TicksPlacement { get; set; } = Placement.Before;
+    [Parameter] public double LargeStep { get; set; } = 10;
+    [Parameter] public double SmallStep { get; set; } = 1;
+    [Parameter] public bool ShowSmallTicks { get; set; }
+    [Parameter] public bool ShowTooltip { get; set; } = true;
+    [Parameter] public TooltipPlacement TooltipPlacement { get; set; } = TooltipPlacement.Before;
+    [Parameter] public TooltipShowOn TooltipShowOn { get; set; } = TooltipShowOn.Focus;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<TValue>>? ValidationRules { get; set; }
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool _hasPermission = true;
+    private TValue? _previousValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        _previousValue = Value;
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnValueChangedInternal(SliderChangeEventArgs<TValue> args)
+    {
+        var newValue = args.Value;
+
+        // Validation
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        // Update value
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ValueChanged",
+                Resource = AuditResource ?? "Slider",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = _previousValue?.ToString() ?? string.Empty,
+                    ["NewValue"] = newValue?.ToString() ?? string.Empty,
+                    ["ComponentId"] = "Slider"
+                }
+            });
+        }
+
+        _previousValue = newValue;
+    }
+
+    public async Task<bool> ValidateAsync()
+    {
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(Value);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        StateHasChanged();
+        return !ValidationErrors.Any();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (ValidationErrors.Any())
+        {
+            attributes["aria-invalid"] = "true";
+            attributes["aria-describedby"] = "validation-message";
+        }
+
+        return attributes;
+    }
+}

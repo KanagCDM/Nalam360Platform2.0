@@ -1,0 +1,206 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-upload @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-upload__label">@Label</label>
+        }
+
+        <SfUploader ID="@Id"
+                    AutoUpload="@AutoUpload"
+                    AllowedExtensions="@AllowedExtensions"
+                    MinFileSize="@MinFileSize"
+                    MaxFileSize="@MaxFileSize"
+                    Multiple="@Multiple"
+                    Enabled="@(!Disabled && _hasPermission)"
+                    ShowFileList="@ShowFileList"
+                    SequentialUpload="@SequentialUpload"
+                    CssClass="@InternalCssClass"
+                    HtmlAttributes="@GetHtmlAttributes()"
+                    OnUploadStart="OnUploadStartInternal"
+                    Success="OnSuccessInternal"
+                    Failure="OnFailureInternal"
+                    OnRemove="OnRemoveInternal">
+            @if (AsyncSettings != null)
+            {
+                <UploaderAsyncSettings SaveUrl="@AsyncSettings.SaveUrl" RemoveUrl="@AsyncSettings.RemoveUrl" />
+            }
+        </SfUploader>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <div class="n360-upload__help-text">@HelpText</div>
+        }
+
+        @if (ValidationErrors.Any())
+        {
+            <div class="n360-upload__validation" role="alert">
+                @foreach (var error in ValidationErrors)
+                {
+                    <div class="n360-upload__validation-message n360-upload__validation-message--@error.Severity.ToString().ToLower()">
+                        @error.Message
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool AutoUpload { get; set; } = true;
+    [Parameter] public string AllowedExtensions { get; set; } = "*";
+    [Parameter] public double MinFileSize { get; set; } = 0;
+    [Parameter] public double MaxFileSize { get; set; } = 30000000; // 30MB default
+    [Parameter] public bool Multiple { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowFileList { get; set; } = true;
+    [Parameter] public bool SequentialUpload { get; set; }
+    [Parameter] public AsyncSettingsModel? AsyncSettings { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<UploadingEventArgs> OnUploadStart { get; set; }
+    [Parameter] public EventCallback<SuccessEventArgs> OnSuccess { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.Inputs.FailureEventArgs> OnFailure { get; set; }
+    [Parameter] public EventCallback<RemovingEventArgs> OnRemove { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnUploadStartInternal(UploadingEventArgs args)
+    {
+        await OnUploadStart.InvokeAsync(args);
+
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "UploadStart",
+                Resource = AuditResource ?? "Upload",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["NewValue"] = $"File: {args.FileData.Name}, Size: {args.FileData.Size}",
+                    ["ComponentId"] = "Upload"
+                }
+            });
+        }
+    }
+
+    private async Task OnSuccessInternal(SuccessEventArgs args)
+    {
+        await OnSuccess.InvokeAsync(args);
+
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "UploadSuccess",
+                Resource = AuditResource ?? "Upload",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["NewValue"] = $"File: {args.File.Name}",
+                    ["ComponentId"] = "Upload"
+                }
+            });
+        }
+    }
+
+    private async Task OnFailureInternal(Syncfusion.Blazor.Inputs.FailureEventArgs args)
+    {
+        await OnFailure.InvokeAsync(args);
+
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "UploadFailure",
+                Resource = AuditResource ?? "Upload",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["NewValue"] = $"File: {args.File.Name}, Error: {args.Response.StatusText}",
+                    ["ComponentId"] = "Upload"
+                }
+            });
+        }
+    }
+
+    private async Task OnRemoveInternal(RemovingEventArgs args)
+    {
+        await OnRemove.InvokeAsync(args);
+
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FileRemove",
+                Resource = AuditResource ?? "Upload",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = $"File: {args.FilesData[0].Name}",
+                    ["ComponentId"] = "Upload"
+                }
+            });
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (ValidationErrors.Any())
+        {
+            attributes["aria-invalid"] = "true";
+            attributes["aria-describedby"] = "validation-message";
+        }
+
+        return attributes;
+    }
+
+    public class AsyncSettingsModel
+    {
+        public string SaveUrl { get; set; } = string.Empty;
+        public string? RemoveUrl { get; set; }
+    }
+}

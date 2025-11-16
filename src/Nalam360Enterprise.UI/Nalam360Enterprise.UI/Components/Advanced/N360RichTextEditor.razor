@@ -1,0 +1,65 @@
+@* Note: N360RichTextEditor requires Syncfusion.Blazor.RichTextEditor package *@
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-richtexteditor @CssClass n360-richtexteditor__placeholder" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
+        <div class="n360-richtexteditor__content">
+            <p>Rich Text Editor Component</p>
+            <small>Requires Syncfusion.Blazor.RichTextEditor package</small>
+            @if (!string.IsNullOrEmpty(Value))
+            {
+                <div class="n360-richtexteditor__preview">
+                    @((MarkupString)Value)
+                </div>
+            }
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public bool Readonly { get; set; }
+    [Parameter] public string Height { get; set; } = "300px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool EnableResize { get; set; } = true;
+    [Parameter] public bool EnableHtmlEncode { get; set; }
+    [Parameter] public bool EnableXhtml { get; set; }
+    [Parameter] public int MaxLength { get; set; } = -1;
+    [Parameter] public RenderFragment? ToolbarSettings { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool IsEffectivelyEnabled => Enabled && _hasPermission;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public Task<string> GetHtmlAsync() => Task.FromResult(Value ?? string.Empty);
+    public Task<string> GetTextAsync() => Task.FromResult(Value ?? string.Empty);
+    public Task RefreshAsync() => Task.CompletedTask;
+}

@@ -1,0 +1,66 @@
+@using Syncfusion.Blazor.Layouts
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-splitter @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfSplitter @ref="_splitter"
+                    Height="@Height"
+                    Width="@Width"
+                    Orientation="@Orientation"
+                    SeparatorSize="@SeparatorSize"
+                    CssClass="@InternalCssClass">
+            @ChildContent
+        </SfSplitter>
+    </div>
+}
+
+@code {
+    [Parameter] public string Height { get; set; } = "100%";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public Syncfusion.Blazor.Layouts.Orientation Orientation { get; set; } = Syncfusion.Blazor.Layouts.Orientation.Horizontal;
+    [Parameter] public double SeparatorSize { get; set; } = 4;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private SfSplitter? _splitter;
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public async Task CollapseAsync(int index)
+    {
+        if (_splitter != null)
+        {
+            await _splitter.CollapseAsync(index);
+        }
+    }
+
+    public async Task ExpandAsync(int index)
+    {
+        if (_splitter != null)
+        {
+            await _splitter.ExpandAsync(index);
+        }
+    }
+}

@@ -1,0 +1,87 @@
+@using Syncfusion.Blazor.Buttons
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-chip @CssClass @GetVariantClass()" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfChip @ref="_chip"
+                EnableDelete="@EnableDelete"
+                Enabled="@IsEffectivelyEnabled"
+                CssClass="@InternalCssClass">
+            <ChipItems>
+                <ChipItem Text="@Text"
+                          LeadingIconCss="@LeadingIcon"
+                          TrailingIconCss="@TrailingIcon"
+                          AvatarIconCss="@AvatarIcon"
+                          AvatarText="@AvatarText"
+                          Enabled="@IsEffectivelyEnabled">
+                </ChipItem>
+            </ChipItems>
+        </SfChip>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? LeadingIcon { get; set; }
+    [Parameter] public string? TrailingIcon { get; set; }
+    [Parameter] public string? AvatarIcon { get; set; }
+    [Parameter] public string? AvatarText { get; set; }
+    [Parameter] public bool EnableDelete { get; set; }
+    [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public ChipVariant Variant { get; set; } = ChipVariant.Default;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+    
+    private SfChip? _chip;
+    private bool _hasPermission = true;
+    private bool IsEffectivelyEnabled => Enabled && _hasPermission;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetVariantClass()
+    {
+        return Variant switch
+        {
+            ChipVariant.Primary => "n360-chip--primary",
+            ChipVariant.Success => "n360-chip--success",
+            ChipVariant.Warning => "n360-chip--warning",
+            ChipVariant.Danger => "n360-chip--danger",
+            ChipVariant.Info => "n360-chip--info",
+            _ => "n360-chip--default"
+        };
+    }
+
+    public enum ChipVariant
+    {
+        Default,
+        Primary,
+        Success,
+        Warning,
+        Danger,
+        Info
+    }
+}

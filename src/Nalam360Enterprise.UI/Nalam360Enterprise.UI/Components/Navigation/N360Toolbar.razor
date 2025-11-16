@@ -1,0 +1,112 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+<div class="n360-toolbar @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfToolbar OverflowMode="@OverflowMode"
+               Width="@Width"
+               Height="@Height"
+               CssClass="@InternalCssClass"
+               Clicked="OnClickedInternal">
+        <ToolbarItems>
+            @foreach (var item in _filteredItems)
+            {
+                @if (item.Template != null)
+                {
+                    <ToolbarItem Type="@item.Type"
+                                 Align="@item.Align"
+                                 Disabled="@item.Disabled"
+                                 CssClass="@item.CssClass">
+                        <Template>
+                            @item.Template
+                        </Template>
+                    </ToolbarItem>
+                }
+                else
+                {
+                    <ToolbarItem Text="@item.Text"
+                                 PrefixIcon="@item.PrefixIcon"
+                                 SuffixIcon="@item.SuffixIcon"
+                                 Type="@item.Type"
+                                 Align="@item.Align"
+                                 ShowTextOn="@item.ShowTextOn"
+                                 Disabled="@item.Disabled"
+                                 TooltipText="@item.TooltipText"
+                                 CssClass="@item.CssClass" />
+                }
+            }
+        </ToolbarItems>
+    </SfToolbar>
+</div>
+
+@code {
+    [Parameter] public List<ToolbarItemModel> Items { get; set; } = new();
+    [Parameter] public OverflowMode OverflowMode { get; set; } = OverflowMode.Scrollable;
+    [Parameter] public string Width { get; set; } = "auto";
+    [Parameter] public string Height { get; set; } = "auto";
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<ClickEventArgs> OnClicked { get; set; }
+
+    private List<ToolbarItemModel> _filteredItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    private async Task FilterItemsAsync()
+    {
+        if (PermissionService == null)
+        {
+            _filteredItems = Items;
+            return;
+        }
+
+        _filteredItems = new List<ToolbarItemModel>();
+        foreach (var item in Items)
+        {
+            if (string.IsNullOrEmpty(item.RequiredPermission))
+            {
+                _filteredItems.Add(item);
+            }
+            else
+            {
+                var hasPermission = await PermissionService.HasPermissionAsync(item.RequiredPermission);
+                if (hasPermission)
+                {
+                    _filteredItems.Add(item);
+                }
+            }
+        }
+    }
+
+    private async Task OnClickedInternal(ClickEventArgs args)
+    {
+        await OnClicked.InvokeAsync(args);
+    }
+
+    public class ToolbarItemModel
+    {
+        public string? Text { get; set; }
+        public string? PrefixIcon { get; set; }
+        public string? SuffixIcon { get; set; }
+        public ItemType Type { get; set; } = ItemType.Button;
+        public ItemAlign Align { get; set; } = ItemAlign.Left;
+        public DisplayMode ShowTextOn { get; set; } = DisplayMode.Both;
+        public bool Disabled { get; set; }
+        public string? TooltipText { get; set; }
+        public string? CssClass { get; set; }
+        public RenderFragment? Template { get; set; }
+        public string? RequiredPermission { get; set; }
+    }
+}

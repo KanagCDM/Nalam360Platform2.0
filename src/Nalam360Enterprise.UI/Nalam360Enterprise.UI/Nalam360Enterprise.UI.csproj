@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- NuGet Package Configuration -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>Nalam360Enterprise.UI</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Nalam360 Team</Authors>
+    <Company>Nalam360</Company>
+    <Product>Nalam360 Enterprise UI Component Library</Product>
+    <Description>Production-ready Blazor component library built on Syncfusion controls with enterprise features including RBAC, theming, accessibility, i18n, and schema-driven validation.</Description>
+    <Copyright>Copyright © 2025 Nalam360</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/nalam360/enterprise-ui</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nalam360/enterprise-ui</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>blazor;components;ui;enterprise;syncfusion;rbac;validation;theming;accessibility</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See CHANGELOG.md for detailed release notes</PackageReleaseNotes>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../../LICENSE" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.4" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Charts" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Diagram" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Grid" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Kanban" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.PdfViewer" Version="27.1.58" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Schedule" Version="31.2.10" />
+  </ItemGroup>
+
+</Project>

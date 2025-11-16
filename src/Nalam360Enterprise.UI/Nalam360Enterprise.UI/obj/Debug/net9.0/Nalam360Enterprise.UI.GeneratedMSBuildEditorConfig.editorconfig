@@ -1,0 +1,187 @@
+is_global = true
+build_property.TargetFramework = net9.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v9.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows,browser
+build_property.RootNamespace = Nalam360Enterprise.UI
+build_property.RootNamespace = Nalam360Enterprise.UI
+build_property.ProjectDir = /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 9.0
+build_property.EnableCodeStyleSeverity = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Advanced/N360Diagram.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZHZhbmNlZC9OMzYwRGlhZ3JhbS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Advanced/N360FileManager.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZHZhbmNlZC9OMzYwRmlsZU1hbmFnZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Advanced/N360PdfViewer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZHZhbmNlZC9OMzYwUGRmVmlld2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Advanced/N360RichTextEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZHZhbmNlZC9OMzYwUmljaFRleHRFZGl0b3IucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Buttons/N360Button.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9CdXR0b25zL04zNjBCdXR0b24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Buttons/N360ButtonGroup.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9CdXR0b25zL04zNjBCdXR0b25Hcm91cC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Buttons/N360Chip.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9CdXR0b25zL04zNjBDaGlwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Charts/N360Chart.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DaGFydHMvTjM2MENoYXJ0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Data/N360Grid.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9EYXRhL04zNjBHcmlkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Data/N360ListView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9EYXRhL04zNjBMaXN0Vmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Data/N360Pivot.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9EYXRhL04zNjBQaXZvdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Data/N360TreeGrid.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9EYXRhL04zNjBUcmVlR3JpZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360CheckBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MENoZWNrQm94LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360DatePicker.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MERhdGVQaWNrZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360DropDownList.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MERyb3BEb3duTGlzdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360MaskedTextBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2ME1hc2tlZFRleHRCb3gucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360NumericTextBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2ME51bWVyaWNUZXh0Qm94LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360Slider.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MFNsaWRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360Switch.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MFN3aXRjaC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360TextBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MFRleHRCb3gucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Inputs/N360Upload.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9JbnB1dHMvTjM2MFVwbG9hZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Layout/N360Card.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTjM2MENhcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Layout/N360Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTjM2MERhc2hib2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Layout/N360Dialog.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTjM2MERpYWxvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Layout/N360Drawer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTjM2MERyYXdlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Layout/N360Splitter.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTjM2MFNwbGl0dGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360Accordion.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBBY2NvcmRpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360Breadcrumb.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBCcmVhZGNydW1iLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360Sidebar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBTaWRlYmFyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360Tabs.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBUYWJzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360Toolbar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBUb29sYmFyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Navigation/N360TreeView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OYXZpZ2F0aW9uL04zNjBUcmVlVmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Notifications/N360Badge.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Ob3RpZmljYXRpb25zL04zNjBCYWRnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Notifications/N360Spinner.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Ob3RpZmljYXRpb25zL04zNjBTcGlubmVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Notifications/N360Toast.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Ob3RpZmljYXRpb25zL04zNjBUb2FzdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Notifications/N360Tooltip.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Ob3RpZmljYXRpb25zL04zNjBUb29sdGlwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Scheduling/N360Kanban.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TY2hlZHVsaW5nL04zNjBLYW5iYW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Scheduling/N360Schedule.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TY2hlZHVsaW5nL04zNjBTY2hlZHVsZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Components/Visualization/N360ProgressBar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9WaXN1YWxpemF0aW9uL04zNjBQcm9ncmVzc0Jhci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Component1.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50MS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-1phdt6opla

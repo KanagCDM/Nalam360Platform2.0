@@ -1,0 +1,57 @@
+@* Note: N360FileManager requires Syncfusion.Blazor.FileManager package *@
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-filemanager @CssClass n360-filemanager__placeholder" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
+        <div class="n360-filemanager__content">
+            <p>File Manager Component</p>
+            <small>Requires Syncfusion.Blazor.FileManager package</small>
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Height { get; set; } = "600px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public bool EnablePersistence { get; set; }
+    [Parameter] public bool AllowDragAndDrop { get; set; } = true;
+    [Parameter] public bool AllowMultiSelection { get; set; } = true;
+    [Parameter] public bool ShowFileExtension { get; set; } = true;
+    [Parameter] public bool ShowHiddenItems { get; set; }
+    [Parameter] public bool ShowThumbnail { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnFileOpen { get; set; }
+    [Parameter] public EventCallback OnFileSelect { get; set; }
+    
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public Task RefreshFilesAsync() => Task.CompletedTask;
+    public Task RefreshLayoutAsync() => Task.CompletedTask;
+}

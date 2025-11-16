@@ -1,0 +1,77 @@
+@typeparam TValue
+@using Syncfusion.Blazor.Lists
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-listview @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfListView @ref="_listView"
+                    TValue="TValue"
+                    DataSource="@DataSource"
+                    ShowCheckBox="@ShowCheckBox"
+                    ShowHeader="@ShowHeader"
+                    HeaderTitle="@HeaderTitle"
+                    Enable="@IsEffectivelyEnabled"
+                    Height="@Height"
+                    Width="@Width"
+                    CssClass="@InternalCssClass">
+            @if (ItemTemplate != null)
+            {
+                <ListViewTemplates TValue="TValue">
+                    <Template>
+                        @ItemTemplate(context)
+                    </Template>
+                </ListViewTemplates>
+            }
+            @ChildContent
+        </SfListView>
+    </div>
+}
+
+@code {
+    [Parameter] public IEnumerable<TValue>? DataSource { get; set; }
+    [Parameter] public bool ShowCheckBox { get; set; }
+    [Parameter] public bool ShowHeader { get; set; }
+    [Parameter] public string? HeaderTitle { get; set; }
+    [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public string Height { get; set; } = "auto";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public RenderFragment<TValue>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TValue> OnSelect { get; set; }
+    
+    private SfListView<TValue>? _listView;
+    private bool _hasPermission = true;
+    private bool IsEffectivelyEnabled => Enabled && _hasPermission;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    public List<TValue> GetSelectedItems()
+    {
+        // Placeholder - Syncfusion API varies
+        return new List<TValue>();
+    }
+}

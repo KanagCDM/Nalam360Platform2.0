@@ -1,0 +1,78 @@
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission || !HideIfNoPermission)
+{
+    <div class="n360-badge @CssClass @GetVariantClass()" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Content))
+        {
+            <span class="n360-badge__content">@Content</span>
+        }
+        @if (Count.HasValue)
+        {
+            <span class="n360-badge__count">@Count</span>
+        }
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public int? Count { get; set; }
+    [Parameter] public BadgeVariant Variant { get; set; } = BadgeVariant.Primary;
+    [Parameter] public BadgeSize Size { get; set; } = BadgeSize.Medium;
+    [Parameter] public bool IsDot { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetVariantClass()
+    {
+        return Variant switch
+        {
+            BadgeVariant.Primary => "n360-badge--primary",
+            BadgeVariant.Success => "n360-badge--success",
+            BadgeVariant.Warning => "n360-badge--warning",
+            BadgeVariant.Danger => "n360-badge--danger",
+            BadgeVariant.Info => "n360-badge--info",
+            _ => "n360-badge--primary"
+        };
+    }
+
+    public enum BadgeVariant
+    {
+        Primary,
+        Success,
+        Warning,
+        Danger,
+        Info
+    }
+
+    public enum BadgeSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+}

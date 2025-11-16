@@ -1,0 +1,200 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+@typeparam TValue
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-text-input @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="n360-input-label" for="@Id">
+            @Label
+            @if (IsRequired)
+            {
+                <span class="n360-required-indicator" aria-label="required">*</span>
+            }
+        </label>
+    }
+
+    <SfTextBox @ref="_textBox"
+               ID="@Id"
+               Value="@Value?.ToString()"
+               ValueChange="@OnValueChangedInternal"
+               Placeholder="@Placeholder"
+               Enabled="@IsEffectivelyEnabled"
+               Readonly="@Readonly"
+               CssClass="@InputCssClass"
+               FloatLabelType="@FloatLabelType"
+               ShowClearButton="@ShowClearButton"
+               Multiline="@Multiline"
+               HtmlAttributes="@GetHtmlAttributes()">
+    </SfTextBox>
+
+    @if (!string.IsNullOrEmpty(HelpText))
+    {
+        <div class="n360-input-help-text">@HelpText</div>
+    }
+
+    @if (ValidationErrors.Any())
+    {
+        <div class="n360-input-validation-errors" role="alert">
+            @foreach (var error in ValidationErrors)
+            {
+                <div class="n360-validation-error @GetSeverityClass(error.Severity)">
+                    @error.Message
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private SfTextBox? _textBox;
+    private bool _isPermissionChecked = false;
+    private bool _hasPermission = true;
+
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool IsRequired { get; set; }
+    [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public bool Readonly { get; set; }
+    [Parameter] public bool Multiline { get; set; }
+    [Parameter] public bool ShowClearButton { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InputCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public Syncfusion.Blazor.Inputs.FloatLabelType FloatLabelType { get; set; } = Syncfusion.Blazor.Inputs.FloatLabelType.Auto;
+
+    // RBAC Parameters
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+
+    // Audit Parameters
+    [Parameter] public bool EnableAudit { get; set; } = false;
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<TValue>> ValidationRules { get; set; } = new();
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool IsEffectivelyEnabled => Enabled && _hasPermission;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            _isPermissionChecked = true;
+        }
+    }
+
+    private async Task OnValueChangedInternal(ChangedEventArgs args)
+    {
+        var newValue = ConvertValue(args.Value);
+        
+        // Validate
+        if (ValidationRules.Any())
+        {
+            ValidationErrors.Clear();
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                    ValidationErrors.AddRange(result.Warnings);
+                }
+            }
+        }
+
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+
+        // Audit if enabled
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ValueChanged",
+                Resource = AuditResource ?? $"TextBox-{Id}",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = Value?.ToString() ?? string.Empty,
+                    ["NewValue"] = newValue?.ToString() ?? string.Empty,
+                    ["ComponentId"] = Id
+                }
+            });
+        }
+    }
+
+    private TValue? ConvertValue(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return default;
+
+        var targetType = typeof(TValue);
+        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        try
+        {
+            return (TValue?)Convert.ChangeType(value, underlyingType);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRequired)
+        {
+            attributes["aria-required"] = "true";
+        }
+
+        if (!IsEffectivelyEnabled)
+        {
+            attributes["aria-disabled"] = "true";
+        }
+
+        if (!string.IsNullOrEmpty(HelpText))
+        {
+            attributes["aria-describedby"] = $"{Id}-help";
+        }
+
+        return attributes;
+    }
+
+    private string GetSeverityClass(ValidationSeverity severity) => severity switch
+    {
+        ValidationSeverity.Warning => "severity-warning",
+        ValidationSeverity.Info => "severity-info",
+        _ => "severity-error"
+    };
+
+    public async Task<bool> ValidateAsync()
+    {
+        ValidationErrors.Clear();
+        
+        foreach (var rule in ValidationRules)
+        {
+            var result = await rule.ValidateAsync(Value);
+            if (!result.IsValid)
+            {
+                ValidationErrors.AddRange(result.Errors);
+                ValidationErrors.AddRange(result.Warnings);
+            }
+        }
+
+        StateHasChanged();
+        return !ValidationErrors.Any(e => e.Severity == ValidationSeverity.Error);
+    }
+}

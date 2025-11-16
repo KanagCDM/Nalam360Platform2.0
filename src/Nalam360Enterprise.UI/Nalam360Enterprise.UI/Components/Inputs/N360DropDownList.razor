@@ -1,0 +1,197 @@
+@using Syncfusion.Blazor.DropDowns
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+@typeparam TValue
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-dropdown @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-dropdown__label">
+                @Label
+                @if (IsRequired)
+                {
+                    <span class="n360-dropdown__required" aria-label="required">*</span>
+                }
+            </label>
+        }
+
+        <SfDropDownList TValue="TValue"
+                        TItem="TItem"
+                        @bind-Value="@Value"
+                        DataSource="@DataSource"
+                        Placeholder="@Placeholder"
+                        Enabled="@(!Disabled && _hasPermission)"
+                        ReadOnly="@ReadOnly"
+                        AllowFiltering="@AllowFiltering"
+                        ShowClearButton="@ShowClearButton"
+                        PopupHeight="@PopupHeight"
+                        FloatLabelType="@FloatLabelType"
+                        CssClass="@InternalCssClass"
+                        HtmlAttributes="@GetHtmlAttributes()"
+                        ValueChange="OnValueChangedInternal">
+            <DropDownListFieldSettings Value="@ValueField" Text="@TextField" />
+            @if (ItemTemplate != null)
+            {
+                <DropDownListTemplates TItem="TItem">
+                    <ItemTemplate>@ItemTemplate(context)</ItemTemplate>
+                </DropDownListTemplates>
+            }
+        </SfDropDownList>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <div class="n360-dropdown__help-text">@HelpText</div>
+        }
+
+        @if (ValidationErrors.Any())
+        {
+            <div class="n360-dropdown__validation" role="alert">
+                @foreach (var error in ValidationErrors)
+                {
+                    <div class="n360-dropdown__validation-message n360-dropdown__validation-message--@error.Severity.ToString().ToLower()">
+                        @error.Message
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public IEnumerable<TItem>? DataSource { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public string ValueField { get; set; } = "Value";
+    [Parameter] public string TextField { get; set; } = "Text";
+    [Parameter] public bool IsRequired { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool AllowFiltering { get; set; }
+    [Parameter] public bool ShowClearButton { get; set; }
+    [Parameter] public string PopupHeight { get; set; } = "300px";
+    [Parameter] public FloatLabelType FloatLabelType { get; set; } = FloatLabelType.Auto;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<TValue>>? ValidationRules { get; set; }
+    [Parameter] public List<ValidationError> ValidationErrors { get; set; } = new();
+
+    private bool _hasPermission = true;
+    private TValue? _previousValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        _previousValue = Value;
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnValueChangedInternal(ChangeEventArgs<TValue, TItem> args)
+    {
+        var newValue = args.Value;
+
+        // Validation
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        // Update value
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ValueChanged",
+                Resource = AuditResource ?? "DropDownList",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = _previousValue?.ToString() ?? string.Empty,
+                    ["NewValue"] = newValue?.ToString() ?? string.Empty,
+                    ["ComponentId"] = "DropDownList"
+                }
+            });
+        }
+
+        _previousValue = newValue;
+    }
+
+    public async Task<bool> ValidateAsync()
+    {
+        ValidationErrors.Clear();
+        if (ValidationRules != null)
+        {
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(Value);
+                if (!result.IsValid && result.Errors != null)
+                {
+                    ValidationErrors.AddRange(result.Errors);
+                }
+            }
+        }
+
+        StateHasChanged();
+        return !ValidationErrors.Any();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRequired)
+        {
+            attributes["aria-required"] = "true";
+        }
+
+        if (ValidationErrors.Any())
+        {
+            attributes["aria-invalid"] = "true";
+            attributes["aria-describedby"] = "validation-message";
+        }
+
+        return attributes;
+    }
+}

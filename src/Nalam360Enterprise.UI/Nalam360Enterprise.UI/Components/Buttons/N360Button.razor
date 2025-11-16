@@ -1,0 +1,129 @@
+@using Syncfusion.Blazor.Buttons
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <SfButton Content="@Content"
+              IconCss="@IconCss"
+              IconPosition="@IconPosition"
+              CssClass="@GetButtonCssClass()"
+              IsPrimary="@IsPrimary"
+              Disabled="@(Disabled || !_hasPermission)"
+              OnClick="@OnClickInternal"
+              HtmlAttributes="@GetHtmlAttributes()">
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+    </SfButton>
+}
+
+@code {
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? IconCss { get; set; }
+    [Parameter] public IconPosition IconPosition { get; set; } = IconPosition.Left;
+    [Parameter] public N360ButtonType ButtonType { get; set; } = N360ButtonType.Default;
+    [Parameter] public ButtonSize Size { get; set; } = ButtonSize.Medium;
+    [Parameter] public bool IsPrimary { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+    }
+
+    private async Task CheckPermissionAsync()
+    {
+        if (string.IsNullOrEmpty(RequiredPermission) || PermissionService == null)
+        {
+            _hasPermission = true;
+            return;
+        }
+
+        _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+    }
+
+    private async Task OnClickInternal(MouseEventArgs args)
+    {
+        await OnClick.InvokeAsync(args);
+
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ButtonClick",
+                Resource = AuditResource ?? Content ?? "Button",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
+    private string GetButtonCssClass()
+    {
+        var classes = new List<string> { "n360-button" };
+
+        classes.Add($"n360-button--{ButtonType.ToString().ToLower()}");
+        classes.Add($"n360-button--{Size.ToString().ToLower()}");
+
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        if (IsRtl)
+        {
+            classes.Add("n360-button--rtl");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+        
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+
+    public enum N360ButtonType
+    {
+        Default,
+        Primary,
+        Success,
+        Info,
+        Warning,
+        Danger,
+        Link
+    }
+
+    public enum ButtonSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+}

@@ -1,0 +1,114 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+<div class="n360-tabs @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+    <SfTab @ref="_tab"
+           CssClass="@InternalCssClass"
+           Height="@Height"
+           Width="@Width"
+           HeaderPlacement="@HeaderPlacement"
+           OverflowMode="@OverflowMode"
+           ShowCloseButton="@ShowCloseButton"
+           EnablePersistence="@EnablePersistence"
+           Selected="OnSelectedInternal"
+           Created="@OnCreated"
+           Removed="@OnRemoved">
+        <TabItems>
+            @foreach (var item in _filteredItems)
+            {
+                <TabItem CssClass="@item.CssClass" Disabled="@item.Disabled">
+                    <HeaderTemplate>
+                        @if (!string.IsNullOrEmpty(item.IconCss))
+                        {
+                            <span class="@item.IconCss"></span>
+                        }
+                        @item.Header
+                    </HeaderTemplate>
+                    <ContentTemplate>@(item.Content ?? (RenderFragment)(@<text></text>))</ContentTemplate>
+                </TabItem>
+            }
+        </TabItems>
+    </SfTab>
+</div>
+
+@code {
+    [Parameter] public List<TabItemModel> Items { get; set; } = new();
+    [Parameter] public string Height { get; set; } = "auto";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public HeaderPosition HeaderPlacement { get; set; } = HeaderPosition.Top;
+    [Parameter] public OverflowMode OverflowMode { get; set; } = OverflowMode.Scrollable;
+    [Parameter] public bool ShowCloseButton { get; set; }
+    [Parameter] public bool EnablePersistence { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<SelectEventArgs> OnSelected { get; set; }
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback<RemoveEventArgs> OnRemoved { get; set; }
+
+    private SfTab? _tab;
+    private List<TabItemModel> _filteredItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await FilterItemsAsync();
+    }
+
+    private async Task FilterItemsAsync()
+    {
+        if (PermissionService == null)
+        {
+            _filteredItems = Items;
+            return;
+        }
+
+        _filteredItems = new List<TabItemModel>();
+        foreach (var item in Items)
+        {
+            if (string.IsNullOrEmpty(item.RequiredPermission))
+            {
+                _filteredItems.Add(item);
+            }
+            else
+            {
+                var hasPermission = await PermissionService.HasPermissionAsync(item.RequiredPermission);
+                if (hasPermission)
+                {
+                    _filteredItems.Add(item);
+                }
+            }
+        }
+    }
+
+    private async Task OnSelectedInternal(SelectEventArgs args)
+    {
+        await OnSelected.InvokeAsync(args);
+    }
+
+    public async Task SelectAsync(int index)
+    {
+        if (_tab != null)
+        {
+            await _tab.SelectAsync(index);
+        }
+    }
+
+    public class TabItemModel
+    {
+        public string Header { get; set; } = string.Empty;
+        public RenderFragment? Content { get; set; }
+        public string? IconCss { get; set; }
+        public string? CssClass { get; set; }
+        public bool Disabled { get; set; }
+        public string? RequiredPermission { get; set; }
+    }
+}

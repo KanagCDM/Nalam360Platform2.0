@@ -1,0 +1,32 @@
+@using Syncfusion.Blazor.Spinner
+
+<div class="n360-spinner @CssClass">
+    @if (IsVisible)
+    {
+        <SfSpinner @bind-Visible="@IsVisible"
+                   Type="@Type"
+                   Label="@Label"
+                   CssClass="@InternalCssClass">
+        </SfSpinner>
+    }
+</div>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public SpinnerType Type { get; set; } = SpinnerType.Bootstrap5;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+
+    public void Show()
+    {
+        IsVisible = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+}
