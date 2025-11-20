@@ -10,6 +10,10 @@ This is a **dual-focus enterprise platform** consisting of:
 
 **Current Status**: ✅ Production Ready - 0 compilation errors, 100% requirements met, full CI/CD automation
 
+**Solutions**: Two separate solution files exist:
+- `Nalam360EnterprisePlatform.sln`: Platform modules only (.NET 8)
+- `Nalam360Enterprise.sln`: UI library and docs (.NET 9)
+
 ## Architecture Patterns
 
 ### CQRS with Result Pattern
@@ -69,19 +73,106 @@ src/
 # Build entire solution (14 platform modules + UI library)
 dotnet build Nalam360EnterprisePlatform.sln --configuration Release
 
+# Build UI library and docs
+dotnet build Nalam360Enterprise.sln --configuration Release
+
 # Run example API
 dotnet run --project examples/Nalam360.Platform.Example.Api
+
+# Run interactive docs site (localhost:5032)
+dotnet run --project docs/Nalam360Enterprise.Docs.Web
 ```
 
 ### Testing
-- Unit tests in `tests/Nalam360.Platform.Tests/`
-- UI tests in `tests/Nalam360Enterprise.UI.Tests/` using bUnit
+```powershell
+# Run all tests
+dotnet test Nalam360EnterprisePlatform.sln --configuration Release
+
+# Platform tests only (xUnit)
+dotnet test tests/Nalam360.Platform.Tests/
+
+# UI tests only (xUnit + bUnit)
+dotnet test tests/Nalam360Enterprise.UI.Tests/
+
+# Visual tests (Playwright)
+dotnet test tests/Nalam360Enterprise.UI.VisualTests/
+
+# Filter specific test
+dotnet test --filter "FullyQualifiedName~CreateOrderHandler"
+
+# With coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+### ML Model Training
+```powershell
+# Quick training (synthetic data)
+.\train-ml-models-quick.ps1
+
+# Full training (production)
+.\train-ml-models.ps1
+
+# Test Azure OpenAI integration
+.\test-azure-openai.ps1
+
+# Test ML predictions
+.\test-ml-predictions.ps1
+```
+
+### Common Issues
+1. **Build errors on .NET version mismatch**: Platform modules require .NET 8 SDK, UI requires .NET 9 SDK - install both
+2. **Missing Syncfusion license**: Key is embedded in `ServiceCollectionExtensions.cs`, no action needed
+3. **AI services 404**: Check `AI_APPSETTINGS_EXAMPLE.json` for proper Azure OpenAI endpoint format
+4. **Test failures on missing context**: Ensure `TestContext` is inherited for bUnit component tests
 
 ### Adding Platform Features
 1. Place in appropriate layer (Core/Domain/Application/Data)
-2. Return `Result<T>` for operations that can fail
+2. Return `Result<T>` for operations that can fail - never throw for business failures
 3. Use `IMediator.Send()` for CQRS commands/queries
-4. Register services via `ServiceCollectionExtensions.cs` in each module
+4. Register services via `ServiceCollectionExtensions.cs` in each module's `DependencyInjection/` folder
+5. All async methods must accept `CancellationToken ct` parameter
+6. Domain events: Call `AddDomainEvent()` in aggregates, `ClearDomainEvents()` after persistence
+
+### Testing Patterns
+```csharp
+// Platform tests: xUnit with Moq and FluentAssertions
+public class CreateOrderHandlerTests
+{
+    private readonly Mock<IOrderRepository> _mockRepository;
+    
+    [Fact]
+    public async Task Handle_WithValidCommand_ReturnsSuccess()
+    {
+        // Arrange
+        var command = new CreateOrderCommand(Guid.NewGuid(), 100m);
+        
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+        
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _mockRepository.Verify(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+}
+
+// UI component tests: bUnit with TestContext
+public class N360ButtonTests : TestContext
+{
+    [Fact]
+    public void Button_WithRequiredPermission_HidesWhenNoPermission()
+    {
+        // Arrange
+        Services.AddScoped<IPermissionService, MockPermissionService>();
+        
+        // Act
+        var cut = RenderComponent<N360Button>(parameters => parameters
+            .Add(p => p.RequiredPermission, "ADMIN_ONLY"));
+        
+        // Assert
+        cut.Markup.Should().BeEmpty();
+    }
+}
+```
 
 ### Creating UI Components
 All components in `Nalam360Enterprise.UI/Components/` follow this pattern:
@@ -90,8 +181,10 @@ All components in `Nalam360Enterprise.UI/Components/` follow this pattern:
 - Syncfusion provides enterprise-grade features: accessibility, RTL, themes, validation, keyboard navigation
 - Include RBAC support: `RequiredPermission`, `HideIfNoPermission` parameters
 - Include audit: `EnableAudit`, `AuditResource`, `AuditAction` parameters
-- Use `ValidationRules` for schema-driven validation
+- Use `ValidationRules` for schema-driven validation (Yup/Zod-like API)
 - Call `GetHtmlAttributes()` for accessibility/RTL/theming
+- Inject `IPermissionService` for RBAC, `IAuditService` for audit logging
+- Inherit from `N360ComponentBase` for standard parameters (CssClass, Style, AdditionalAttributes)
 
 **Component Selection Priority:**
 1. **First**: Check Syncfusion Blazor component catalog - use if available
@@ -102,10 +195,25 @@ Example component signature:
 ```csharp
 @using Syncfusion.Blazor.Chat // Import Syncfusion namespace
 @inherits N360ComponentBase
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
 
 [Parameter] public string? RequiredPermission { get; set; }
+[Parameter] public bool HideIfNoPermission { get; set; } = true;
 [Parameter] public bool EnableAudit { get; set; }
+[Parameter] public string? AuditResource { get; set; }
 [Parameter] public ValidationRules? ValidationRules { get; set; }
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && !await PermissionService.HasPermissionAsync(RequiredPermission))
+        {
+            if (HideIfNoPermission) return;
+            // Or show disabled state
+        }
+    }
+}
 ```
 
 ## Key Conventions
@@ -139,6 +247,8 @@ UI components use Syncfusion services - already registered via `AddNalam360Enter
 3. **Don't forget CancellationToken**: All async methods accept `CancellationToken ct`
 4. **Don't skip permission checks**: UI components require `PermissionService` injection
 5. **Always dispatch domain events**: Call `ClearDomainEvents()` after persisting aggregates
+6. **UI component location**: Components are in `src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/` (nested structure)
+7. **Service registration**: Use fluent `Add*` methods - each module has `ServiceCollectionExtensions.cs` in `DependencyInjection/` folder
 
 ## Essential Files & Documentation
 
@@ -171,6 +281,8 @@ UI components use Syncfusion services - already registered via `AddNalam360Enter
 ### AI/ML Integration
 - `Documentation/06-AI-ML/AI_INTEGRATION_GUIDE.md`: Azure OpenAI integration
 - `Documentation/06-AI-ML/AI_SERVICES_USAGE_GUIDE.md`: Complete API reference (500+ lines)
+- `AI_APPSETTINGS_EXAMPLE.json`: Azure OpenAI configuration template
+- `examples/AI_Example_Program.cs`: AI service registration examples
 
 ### Compliance & Status
 - `Documentation/08-Compliance/REQUIREMENTS_ANALYSIS.md`: Complete requirements compliance (1866 lines)
@@ -180,6 +292,9 @@ UI components use Syncfusion services - already registered via `AddNalam360Enter
 
 ### Code Organization
 - `src/*/DependencyInjection/ServiceCollectionExtensions.cs`: Module registration patterns for all 14 platform modules
+- `src/Nalam360.Platform.Core/Results/Result.cs`: Railway-Oriented Programming result type
+- `src/Nalam360.Platform.Domain/Primitives/`: DDD base classes (Entity, AggregateRoot, ValueObject)
+- `src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Core/`: Theming, Security, AI, Forms infrastructure
 
 ### Interactive Documentation Site
 - **URL:** http://localhost:5032 (dev) | GitHub Pages (production)
