@@ -12,9 +12,10 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nalam360")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyDescriptionAttribute("Serialization abstractions for Nalam360 Enterprise Platform with JSON support.")]
+[assembly: System.Reflection.AssemblyDescriptionAttribute(("Serialization abstractions for Nalam360 Enterprise Platform with JSON, XML, and P" +
+    "rotobuf support."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0af7005af0816345e3fdc749459113bf3b840714")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+edd3982f1a38baeeb42aa78fcc49d92c1dd57152")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Serialization")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Serialization")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

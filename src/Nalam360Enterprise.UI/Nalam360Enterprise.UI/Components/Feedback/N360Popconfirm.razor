@@ -1,0 +1,201 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission && _isVisible)
+{
+    <div class="@GetPopconfirmClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        <div class="n360-popconfirm__trigger" @onclick="ToggleVisibilityAsync">
+            @ChildContent
+        </div>
+        
+        @if (_isVisible)
+        {
+            <div class="n360-popconfirm__popup @GetPlacementClass()">
+                <div class="n360-popconfirm__arrow"></div>
+                <div class="n360-popconfirm__inner">
+                    <div class="n360-popconfirm__message">
+                        @if (Icon != null)
+                        {
+                            <span class="n360-popconfirm__icon @GetIconClass()">@Icon</span>
+                        }
+                        else if (ShowIcon)
+                        {
+                            <span class="n360-popconfirm__icon @GetIconClass()">
+                                <span class="n360-icon-question-circle"></span>
+                            </span>
+                        }
+                        
+                        <div class="n360-popconfirm__content">
+                            @if (TitleContent != null)
+                            {
+                                @TitleContent
+                            }
+                            else
+                            {
+                                <div class="n360-popconfirm__title">@Title</div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Description))
+                            {
+                                <div class="n360-popconfirm__description">@Description</div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="n360-popconfirm__actions">
+                        <button type="button" 
+                                class="n360-popconfirm__btn n360-popconfirm__btn--cancel @CancelButtonClass"
+                                @onclick="HandleCancelAsync">
+                            @CancelText
+                        </button>
+                        <button type="button" 
+                                class="n360-popconfirm__btn n360-popconfirm__btn--ok @OkButtonClass"
+                                @onclick="HandleConfirmAsync">
+                            @OkText
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Are you sure?";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? TitleContent { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public bool ShowIcon { get; set; } = true;
+    [Parameter] public PopconfirmType Type { get; set; } = PopconfirmType.Warning;
+    [Parameter] public string OkText { get; set; } = "Yes";
+    [Parameter] public string CancelText { get; set; } = "No";
+    [Parameter] public string OkButtonClass { get; set; } = "n360-btn--primary";
+    [Parameter] public string CancelButtonClass { get; set; } = "n360-btn--default";
+    [Parameter] public PopconfirmPlacement Placement { get; set; } = PopconfirmPlacement.Top;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<bool> OnVisibleChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isVisible;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task ToggleVisibilityAsync()
+    {
+        _isVisible = !_isVisible;
+        await OnVisibleChange.InvokeAsync(_isVisible);
+    }
+
+    private async Task HandleConfirmAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "PopconfirmConfirm",
+                Resource = AuditResource ?? "Popconfirm",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Title", Title }
+                }
+            });
+        }
+        
+        _isVisible = false;
+        await OnConfirm.InvokeAsync();
+        await OnVisibleChange.InvokeAsync(false);
+    }
+
+    private async Task HandleCancelAsync()
+    {
+        _isVisible = false;
+        await OnCancel.InvokeAsync();
+        await OnVisibleChange.InvokeAsync(false);
+    }
+
+    private string GetPopconfirmClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-popconfirm",
+            $"n360-popconfirm--{Type.ToString().ToLower()}"
+        };
+        
+        if (_isVisible)
+        {
+            classes.Add("n360-popconfirm--visible");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetPlacementClass()
+    {
+        return $"n360-popconfirm__popup--{Placement.ToString().ToLower()}";
+    }
+
+    private string GetIconClass()
+    {
+        return Type switch
+        {
+            PopconfirmType.Warning => "n360-popconfirm__icon--warning",
+            PopconfirmType.Error => "n360-popconfirm__icon--error",
+            PopconfirmType.Info => "n360-popconfirm__icon--info",
+            _ => "n360-popconfirm__icon--warning"
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+
+    public void Show()
+    {
+        _isVisible = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        _isVisible = false;
+        StateHasChanged();
+    }
+}

@@ -5,17 +5,54 @@ on:
     branches: [ main, develop ]
     tags:
       - 'v*'
+      - 'platform-v*'
+      - 'ui-v*'
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION_8: '8.0.x'
+  DOTNET_VERSION_9: '9.0.x'
   CONFIGURATION: Release
 
 jobs:
-  build:
-    name: Build and Test
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION_8 }}
+    
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION_9 }}
+    
+    - name: Check for vulnerable packages
+      run: |
+        dotnet list package --vulnerable --include-transitive | tee vulnerability-report.txt
+        if grep -q "critical\|high" vulnerability-report.txt; then
+          echo "Critical or high vulnerabilities found!"
+          exit 1
+        fi
+    
+    - name: Upload vulnerability report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: vulnerability-report
+        path: vulnerability-report.txt
+
+  build-platform:
+    name: Build Platform Modules (.NET 8)
+    needs: security-scan
     runs-on: ubuntu-latest
     
     steps:
@@ -24,74 +61,163 @@ jobs:
       with:
         fetch-depth: 0
     
-    - name: Setup .NET
+    - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-version: ${{ env.DOTNET_VERSION_8 }}
     
     - name: Restore dependencies
-      run: dotnet restore Nalam360Enterprise.sln
+      run: dotnet restore Nalam360EnterprisePlatform.sln
     
-    - name: Build solution
-      run: dotnet build Nalam360Enterprise.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build platform modules
+      run: dotnet build Nalam360EnterprisePlatform.sln --configuration ${{ env.CONFIGURATION }} --no-restore
     
-    - name: Run unit tests
-      run: dotnet test tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --logger "trx" --collect:"XPlat Code Coverage"
+    - name: Run platform tests
+      run: dotnet test tests/Nalam360.Platform.Tests/Nalam360.Platform.Tests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --logger "trx" --collect:"XPlat Code Coverage"
     
-    - name: Upload test results
+    - name: Upload platform test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results
+        name: platform-test-results
         path: '**/*.trx'
     
-    - name: Upload code coverage
+    - name: Upload platform code coverage
       uses: codecov/codecov-action@v4
       with:
         files: '**/coverage.cobertura.xml'
-        flags: unittests
-        name: codecov-umbrella
+        flags: platform-modules
+        name: codecov-platform
     
-    - name: Pack NuGet package
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    - name: Pack platform modules
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/platform-v') || startsWith(github.ref, 'refs/tags/v'))
       run: |
-        VERSION=${GITHUB_REF#refs/tags/v}
-        dotnet pack src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj \
-          --configuration ${{ env.CONFIGURATION }} \
-          --no-build \
-          --output ./artifacts \
-          -p:PackageVersion=$VERSION
+        VERSION=${GITHUB_REF#refs/tags/platform-v}
+        VERSION=${VERSION#refs/tags/v}
+        
+        # Pack all 14 platform modules
+        for project in src/Nalam360.Platform.*/*.csproj; do
+          dotnet pack "$project" \
+            --configuration ${{ env.CONFIGURATION }} \
+            --no-build \
+            --output ./artifacts/platform \
+            -p:PackageVersion=$VERSION
+        done
     
-    - name: Upload NuGet artifacts
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    - name: Upload platform NuGet artifacts
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/platform-v') || startsWith(github.ref, 'refs/tags/v'))
       uses: actions/upload-artifact@v4
       with:
-        name: nuget-packages
-        path: ./artifacts/*.nupkg
+        name: platform-nuget-packages
+        path: ./artifacts/platform/*.nupkg
 
-  publish:
-    name: Publish to NuGet
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+  build-ui:
+    name: Build UI Library (.NET 9)
+    needs: security-scan
     runs-on: ubuntu-latest
     
     steps:
-    - name: Download NuGet artifacts
-      uses: actions/download-artifact@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
-        name: nuget-packages
-        path: ./artifacts
+        fetch-depth: 0
     
-    - name: Setup .NET
+    - name: Setup .NET 9
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-version: ${{ env.DOTNET_VERSION_9 }}
     
-    - name: Publish to NuGet.org
+    - name: Restore dependencies
+      run: dotnet restore src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj
+    
+    - name: Build UI library
+      run: dotnet build src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+    
+    - name: Run UI tests
+      run: dotnet test tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --logger "trx" --collect:"XPlat Code Coverage"
+    
+    - name: Upload UI test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ui-test-results
+        path: '**/*.trx'
+    
+    - name: Upload UI code coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: '**/coverage.cobertura.xml'
+        flags: ui-library
+        name: codecov-ui
+    
+    - name: Pack UI library
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/ui-v') || startsWith(github.ref, 'refs/tags/v'))
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/ui-v}
+        VERSION=${VERSION#refs/tags/v}
+        dotnet pack src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj \
+          --configuration ${{ env.CONFIGURATION }} \
+          --no-build \
+          --output ./artifacts/ui \
+          -p:PackageVersion=$VERSION
+    
+    - name: Upload UI NuGet artifacts
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/ui-v') || startsWith(github.ref, 'refs/tags/v'))
+      uses: actions/upload-artifact@v4
+      with:
+        name: ui-nuget-packages
+        path: ./artifacts/ui/*.nupkg
+
+  publish-platform:
+    name: Publish Platform Modules to NuGet
+    needs: build-platform
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/platform-v') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download platform NuGet artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: platform-nuget-packages
+        path: ./artifacts/platform
+    
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION_8 }}
+    
+    - name: Publish platform modules to NuGet.org
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
-        dotnet nuget push ./artifacts/*.nupkg \
+        dotnet nuget push ./artifacts/platform/*.nupkg \
+          --api-key $NUGET_API_KEY \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  publish-ui:
+    name: Publish UI Library to NuGet
+    needs: build-ui
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/ui-v') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download UI NuGet artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ui-nuget-packages
+        path: ./artifacts/ui
+    
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION_9 }}
+    
+    - name: Publish UI library to NuGet.org
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        dotnet nuget push ./artifacts/ui/*.nupkg \
           --api-key $NUGET_API_KEY \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate

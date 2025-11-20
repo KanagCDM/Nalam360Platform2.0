@@ -1,0 +1,236 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetOTPClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @for (int i = 0; i < Length; i++)
+        {
+            var index = i;
+            <input type="@(Mask ? "password" : "text")"
+                   class="n360-otp__input"
+                   maxlength="1"
+                   value="@GetValueAt(index)"
+                   @oninput="e => HandleInputAsync(e, index)"
+                   @onkeydown="e => HandleKeyDownAsync(e, index)"
+                   @onpaste="HandlePasteAsync"
+                   @ref="_inputRefs[index]"
+                   disabled="@Disabled"
+                   placeholder="@(string.IsNullOrEmpty(Placeholder) ? "" : Placeholder.Substring(index, 1))"
+                   aria-label="@($"OTP digit {index + 1}")" />
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public int Length { get; set; } = 6;
+    [Parameter] public bool Mask { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public OTPInputType InputType { get; set; } = OTPInputType.Numeric;
+    
+    // Events
+    [Parameter] public EventCallback<string> OnComplete { get; set; }
+    [Parameter] public EventCallback<string> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private string[] _digits = new string[6];
+    private ElementReference[] _inputRefs = new ElementReference[6];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _digits = new string[Length];
+        _inputRefs = new ElementReference[Length];
+        
+        if (!string.IsNullOrEmpty(Value))
+        {
+            for (int i = 0; i < Math.Min(Value.Length, Length); i++)
+            {
+                _digits[i] = Value[i].ToString();
+            }
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Length != _digits.Length)
+        {
+            _digits = new string[Length];
+            _inputRefs = new ElementReference[Length];
+        }
+    }
+
+    private string GetValueAt(int index)
+    {
+        return index < _digits.Length ? _digits[index] ?? string.Empty : string.Empty;
+    }
+
+    private async Task HandleInputAsync(Microsoft.AspNetCore.Components.ChangeEventArgs e, int index)
+    {
+        var input = e.Value?.ToString() ?? string.Empty;
+        
+        if (string.IsNullOrEmpty(input))
+        {
+            _digits[index] = string.Empty;
+            await UpdateValueAsync();
+            return;
+        }
+        
+        var lastChar = input[^1].ToString();
+        
+        if (!IsValidInput(lastChar))
+        {
+            return;
+        }
+        
+        _digits[index] = lastChar;
+        await UpdateValueAsync();
+        
+        if (index < Length - 1)
+        {
+            await FocusInputAsync(index + 1);
+        }
+        else
+        {
+            var completeValue = string.Join("", _digits);
+            if (completeValue.Length == Length)
+            {
+                await OnComplete.InvokeAsync(completeValue);
+                
+                if (EnableAudit && AuditService != null)
+                {
+                    await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "OTPComplete",
+                Resource = AuditResource ?? "OTP",
+                AdditionalData = new Dictionary<string, object> {
+                            { "Length", Length }
+                        }
+            });
+                }
+            }
+        }
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Backspace")
+        {
+            if (string.IsNullOrEmpty(_digits[index]) && index > 0)
+            {
+                await FocusInputAsync(index - 1);
+            }
+            else
+            {
+                _digits[index] = string.Empty;
+                await UpdateValueAsync();
+            }
+        }
+        else if (e.Key == "ArrowLeft" && index > 0)
+        {
+            await FocusInputAsync(index - 1);
+        }
+        else if (e.Key == "ArrowRight" && index < Length - 1)
+        {
+            await FocusInputAsync(index + 1);
+        }
+    }
+
+    private async Task HandlePasteAsync(ClipboardEventArgs e)
+    {
+        // Note: Actual paste data would need JS interop
+        // This is a placeholder for the paste handling logic
+        await Task.CompletedTask;
+    }
+
+    private async Task UpdateValueAsync()
+    {
+        var newValue = string.Join("", _digits);
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+        await OnChange.InvokeAsync(newValue);
+    }
+
+    private async Task FocusInputAsync(int index)
+    {
+        // Note: Would require JS interop for actual focus
+        await Task.CompletedTask;
+    }
+
+    private bool IsValidInput(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return false;
+        
+        return InputType switch
+        {
+            OTPInputType.Numeric => char.IsDigit(input[0]),
+            OTPInputType.Alphabetic => char.IsLetter(input[0]),
+            OTPInputType.Alphanumeric => char.IsLetterOrDigit(input[0]),
+            _ => true
+        };
+    }
+
+    public async Task ClearAsync()
+    {
+        _digits = new string[Length];
+        await UpdateValueAsync();
+        await FocusInputAsync(0);
+    }
+
+    private string GetOTPClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-otp"
+        };
+        
+        if (Disabled)
+        {
+            classes.Add("n360-otp--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        attributes["role"] = "group";
+        attributes["aria-label"] = "OTP input";
+
+        return attributes;
+    }
+}

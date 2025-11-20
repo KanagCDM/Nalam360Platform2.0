@@ -1,0 +1,309 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TValue
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetCascaderClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        <div class="n360-cascader__trigger" @onclick="ToggleDropdownAsync">
+            <div class="n360-cascader__input">
+                @if (_selectedPath.Any())
+                {
+                    <span class="n360-cascader__value">@GetDisplayText()</span>
+                }
+                else
+                {
+                    <span class="n360-cascader__placeholder">@Placeholder</span>
+                }
+            </div>
+            <span class="n360-cascader__arrow @(_isOpen ? "n360-cascader__arrow--open" : "")"></span>
+            @if (AllowClear && _selectedPath.Any())
+            {
+                <span class="n360-cascader__clear" @onclick="HandleClearAsync" @onclick:stopPropagation="true">×</span>
+            }
+        </div>
+        
+        @if (_isOpen)
+        {
+            <div class="n360-cascader__dropdown">
+                @for (int level = 0; level <= _selectedPath.Count; level++)
+                {
+                    var currentLevel = level;
+                    var items = GetItemsAtLevel(currentLevel);
+                    
+                    @if (items.Any())
+                    {
+                        <div class="n360-cascader__menu">
+                            @if (ShowSearch && currentLevel == 0)
+                            {
+                                <div class="n360-cascader__search">
+                                    <input type="text" 
+                                           placeholder="@SearchPlaceholder"
+                                           @bind="_searchText"
+                                           @bind:event="oninput"
+                                           @bind:after="FilterItemsAsync"
+                                           class="n360-cascader__search-input" />
+                                </div>
+                            }
+                            
+                            <div class="n360-cascader__menu-items">
+                                @foreach (var item in items)
+                                {
+                                    var hasChildren = ChildrenSelector(item)?.Any() ?? false;
+                                    var isSelected = _selectedPath.Count > currentLevel && 
+                                                   EqualityComparer<TItem>.Default.Equals(_selectedPath[currentLevel], item);
+                                    var isDisabled = DisabledPredicate?.Invoke(item) ?? false;
+                                    
+                                    <div class="n360-cascader__menu-item @(isSelected ? "n360-cascader__menu-item--selected" : "") @(isDisabled ? "n360-cascader__menu-item--disabled" : "")"
+                                         @onclick="() => HandleItemClickAsync(item, currentLevel)">
+                                        @if (ItemTemplate != null)
+                                        {
+                                            @ItemTemplate(item)
+                                        }
+                                        else
+                                        {
+                                            <span class="n360-cascader__menu-item-text">@LabelSelector(item)</span>
+                                        }
+                                        @if (hasChildren)
+                                        {
+                                            <span class="n360-cascader__menu-item-expand">›</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public List<TItem> Options { get; set; } = new();
+    [Parameter] public Func<TItem, string> LabelSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<TItem, TValue> ValueSelector { get; set; } = item => (TValue)(object)item!;
+    [Parameter] public Func<TItem, IEnumerable<TItem>?> ChildrenSelector { get; set; } = item => null;
+    [Parameter] public Func<TItem, bool>? DisabledPredicate { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Please select";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public bool ShowSearch { get; set; }
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public bool ChangeOnSelect { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public CascaderExpandTrigger ExpandTrigger { get; set; } = CascaderExpandTrigger.Click;
+    [Parameter] public string Separator { get; set; } = " / ";
+    
+    // Events
+    [Parameter] public EventCallback<CascaderChangeEventArgs<TValue, TItem>> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isOpen;
+    private List<TItem> _selectedPath = new();
+    private List<TItem> _filteredOptions = new();
+    private string _searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _filteredOptions = Options;
+        
+        if (Value != null)
+        {
+            LoadSelectedPath();
+        }
+    }
+
+    private void LoadSelectedPath()
+    {
+        _selectedPath.Clear();
+        FindPathToValue(Options, Value!);
+    }
+
+    private bool FindPathToValue(IEnumerable<TItem> items, TValue targetValue, List<TItem>? currentPath = null)
+    {
+        currentPath ??= new List<TItem>();
+        
+        foreach (var item in items)
+        {
+            currentPath.Add(item);
+            
+            var itemValue = ValueSelector(item);
+            if (EqualityComparer<TValue>.Default.Equals(itemValue, targetValue))
+            {
+                _selectedPath = new List<TItem>(currentPath);
+                return true;
+            }
+            
+            var children = ChildrenSelector(item);
+            if (children != null && FindPathToValue(children, targetValue, currentPath))
+            {
+                return true;
+            }
+            
+            currentPath.RemoveAt(currentPath.Count - 1);
+        }
+        
+        return false;
+    }
+
+    private async Task ToggleDropdownAsync()
+    {
+        if (Disabled) return;
+        _isOpen = !_isOpen;
+    }
+
+    private async Task HandleItemClickAsync(TItem item, int level)
+    {
+        if (DisabledPredicate?.Invoke(item) ?? false) return;
+        
+        // Update selected path
+        _selectedPath = _selectedPath.Take(level).Append(item).ToList();
+        
+        var hasChildren = ChildrenSelector(item)?.Any() ?? false;
+        
+        if (!hasChildren || ChangeOnSelect)
+        {
+            var newValue = ValueSelector(item);
+            Value = newValue;
+            await ValueChanged.InvokeAsync(newValue);
+            
+            if (EnableAudit && AuditService != null)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CascaderSelect",
+                Resource = AuditResource ?? "Cascader",
+                AdditionalData = new Dictionary<string, object> {
+                        { "Value", newValue?.ToString() ?? string.Empty },
+                        { "Path", GetDisplayText() },
+                        { "Level", level }
+                    }
+            });
+            }
+            
+            await OnChange.InvokeAsync(new CascaderChangeEventArgs<TValue, TItem>(newValue, _selectedPath));
+            
+            if (!hasChildren)
+            {
+                _isOpen = false;
+            }
+        }
+    }
+
+    private async Task HandleClearAsync()
+    {
+        _selectedPath.Clear();
+        Value = default;
+        await ValueChanged.InvokeAsync(default!);
+        await OnChange.InvokeAsync(new CascaderChangeEventArgs<TValue, TItem>(default!, new List<TItem>()));
+    }
+
+    private List<TItem> GetItemsAtLevel(int level)
+    {
+        if (level == 0)
+        {
+            return string.IsNullOrWhiteSpace(_searchText) ? _filteredOptions : SearchItems(_filteredOptions);
+        }
+        
+        if (level <= _selectedPath.Count)
+        {
+            var parentItem = _selectedPath[level - 1];
+            var children = ChildrenSelector(parentItem);
+            return children?.ToList() ?? new List<TItem>();
+        }
+        
+        return new List<TItem>();
+    }
+
+    private List<TItem> SearchItems(List<TItem> items)
+    {
+        var results = new List<TItem>();
+        
+        foreach (var item in items)
+        {
+            if (LabelSelector(item).Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+            {
+                results.Add(item);
+            }
+            
+            var children = ChildrenSelector(item);
+            if (children != null)
+            {
+                results.AddRange(SearchItems(children.ToList()));
+            }
+        }
+        
+        return results;
+    }
+
+    private Task FilterItemsAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    private string GetDisplayText()
+    {
+        return string.Join(Separator, _selectedPath.Select(LabelSelector));
+    }
+
+    private string GetCascaderClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-cascader"
+        };
+        
+        if (_isOpen)
+        {
+            classes.Add("n360-cascader--open");
+        }
+        
+        if (Disabled)
+        {
+            classes.Add("n360-cascader--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

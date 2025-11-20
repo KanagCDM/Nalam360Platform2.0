@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Observability</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Observability features for Nalam360 Enterprise Platform including tracing, metrics, and health checks.</description>
+    <tags>observability opentelemetry tracing metrics health-checks enterprise</tags>
+    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry" version="1.7.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Exporter.Console" version="1.7.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Exporter.OpenTelemetryProtocol" version="1.7.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Extensions.Hosting" version="1.7.0" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Instrumentation.AspNetCore" version="1.7.1" exclude="Build,Analyzers" />
+        <dependency id="OpenTelemetry.Instrumentation.Http" version="1.7.1" exclude="Build,Analyzers" />
+        <dependency id="System.Diagnostics.DiagnosticSource" version="8.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.dll" target="lib\net8.0\Nalam360.Platform.Observability.dll" />
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.xml" target="lib\net8.0\Nalam360.Platform.Observability.xml" />
+  </files>
+</package>

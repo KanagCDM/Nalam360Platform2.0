@@ -1,0 +1,424 @@
+@using Nalam360Enterprise.UI.Core
+@inherits N360ComponentBase
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-spotlight @(IsOpen ? "open" : "") @(IsDark ? "dark" : "")">
+    @if (IsOpen)
+    {
+        <div class="spotlight-overlay" @onclick="Close"></div>
+        <div class="spotlight-container">
+            <!-- Search Input -->
+            <div class="spotlight-search">
+                <i class="fas fa-search search-icon"></i>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="@Placeholder"
+                    @bind="_searchQuery"
+                    @bind:event="oninput"
+                    @onkeydown="OnKeyDown"
+                    @ref="_searchInputRef"
+                    autofocus />
+                @if (!string.IsNullOrEmpty(_searchQuery))
+                {
+                    <button class="clear-button" @onclick="ClearSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
+                }
+            </div>
+
+            <!-- Results -->
+            <div class="spotlight-results">
+                @if (GetFilteredResults().Any())
+                {
+                    @foreach (var category in GetGroupedResults())
+                    {
+                        <div class="result-category">
+                            <h4 class="category-title">
+                                <i class="@category.Icon"></i>
+                                @category.Name
+                                <span class="category-count">@category.Results.Count</span>
+                            </h4>
+                            <div class="result-list">
+                                @foreach (var result in category.Results.Take(MaxResultsPerCategory))
+                                {
+                                    var isSelected = _selectedIndex == GetResultIndex(result);
+                                    <div 
+                                        class="result-item @(isSelected ? "selected" : "") @result.Type.ToString().ToLower()"
+                                        @onclick="() => SelectResult(result)">
+                                        <div class="result-icon-wrapper">
+                                            <i class="@result.Icon result-icon"></i>
+                                        </div>
+                                        <div class="result-content">
+                                            <div class="result-title">
+                                                @((MarkupString)HighlightMatch(result.Title, _searchQuery))
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(result.Description))
+                                            {
+                                                <div class="result-description">@result.Description</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(result.Path))
+                                            {
+                                                <div class="result-path">@result.Path</div>
+                                            }
+                                        </div>
+                                        @if (result.Score > 0)
+                                        {
+                                            <div class="result-score">
+                                                <i class="fas fa-star"></i>
+                                                @result.Score.ToString("0.0")
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(result.Shortcut))
+                                        {
+                                            <kbd class="result-shortcut">@result.Shortcut</kbd>
+                                        }
+                                    </div>
+                                }
+                                @if (category.Results.Count > MaxResultsPerCategory)
+                                {
+                                    <div class="more-results">
+                                        +@(category.Results.Count - MaxResultsPerCategory) more results
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else if (!string.IsNullOrEmpty(_searchQuery))
+                {
+                    <div class="spotlight-empty">
+                        <i class="fas fa-search empty-icon"></i>
+                        <p class="empty-text">No results found for "@_searchQuery"</p>
+                        @if (ShowCreateOption && OnCreateNew.HasDelegate)
+                        {
+                            <button class="empty-action" @onclick="CreateNew">
+                                <i class="fas fa-plus"></i>
+                                Create "@_searchQuery"
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <!-- Recent Searches -->
+                    @if (ShowRecentSearches && _recentSearches.Any())
+                    {
+                        <div class="recent-section">
+                            <h4 class="section-title">
+                                <i class="fas fa-clock"></i>
+                                Recent Searches
+                            </h4>
+                            <div class="recent-list">
+                                @foreach (var recent in _recentSearches.Take(5))
+                                {
+                                    <button class="recent-item" @onclick="() => ApplyRecentSearch(recent)">
+                                        <i class="fas fa-history"></i>
+                                        @recent
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Footer -->
+            @if (ShowFooter)
+            {
+                <div class="spotlight-footer">
+                    <div class="footer-shortcuts">
+                        <span class="shortcut-hint">
+                            <kbd>↑</kbd><kbd>↓</kbd> Navigate
+                        </span>
+                        <span class="shortcut-hint">
+                            <kbd>Enter</kbd> Select
+                        </span>
+                        <span class="shortcut-hint">
+                            <kbd>Esc</kbd> Close
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<SearchResult> Results { get; set; } = new();
+    [Parameter] public string Placeholder { get; set; } = "Search anything...";
+    [Parameter] public int MaxResultsPerCategory { get; set; } = 5;
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public bool ShowRecentSearches { get; set; } = true;
+    [Parameter] public bool ShowCreateOption { get; set; } = false;
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<SearchResult> OnResultSelected { get; set; }
+    [Parameter] public EventCallback<string> OnCreateNew { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // State
+    private bool IsOpen { get; set; } = false;
+    private string _searchQuery = string.Empty;
+    private int _selectedIndex = 0;
+    private ElementReference _searchInputRef;
+    private List<string> _recentSearches = new();
+
+    // Enums
+    public enum ResultType
+    {
+        Page,
+        Action,
+        File,
+        Person,
+        Setting,
+        Other
+    }
+
+    // Models
+    public class SearchResult
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Path { get; set; }
+        public string Icon { get; set; } = "fas fa-file";
+        public string Category { get; set; } = "General";
+        public ResultType Type { get; set; } = ResultType.Other;
+        public double Score { get; set; } = 0;
+        public string? Shortcut { get; set; }
+        public List<string> Tags { get; set; } = new();
+        public string? RequiredPermission { get; set; }
+        public Func<Task>? OnSelect { get; set; }
+    }
+
+    public class ResultCategory
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Icon { get; set; } = "fas fa-folder";
+        public List<SearchResult> Results { get; set; } = new();
+    }
+
+    // Methods
+    public void Open()
+    {
+        IsOpen = true;
+        _selectedIndex = 0;
+        StateHasChanged();
+        OnOpen.InvokeAsync();
+        LogAudit("SpotlightOpened", "Opened spotlight search");
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+        _searchQuery = string.Empty;
+        _selectedIndex = 0;
+        StateHasChanged();
+        OnClose.InvokeAsync();
+        LogAudit("SpotlightClosed", "Closed spotlight search");
+    }
+
+    public void Toggle()
+    {
+        if (IsOpen) Close();
+        else Open();
+    }
+
+    private void ClearSearch()
+    {
+        _searchQuery = string.Empty;
+        _selectedIndex = 0;
+    }
+
+    private List<SearchResult> GetFilteredResults()
+    {
+        if (string.IsNullOrEmpty(_searchQuery))
+            return new List<SearchResult>();
+
+        var query = _searchQuery.ToLowerInvariant();
+        
+        return Results
+            .Where(r => 
+                r.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(r.Description) && r.Description.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(r.Path) && r.Path.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                r.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(r => CalculateScore(r, query))
+            .ToList();
+    }
+
+    private double CalculateScore(SearchResult result, string query)
+    {
+        double score = 0;
+        
+        // Exact title match
+        if (result.Title.Equals(query, StringComparison.OrdinalIgnoreCase))
+            score += 100;
+        
+        // Title starts with query
+        else if (result.Title.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+            score += 50;
+        
+        // Title contains query
+        else if (result.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
+            score += 25;
+        
+        // Tag match
+        if (result.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            score += 15;
+        
+        // Use existing score
+        score += result.Score;
+        
+        return score;
+    }
+
+    private List<ResultCategory> GetGroupedResults()
+    {
+        return GetFilteredResults()
+            .GroupBy(r => r.Category)
+            .Select(g => new ResultCategory
+            {
+                Name = g.Key,
+                Icon = GetCategoryIcon(g.Key),
+                Results = g.ToList()
+            })
+            .ToList();
+    }
+
+    private string GetCategoryIcon(string category) => category.ToLowerInvariant() switch
+    {
+        "pages" => "fas fa-file-alt",
+        "actions" => "fas fa-bolt",
+        "files" => "fas fa-folder",
+        "people" => "fas fa-users",
+        "settings" => "fas fa-cog",
+        _ => "fas fa-star"
+    };
+
+    private int GetResultIndex(SearchResult result)
+    {
+        return GetFilteredResults().IndexOf(result);
+    }
+
+    private async Task SelectResult(SearchResult result)
+    {
+        // Add to recent searches
+        if (!_recentSearches.Contains(_searchQuery))
+        {
+            _recentSearches.Insert(0, _searchQuery);
+            if (_recentSearches.Count > 10)
+                _recentSearches.RemoveAt(_recentSearches.Count - 1);
+        }
+
+        // Execute result action
+        if (result.OnSelect != null)
+        {
+            await result.OnSelect.Invoke();
+        }
+
+        // Notify parent
+        await OnResultSelected.InvokeAsync(result);
+
+        // Log audit
+        LogAudit("ResultSelected", $"Selected: {result.Title}");
+
+        Close();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        var results = GetFilteredResults();
+        
+        if (e.Key == "ArrowDown")
+        {
+            _selectedIndex = Math.Min(_selectedIndex + 1, results.Count - 1);
+            StateHasChanged();
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _selectedIndex = Math.Max(_selectedIndex - 1, 0);
+            StateHasChanged();
+        }
+        else if (e.Key == "Enter" && results.Any())
+        {
+            await SelectResult(results[_selectedIndex]);
+        }
+        else if (e.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    private string HighlightMatch(string text, string query)
+    {
+        if (string.IsNullOrEmpty(query)) return text;
+        
+        var index = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
+        if (index < 0) return text;
+        
+        var before = text.Substring(0, index);
+        var match = text.Substring(index, query.Length);
+        var after = text.Substring(index + query.Length);
+        
+        return $"{before}<mark>{match}</mark>{after}";
+    }
+
+    private void ApplyRecentSearch(string search)
+    {
+        _searchQuery = search;
+        _selectedIndex = 0;
+    }
+
+    private async Task CreateNew()
+    {
+        await OnCreateNew.InvokeAsync(_searchQuery);
+        Close();
+    }
+
+    private void LogAudit(string action, string details)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTime.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "Spotlight",
+                Action = action,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Details"] = details
+                }
+            });
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // Filter results by permission
+        if (PermissionService != null)
+        {
+            var filteredResults = new List<SearchResult>();
+            foreach (var result in Results)
+            {
+                if (string.IsNullOrEmpty(result.RequiredPermission) ||
+                    await PermissionService.HasPermissionAsync(result.RequiredPermission))
+                {
+                    filteredResults.Add(result);
+                }
+            }
+            Results = filteredResults;
+        }
+    }
+}

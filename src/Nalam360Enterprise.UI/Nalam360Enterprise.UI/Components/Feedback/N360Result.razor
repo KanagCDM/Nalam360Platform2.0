@@ -1,0 +1,119 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetResultClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        <div class="n360-result__icon">
+            @if (IconContent != null)
+            {
+                @IconContent
+            }
+            else
+            {
+                @GetDefaultIcon()
+            }
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="n360-result__title">@Title</div>
+        }
+        
+        @if (!string.IsNullOrEmpty(SubTitle))
+        {
+            <div class="n360-result__subtitle">@SubTitle</div>
+        }
+        
+        @if (ContentFragment != null)
+        {
+            <div class="n360-result__content">
+                @ContentFragment
+            </div>
+        }
+        
+        @if (ActionsContent != null)
+        {
+            <div class="n360-result__actions">
+                @ActionsContent
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ResultStatus Status { get; set; } = ResultStatus.Info;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? SubTitle { get; set; }
+    [Parameter] public RenderFragment? IconContent { get; set; }
+    [Parameter] public RenderFragment? ContentFragment { get; set; }
+    [Parameter] public RenderFragment? ActionsContent { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private RenderFragment GetDefaultIcon() => builder =>
+    {
+        var iconClass = Status switch
+        {
+            ResultStatus.Success => "✓",
+            ResultStatus.Error => "✕",
+            ResultStatus.Info => "ℹ",
+            ResultStatus.Warning => "⚠",
+            ResultStatus.NotFound => "404",
+            ResultStatus.Forbidden => "403",
+            ResultStatus.ServerError => "500",
+            _ => "ℹ"
+        };
+        
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", "n360-result__icon-symbol");
+        builder.AddContent(2, iconClass);
+        builder.CloseElement();
+    };
+
+    private string GetResultClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-result",
+            $"n360-result--{Status.ToString().ToLower()}"
+        };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

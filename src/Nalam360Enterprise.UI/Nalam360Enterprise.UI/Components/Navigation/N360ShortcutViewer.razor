@@ -1,0 +1,357 @@
+@using Nalam360Enterprise.UI.Core
+@inherits N360ComponentBase
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-shortcut-viewer @(IsOpen ? "open" : "") @(IsDark ? "dark" : "")">
+    @if (IsOpen)
+    {
+        <div class="viewer-overlay" @onclick="Close"></div>
+        <div class="viewer-container">
+            <!-- Header -->
+            <div class="viewer-header">
+                <div class="header-left">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="@Icon header-icon"></i>
+                    }
+                    <h2 class="header-title">@Title</h2>
+                </div>
+                <button class="close-button" @onclick="Close" title="Close (Esc)">
+                    <i class="fas fa-times close-icon"></i>
+                </button>
+            </div>
+
+            <!-- Search -->
+            @if (ShowSearch)
+            {
+                <div class="viewer-search">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        placeholder="@SearchPlaceholder"
+                        @bind="_searchQuery"
+                        @bind:event="oninput" />
+                    @if (!string.IsNullOrEmpty(_searchQuery))
+                    {
+                        <button class="clear-button" @onclick="ClearSearch">
+                            <i class="fas fa-times clear-icon"></i>
+                        </button>
+                    }
+                </div>
+            }
+
+            <!-- Content -->
+            <div class="viewer-content">
+                @if (GroupByCategory)
+                {
+                    @foreach (var category in GetGroupedShortcuts())
+                    {
+                        <div class="shortcut-category">
+                            <h3 class="category-title">
+                                @if (!string.IsNullOrEmpty(category.Icon))
+                                {
+                                    <i class="@category.Icon category-icon"></i>
+                                }
+                                @category.Name
+                                <span class="category-count">(@category.Shortcuts.Count)</span>
+                            </h3>
+                            <div class="shortcut-list">
+                                @foreach (var shortcut in category.Shortcuts)
+                                {
+                                    <div class="shortcut-item @(shortcut.IsGlobal ? "global" : "")">
+                                        <div class="shortcut-info">
+                                            <div class="shortcut-title">
+                                                @if (!string.IsNullOrEmpty(shortcut.Icon))
+                                                {
+                                                    <i class="@shortcut.Icon shortcut-icon"></i>
+                                                }
+                                                @shortcut.Description
+                                                @if (shortcut.IsGlobal)
+                                                {
+                                                    <span class="global-badge">Global</span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(shortcut.Details))
+                                            {
+                                                <div class="shortcut-details">@shortcut.Details</div>
+                                            }
+                                        </div>
+                                        <div class="shortcut-keys">
+                                            @foreach (var key in ParseKeys(shortcut.Keys))
+                                            {
+                                                <kbd class="key-badge">@key</kbd>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="shortcut-list">
+                        @foreach (var shortcut in GetFilteredShortcuts())
+                        {
+                            <div class="shortcut-item @(shortcut.IsGlobal ? "global" : "")">
+                                <div class="shortcut-info">
+                                    <div class="shortcut-title">
+                                        @if (!string.IsNullOrEmpty(shortcut.Icon))
+                                        {
+                                            <i class="@shortcut.Icon shortcut-icon"></i>
+                                        }
+                                        @shortcut.Description
+                                        @if (shortcut.IsGlobal)
+                                        {
+                                            <span class="global-badge">Global</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(shortcut.Category))
+                                        {
+                                            <span class="category-badge">@shortcut.Category</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(shortcut.Details))
+                                    {
+                                        <div class="shortcut-details">@shortcut.Details</div>
+                                    }
+                                </div>
+                                <div class="shortcut-keys">
+                                    @foreach (var key in ParseKeys(shortcut.Keys))
+                                    {
+                                        <kbd class="key-badge">@key</kbd>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (!GetFilteredShortcuts().Any())
+                {
+                    <div class="viewer-empty">
+                        <i class="fas fa-keyboard empty-icon"></i>
+                        <p class="empty-text">No shortcuts found matching "@_searchQuery"</p>
+                        <button class="empty-action" @onclick="ClearSearch">Clear Search</button>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            @if (ShowFooter)
+            {
+                <div class="viewer-footer">
+                    <div class="footer-info">
+                        <span class="info-item">
+                            <i class="fas fa-keyboard"></i>
+                            @GetFilteredShortcuts().Count() shortcuts
+                        </span>
+                        @if (GroupByCategory)
+                        {
+                            <span class="info-item">
+                                <i class="fas fa-layer-group"></i>
+                                @GetGroupedShortcuts().Count() categories
+                            </span>
+                        }
+                    </div>
+                    @if (ShowPrintButton)
+                    {
+                        <button class="print-button" @onclick="PrintShortcuts">
+                            <i class="fas fa-print"></i>
+                            Print
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<Shortcut> Shortcuts { get; set; } = new();
+    [Parameter] public string Title { get; set; } = "Keyboard Shortcuts";
+    [Parameter] public string Icon { get; set; } = "fas fa-keyboard";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search shortcuts...";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public bool ShowPrintButton { get; set; } = true;
+    [Parameter] public bool GroupByCategory { get; set; } = true;
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // State
+    private bool IsOpen { get; set; } = false;
+    private string _searchQuery = string.Empty;
+
+    // Models
+    public class Shortcut
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Keys { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Details { get; set; }
+        public string? Category { get; set; }
+        public string? Icon { get; set; }
+        public bool IsGlobal { get; set; }
+        public string? RequiredPermission { get; set; }
+    }
+
+    public class ShortcutCategory
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Icon { get; set; }
+        public List<Shortcut> Shortcuts { get; set; } = new();
+    }
+
+    // Methods
+    public void Open()
+    {
+        IsOpen = true;
+        StateHasChanged();
+        OnOpen.InvokeAsync();
+        LogAudit("ShortcutViewerOpened", "Opened shortcut viewer");
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+        _searchQuery = string.Empty;
+        StateHasChanged();
+        OnClose.InvokeAsync();
+        LogAudit("ShortcutViewerClosed", "Closed shortcut viewer");
+    }
+
+    public void Toggle()
+    {
+        if (IsOpen) Close();
+        else Open();
+    }
+
+    private void ClearSearch()
+    {
+        _searchQuery = string.Empty;
+    }
+
+    private List<Shortcut> GetFilteredShortcuts()
+    {
+        var shortcuts = Shortcuts.ToList();
+
+        // Filter by search query
+        if (!string.IsNullOrEmpty(_searchQuery))
+        {
+            shortcuts = shortcuts.Where(s =>
+                s.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                s.Keys.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(s.Category) && s.Category.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(s.Details) && s.Details.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        return shortcuts;
+    }
+
+    private List<ShortcutCategory> GetGroupedShortcuts()
+    {
+        var shortcuts = GetFilteredShortcuts();
+        
+        return shortcuts
+            .GroupBy(s => s.Category ?? "General")
+            .Select(g => new ShortcutCategory
+            {
+                Name = g.Key,
+                Icon = g.First().Icon,
+                Shortcuts = g.ToList()
+            })
+            .OrderBy(c => c.Name)
+            .ToList();
+    }
+
+    private List<string> ParseKeys(string keys)
+    {
+        // Parse keyboard shortcut string (e.g., "Ctrl+K" -> ["Ctrl", "+", "K"])
+        var parts = new List<string>();
+        var current = string.Empty;
+
+        foreach (var c in keys)
+        {
+            if (c == '+' || c == ' ')
+            {
+                if (!string.IsNullOrEmpty(current))
+                {
+                    parts.Add(current.Trim());
+                    current = string.Empty;
+                }
+                if (c == '+')
+                {
+                    parts.Add("+");
+                }
+            }
+            else
+            {
+                current += c;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(current))
+        {
+            parts.Add(current.Trim());
+        }
+
+        return parts;
+    }
+
+    private async Task PrintShortcuts()
+    {
+        LogAudit("ShortcutsPrinted", "Printed shortcuts");
+        
+        // In a real implementation, this would trigger a print dialog
+        // For now, we'll just log the action
+        await Task.CompletedTask;
+    }
+
+    private void LogAudit(string action, string details)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTime.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "ShortcutViewer",
+                Action = action,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Details"] = details
+                }
+            });
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // Filter shortcuts by permission
+        if (PermissionService != null)
+        {
+            var filteredShortcuts = new List<Shortcut>();
+            foreach (var shortcut in Shortcuts)
+            {
+                if (string.IsNullOrEmpty(shortcut.RequiredPermission) ||
+                    await PermissionService.HasPermissionAsync(shortcut.RequiredPermission))
+                {
+                    filteredShortcuts.Add(shortcut);
+                }
+            }
+            Shortcuts = filteredShortcuts;
+        }
+    }
+}

@@ -1,0 +1,626 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-data-exporter @CssClass @(_isRtl ? "rtl" : "")" role="region" aria-label="Data export tool">
+    @if (!_hasPermission && HideIfNoPermission)
+    {
+        return;
+    }
+
+    @if (!_hasPermission && !HideIfNoPermission)
+    {
+        <div class="no-permission">
+            <div class="no-permission-icon">🔒</div>
+            <h3>Access Denied</h3>
+            <p>You don't have permission to export data.</p>
+        </div>
+        return;
+    }
+
+    <!-- Header -->
+    <div class="exporter-header">
+        <div class="header-left">
+            <h2>@Title</h2>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <p class="header-description">@Description</p>
+            }
+        </div>
+        <div class="header-right">
+            @if (ShowHistory)
+            {
+                <button class="btn-icon" @onclick="OnToggleHistoryAsync" title="Export history">
+                    📋
+                </button>
+            }
+            @if (ShowTemplates)
+            {
+                <button class="btn-icon" @onclick="OnToggleTemplatesAsync" title="Templates">
+                    📝
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="exporter-content">
+        @if (_showHistory)
+        {
+            <!-- Export History -->
+            <div class="history-panel">
+                <div class="panel-header">
+                    <h3>Export History</h3>
+                    <button class="btn-close" @onclick="() => _showHistory = false">✕</button>
+                </div>
+                <div class="history-list">
+                    @if (History.Any())
+                    {
+                        @foreach (var item in History.OrderByDescending(h => h.ExportedAt).Take(20))
+                        {
+                            <div class="history-item @(item.Success ? "success" : "failed")">
+                                <div class="history-icon">@(item.Success ? "✅" : "❌")</div>
+                                <div class="history-details">
+                                    <div class="history-name">@item.ConfigurationName</div>
+                                    <div class="history-meta">
+                                        <span>@item.Format</span>
+                                        <span>•</span>
+                                        <span>@item.RecordCount records</span>
+                                        <span>•</span>
+                                        <span>@FormatFileSize(item.FileSize)</span>
+                                        <span>•</span>
+                                        <span>@item.ExportedAt.ToString("MMM d, h:mm tt")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p>No export history</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_showTemplates)
+        {
+            <!-- Templates Panel -->
+            <div class="templates-panel">
+                <div class="panel-header">
+                    <h3>Export Templates</h3>
+                    <button class="btn-close" @onclick="() => _showTemplates = false">✕</button>
+                </div>
+                <div class="templates-list">
+                    @if (Templates.Any())
+                    {
+                        @foreach (var template in Templates)
+                        {
+                            <div class="template-item" @onclick="() => OnLoadTemplateAsync(template)">
+                                <div class="template-icon">📄</div>
+                                <div class="template-info">
+                                    <div class="template-name">@template.Name</div>
+                                    <div class="template-description">@template.Description</div>
+                                    <div class="template-meta">
+                                        <span>@template.Format</span>
+                                        <span>•</span>
+                                        <span>@template.Columns.Count columns</span>
+                                    </div>
+                                </div>
+                                @if (template.IsDefault)
+                                {
+                                    <span class="badge-default">Default</span>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <p>No templates available</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Export Configuration -->
+            <div class="config-panel">
+                <!-- Format Selection -->
+                <div class="config-section">
+                    <h3>Export Format</h3>
+                    <div class="format-options">
+                        @foreach (var format in Enum.GetValues<DataExportFormat>())
+                        {
+                            <div class="format-option @(_configuration.Format == format ? "selected" : "")" 
+                                 @onclick="() => OnSelectFormatAsync(format)">
+                                <div class="format-icon">@GetFormatIcon(format)</div>
+                                <div class="format-name">@format</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Column Selection -->
+                <div class="config-section">
+                    <h3>Select Columns</h3>
+                    <div class="columns-header">
+                        <label class="select-all">
+                            <input type="checkbox" 
+                                   checked="@_allColumnsSelected"
+                                   @onchange="OnToggleAllColumnsAsync" />
+                            <span>Select All (@_configuration.Columns.Count(@c => c.IsVisible) of @_configuration.Columns.Count)</span>
+                        </label>
+                        @if (AllowColumnReorder)
+                        {
+                            <span class="reorder-hint">💡 Drag to reorder</span>
+                        }
+                    </div>
+                    <div class="columns-list">
+                        @foreach (var column in _configuration.Columns)
+                        {
+                            <div class="column-item">
+                                <label class="column-checkbox">
+                                    <input type="checkbox" @bind="column.IsVisible" />
+                                    <span class="column-name">@column.DisplayName</span>
+                                </label>
+                                <div class="column-controls">
+                                    @if (AllowColumnCustomization)
+                                    {
+                                        <button class="btn-edit" @onclick="() => OnEditColumnAsync(column)" title="Edit column">
+                                            ✏️
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Filter Configuration -->
+                @if (ShowFilters && AvailableFields.Any())
+                {
+                    <div class="config-section">
+                        <h3>Filters</h3>
+                        <div class="filter-options">
+                            <div class="filter-row">
+                                <label>Date Range</label>
+                                <div class="date-range">
+                                    <input type="date" @bind="_configuration.Filter.StartDate" placeholder="Start date" />
+                                    <span>to</span>
+                                    <input type="date" @bind="_configuration.Filter.EndDate" placeholder="End date" />
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <label>Max Records</label>
+                                <input type="number" @bind="_configuration.Filter.MaxRecords" placeholder="No limit" min="1" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Export Options -->
+                <div class="config-section">
+                    <h3>Options</h3>
+                    <div class="options-grid">
+                        <label class="option-checkbox">
+                            <input type="checkbox" @bind="_configuration.Options.IncludeHeaders" />
+                            <span>Include Headers</span>
+                        </label>
+                        <label class="option-checkbox">
+                            <input type="checkbox" @bind="_configuration.Options.AutoFitColumns" />
+                            <span>Auto-fit Columns</span>
+                        </label>
+                        <label class="option-checkbox">
+                            <input type="checkbox" @bind="_configuration.Options.ShowGridLines" />
+                            <span>Show Grid Lines</span>
+                        </label>
+                        <label class="option-checkbox">
+                            <input type="checkbox" @bind="_configuration.Options.FreezeHeaders" />
+                            <span>Freeze Headers</span>
+                        </label>
+                        @if (_configuration.Format == DataExportFormat.PDF)
+                        {
+                            <div class="option-field">
+                                <label>Orientation</label>
+                                <select @bind="_configuration.Options.Orientation">
+                                    @foreach (var orientation in Enum.GetValues<DataPageOrientation>())
+                                    {
+                                        <option value="@orientation">@orientation</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="option-field">
+                                <label>Page Size</label>
+                                <select @bind="_configuration.Options.PageSize">
+                                    @foreach (var size in Enum.GetValues<DataPageSize>())
+                                    {
+                                        <option value="@size">@size</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        @if (_configuration.Format == DataExportFormat.CSV)
+                        {
+                            <div class="option-field">
+                                <label>Delimiter</label>
+                                <select @bind="_configuration.Options.Delimiter">
+                                    <option value=",">Comma (,)</option>
+                                    <option value=";">Semicolon (;)</option>
+                                    <option value="\t">Tab</option>
+                                    <option value="|">Pipe (|)</option>
+                                </select>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (AllowSaveTemplate)
+                {
+                    <div class="config-section">
+                        <h3>Save as Template</h3>
+                        <div class="template-save">
+                            <input type="text" @bind="_templateName" placeholder="Template name (optional)" />
+                            <button class="btn-secondary" @onclick="OnSaveTemplateAsync" disabled="@string.IsNullOrWhiteSpace(_templateName)">
+                                Save Template
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="exporter-footer">
+        <div class="footer-left">
+            @if (_isExporting)
+            {
+                <div class="export-progress">
+                    <div class="progress-spinner"></div>
+                    <span>Exporting data...</span>
+                </div>
+            }
+            else if (_lastExportResult != null)
+            {
+                <div class="export-result @(_lastExportResult.Success ? "success" : "error")">
+                    <span>@(_lastExportResult.Success ? "✅" : "❌")</span>
+                    <span>@(_lastExportResult.Success ? $"Exported {_lastExportResult.RecordCount} records" : _lastExportResult.ErrorMessage)</span>
+                </div>
+            }
+        </div>
+        <div class="footer-right">
+            @if (!_showHistory && !_showTemplates)
+            {
+                @if (AllowPreview)
+                {
+                    <button class="btn btn-secondary" @onclick="OnPreviewAsync" disabled="@_isExporting">
+                        👁️ Preview
+                    </button>
+                }
+                <button class="btn btn-primary" @onclick="OnExportAsync" disabled="@(!CanExport() || _isExporting)">
+                    ⬇️ Export
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Column Edit Modal -->
+    @if (_showColumnEditor && _editingColumn != null)
+    {
+        <div class="modal-overlay" @onclick="OnCloseColumnEditorAsync">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Edit Column</h3>
+                    <button class="btn-close" @onclick="OnCloseColumnEditorAsync">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-field">
+                        <label>Display Name</label>
+                        <input type="text" @bind="_editingColumn.DisplayName" />
+                    </div>
+                    <div class="form-field">
+                        <label>Width (px)</label>
+                        <input type="number" @bind="_editingColumn.Width" min="50" max="500" />
+                    </div>
+                    <div class="form-field">
+                        <label>Alignment</label>
+                        <select @bind="_editingColumn.Alignment">
+                            @foreach (var alignment in Enum.GetValues<ExportAlignment>())
+                            {
+                                <option value="@alignment">@alignment</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="checkbox">
+                            <input type="checkbox" @bind="_editingColumn.IsBold" />
+                            <span>Bold</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="OnCloseColumnEditorAsync">Cancel</button>
+                    <button class="btn btn-primary" @onclick="OnSaveColumnAsync">Save</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Title { get; set; } = "Export Data";
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public List<ExportField> AvailableFields { get; set; } = new();
+    [Parameter] public List<ExportTemplate> Templates { get; set; } = new();
+    [Parameter] public List<ExportHistory> History { get; set; } = new();
+    [Parameter] public bool ShowFilters { get; set; } = true;
+    [Parameter] public bool ShowHistory { get; set; } = true;
+    [Parameter] public bool ShowTemplates { get; set; } = true;
+    [Parameter] public bool AllowPreview { get; set; } = true;
+    [Parameter] public bool AllowSaveTemplate { get; set; } = true;
+    [Parameter] public bool AllowColumnCustomization { get; set; } = true;
+    [Parameter] public bool AllowColumnReorder { get; set; } = true;
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "DataExporter";
+
+    // EventCallbacks
+    [Parameter] public EventCallback<ExportConfiguration> OnConfigurationChanged { get; set; }
+    [Parameter] public EventCallback<ExportConfiguration> OnExport { get; set; }
+    [Parameter] public EventCallback<ExportConfiguration> OnPreview { get; set; }
+    [Parameter] public EventCallback<ExportTemplate> OnTemplateSaved { get; set; }
+    [Parameter] public EventCallback<ExportTemplate> OnTemplateLoaded { get; set; }
+    [Parameter] public EventCallback<ExportResult> OnExportCompleted { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isRtl;
+    private ExportConfiguration _configuration = new();
+    private bool _showHistory;
+    private bool _showTemplates;
+    private bool _allColumnsSelected = true;
+    private bool _isExporting;
+    private ExportResult? _lastExportResult;
+    private string _templateName = string.Empty;
+    private bool _showColumnEditor;
+    private ExportColumn? _editingColumn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasPermission = string.IsNullOrEmpty(RequiredPermission) || 
+                        await PermissionService.HasPermissionAsync(RequiredPermission);
+        
+        _isRtl = System.Globalization.CultureInfo.CurrentCulture.TextInfo.IsRightToLeft;
+
+        if (_hasPermission)
+        {
+            // Initialize configuration with available fields
+            _configuration.Columns = AvailableFields.Select(f => new ExportColumn
+            {
+                FieldName = f.Name,
+                DisplayName = f.DisplayName,
+                DataType = f.DataType,
+                IsVisible = true
+            }).ToList();
+
+            _configuration.Filter = new ExportFilter();
+
+            if (EnableAudit)
+            {
+                await LogAuditAsync("OpenExporter");
+            }
+        }
+    }
+
+    private string GetFormatIcon(DataExportFormat format) => format switch
+    {
+        DataExportFormat.Excel => "📊",
+        DataExportFormat.CSV => "📄",
+        DataExportFormat.PDF => "📕",
+        DataExportFormat.JSON => "{ }",
+        DataExportFormat.XML => "</>",
+        DataExportFormat.HTML => "🌐",
+        _ => "📁"
+    };
+
+    private async Task OnSelectFormatAsync(DataExportFormat format)
+    {
+        _configuration.Format = format;
+        await OnConfigurationChanged.InvokeAsync(_configuration);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectFormat");
+        }
+    }
+
+    private async Task OnToggleAllColumnsAsync(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        var isChecked = (bool)(args.Value ?? false);
+        foreach (var column in _configuration.Columns)
+        {
+            column.IsVisible = isChecked;
+        }
+        _allColumnsSelected = isChecked;
+    }
+
+    private async Task OnEditColumnAsync(ExportColumn column)
+    {
+        _editingColumn = column;
+        _showColumnEditor = true;
+        if (EnableAudit)
+        {
+            await LogAuditAsync("EditColumn");
+        }
+    }
+
+    private async Task OnCloseColumnEditorAsync()
+    {
+        _showColumnEditor = false;
+        _editingColumn = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnSaveColumnAsync()
+    {
+        _showColumnEditor = false;
+        _editingColumn = null;
+        await OnConfigurationChanged.InvokeAsync(_configuration);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SaveColumn");
+        }
+    }
+
+    private async Task OnToggleHistoryAsync()
+    {
+        _showHistory = !_showHistory;
+        _showTemplates = false;
+        if (EnableAudit && _showHistory)
+        {
+            await LogAuditAsync("ViewHistory");
+        }
+    }
+
+    private async Task OnToggleTemplatesAsync()
+    {
+        _showTemplates = !_showTemplates;
+        _showHistory = false;
+        if (EnableAudit && _showTemplates)
+        {
+            await LogAuditAsync("ViewTemplates");
+        }
+    }
+
+    private async Task OnLoadTemplateAsync(ExportTemplate template)
+    {
+        _configuration.Format = template.Format;
+        _configuration.Columns = template.Columns.Select(c => new ExportColumn
+        {
+            FieldName = c.FieldName,
+            DisplayName = c.DisplayName,
+            DataType = c.DataType,
+            IsVisible = c.IsVisible,
+            Width = c.Width,
+            Format = c.Format,
+            Alignment = c.Alignment,
+            IsBold = c.IsBold
+        }).ToList();
+        _configuration.Options = template.Options;
+        _showTemplates = false;
+
+        await OnTemplateLoaded.InvokeAsync(template);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("LoadTemplate");
+        }
+    }
+
+    private async Task OnSaveTemplateAsync()
+    {
+        var template = new ExportTemplate
+        {
+            Name = _templateName,
+            Format = _configuration.Format,
+            Columns = _configuration.Columns.Select(c => new ExportColumn
+            {
+                FieldName = c.FieldName,
+                DisplayName = c.DisplayName,
+                DataType = c.DataType,
+                IsVisible = c.IsVisible,
+                Width = c.Width,
+                Alignment = c.Alignment,
+                IsBold = c.IsBold
+            }).ToList(),
+            Options = _configuration.Options
+        };
+
+        _templateName = string.Empty;
+        await OnTemplateSaved.InvokeAsync(template);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SaveTemplate");
+        }
+    }
+
+    private async Task OnPreviewAsync()
+    {
+        await OnPreview.InvokeAsync(_configuration);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("Preview");
+        }
+    }
+
+    private async Task OnExportAsync()
+    {
+        _isExporting = true;
+        _lastExportResult = null;
+        StateHasChanged();
+
+        await OnExport.InvokeAsync(_configuration);
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("Export");
+        }
+
+        // Simulate export process
+        await Task.Delay(2000);
+
+        var result = new ExportResult
+        {
+            Success = true,
+            FileName = $"export_{DateTime.Now:yyyyMMdd_HHmmss}.{_configuration.Format.ToString().ToLower()}",
+            RecordCount = 150,
+            FileSize = 1024 * 256,
+            Duration = TimeSpan.FromSeconds(2),
+            ExportedAt = DateTime.Now
+        };
+
+        _lastExportResult = result;
+        _isExporting = false;
+
+        await OnExportCompleted.InvokeAsync(result);
+    }
+
+    private bool CanExport()
+    {
+        return _configuration.Columns.Any(c => c.IsVisible) && !_isExporting;
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private async Task LogAuditAsync(string action)
+    {
+        var metadata = new AuditMetadata
+        {
+            Resource = AuditResource,
+            Action = action
+        };
+
+        await AuditService.LogAsync(metadata);
+    }
+}

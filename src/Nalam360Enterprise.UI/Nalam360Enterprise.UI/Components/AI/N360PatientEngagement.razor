@@ -1,0 +1,1489 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Calendars
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-patient-engagement">
+    @if (!HasPermission)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> You do not have permission to access Patient Engagement.
+        </div>
+        return;
+    }
+
+    <div class="engagement-header">
+        <h3>
+            <i class="fas fa-comments"></i> Patient Engagement Platform
+            @if (UseRealAI)
+            {
+                <span class="badge bg-success ms-2">🤖 Real AI</span>
+            }
+        </h3>
+        <p class="engagement-subtitle">AI-powered patient communication, education, and adherence management</p>
+    </div>
+
+    <SfTab CssClass="engagement-tabs">
+        <TabItems>
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="AI Chatbot"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="chatbot-panel">
+                        <div class="patient-selector">
+                            <label>Active Patient</label>
+                            <SfDropDownList @bind-Value="@SelectedPatientId" DataSource="@Patients.Select(p => p.PatientId).ToList()" 
+                                          Placeholder="Select Patient" CssClass="engagement-input">
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="chat-container">
+                            <div class="chat-messages" @ref="chatMessagesRef">
+                                @foreach (var message in ChatMessages)
+                                {
+                                    <div class="chat-message @(message.IsPatient ? "patient-message" : "ai-message")">
+                                        <div class="message-avatar">
+                                            @if (message.IsPatient)
+                                            {
+                                                <i class="fas fa-user"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-robot"></i>
+                                            }
+                                        </div>
+                                        <div class="message-content">
+                                            <div class="message-header">
+                                                <span class="message-sender">@message.Sender</span>
+                                                <span class="message-time">@message.Timestamp.ToString("h:mm tt")</span>
+                                            </div>
+                                            <div class="message-text">@message.Message</div>
+                                            @if (message.SuggestedActions?.Any() == true)
+                                            {
+                                                <div class="suggested-actions">
+                                                    @foreach (var action in message.SuggestedActions)
+                                                    {
+                                                        <SfButton CssClass="e-outline e-small action-btn" OnClick="@(() => HandleSuggestedAction(action))">
+                                                            @action
+                                                        </SfButton>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (message.Intent != null)
+                                            {
+                                                <div class="message-intent">
+                                                    <i class="fas fa-brain"></i> Intent: <strong>@message.Intent</strong> 
+                                                    (@($"{message.Confidence:F1}%") confidence)
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="chat-input-area">
+                                <SfTextBox @bind-Value="@CurrentMessage" Placeholder="Type a message..." CssClass="chat-input" 
+                                         @onkeypress="HandleKeyPress">
+                                </SfTextBox>
+                                <SfButton CssClass="e-primary send-btn" IconCss="fas fa-paper-plane" OnClick="SendMessage" Disabled="@IsSendingMessage">
+                                    Send
+                                </SfButton>
+                            </div>
+                        </div>
+
+                        <div class="chat-analytics">
+                            <h5><i class="fas fa-chart-line"></i> Conversation Analytics</h5>
+                            <div class="analytics-grid">
+                                <div class="analytics-item">
+                                    <i class="fas fa-comments"></i>
+                                    <div>
+                                        <div class="analytics-value">@ChatMessages.Count</div>
+                                        <div class="analytics-label">Total Messages</div>
+                                    </div>
+                                </div>
+                                <div class="analytics-item">
+                                    <i class="fas fa-brain"></i>
+                                    <div>
+                                        <div class="analytics-value">@($"{ChatMessages.Where(m => !m.IsPatient && m.Confidence.HasValue).Average(m => m.Confidence ?? 0):F0}%")</div>
+                                        <div class="analytics-label">Avg Confidence</div>
+                                    </div>
+                                </div>
+                                <div class="analytics-item">
+                                    <i class="fas fa-smile"></i>
+                                    <div>
+                                        <div class="analytics-value">Positive</div>
+                                        <div class="analytics-label">Sentiment</div>
+                                    </div>
+                                </div>
+                                <div class="analytics-item">
+                                    <i class="fas fa-clock"></i>
+                                    <div>
+                                        <div class="analytics-value">&lt; 2s</div>
+                                        <div class="analytics-label">Response Time</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Medication Adherence"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="adherence-panel">
+                        <div class="adherence-overview">
+                            <h4><i class="fas fa-pills"></i> Medication Adherence Overview</h4>
+                            <div class="adherence-stats">
+                                <div class="adherence-card excellent">
+                                    <i class="fas fa-star"></i>
+                                    <div>
+                                        <div class="stat-number">@MedicationRecords.Count(m => m.AdherenceRate >= 90)</div>
+                                        <div class="stat-text">Excellent Adherence</div>
+                                        <div class="stat-detail">≥90% rate</div>
+                                    </div>
+                                </div>
+                                <div class="adherence-card good">
+                                    <i class="fas fa-check"></i>
+                                    <div>
+                                        <div class="stat-number">@MedicationRecords.Count(m => m.AdherenceRate >= 70 && m.AdherenceRate < 90)</div>
+                                        <div class="stat-text">Good Adherence</div>
+                                        <div class="stat-detail">70-89% rate</div>
+                                    </div>
+                                </div>
+                                <div class="adherence-card poor">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <div>
+                                        <div class="stat-number">@MedicationRecords.Count(m => m.AdherenceRate < 70)</div>
+                                        <div class="stat-text">Poor Adherence</div>
+                                        <div class="stat-detail">&lt;70% rate</div>
+                                    </div>
+                                </div>
+                                <div class="adherence-card missed">
+                                    <i class="fas fa-times-circle"></i>
+                                    <div>
+                                        <div class="stat-number">@MedicationRecords.Sum(m => m.MissedDoses)</div>
+                                        <div class="stat-text">Total Missed</div>
+                                        <div class="stat-detail">Last 30 days</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="medications-list">
+                            <h5><i class="fas fa-list"></i> Patient Medications</h5>
+                            @foreach (var med in MedicationRecords)
+                            {
+                                <div class="medication-card adherence-@GetAdherenceLevel(med.AdherenceRate)">
+                                    <div class="med-header">
+                                        <div class="med-info">
+                                            <h6>@med.MedicationName</h6>
+                                            <span class="med-dosage">@med.Dosage - @med.Frequency</span>
+                                        </div>
+                                        <div class="adherence-score">
+                                            <div class="score-circle score-@GetAdherenceLevel(med.AdherenceRate)">
+                                                @($"{med.AdherenceRate:F0}%")
+                                            </div>
+                                            <span class="score-label">Adherence</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="med-details">
+                                        <div class="detail-item">
+                                            <label>Doses Taken:</label>
+                                            <span>@med.DosesTaken / @med.TotalDoses</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Missed Doses:</label>
+                                            <span class="missed-count">@med.MissedDoses</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Last Taken:</label>
+                                            <span>@med.LastTaken.ToString("MMM dd, h:mm tt")</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Next Due:</label>
+                                            <span class="next-due">@med.NextDue.ToString("MMM dd, h:mm tt")</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="med-calendar">
+                                        <h6>7-Day Adherence Pattern</h6>
+                                        <div class="calendar-grid">
+                                            @foreach (var day in med.AdherencePattern)
+                                            {
+                                                <div class="calendar-day @(day.Taken ? "taken" : "missed")" title="@day.Date.ToString("MMM dd")">
+                                                    <div class="day-label">@day.Date.ToString("ddd")</div>
+                                                    <div class="day-status">
+                                                        @if (day.Taken)
+                                                        {
+                                                            <i class="fas fa-check"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fas fa-times"></i>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="med-actions">
+                                        <SfButton CssClass="e-success e-small" IconCss="fas fa-bell">Set Reminder</SfButton>
+                                        <SfButton CssClass="e-info e-small" IconCss="fas fa-comment">Send Message</SfButton>
+                                        <SfButton CssClass="e-primary e-small" IconCss="fas fa-chart-line">View Trends</SfButton>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Health Education"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="education-panel">
+                        <div class="education-overview">
+                            <h4><i class="fas fa-graduation-cap"></i> Personalized Health Education</h4>
+                            <p>AI-curated educational content based on patient conditions and needs</p>
+                        </div>
+
+                        <div class="content-recommendations">
+                            <h5><i class="fas fa-lightbulb"></i> Recommended Content</h5>
+                            <div class="content-grid">
+                                @foreach (var content in EducationalContent)
+                                {
+                                    <div class="content-card">
+                                        <div class="content-type-badge type-@content.ContentType.ToLower()">
+                                            @GetContentTypeIcon(content.ContentType) @content.ContentType
+                                        </div>
+                                        <div class="content-thumbnail">
+                                            <i class="@GetContentIcon(content.ContentType)"></i>
+                                        </div>
+                                        <div class="content-info">
+                                            <h6>@content.Title</h6>
+                                            <p class="content-description">@content.Description</p>
+                                            <div class="content-meta">
+                                                <span class="duration">
+                                                    <i class="fas fa-clock"></i> @content.Duration
+                                                </span>
+                                                <span class="difficulty difficulty-@content.Difficulty.ToLower()">
+                                                    @content.Difficulty
+                                                </span>
+                                            </div>
+                                            <div class="content-stats">
+                                                <span class="engagement">
+                                                    <i class="fas fa-eye"></i> @content.ViewCount views
+                                                </span>
+                                                <span class="rating">
+                                                    <i class="fas fa-star"></i> @($"{content.Rating:F1}")
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="content-actions">
+                                            <SfButton CssClass="e-primary e-small view-btn" IconCss="fas fa-play">View Content</SfButton>
+                                            <SfButton CssClass="e-outline e-small" IconCss="fas fa-share">Share</SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="learning-progress">
+                            <h5><i class="fas fa-trophy"></i> Learning Progress</h5>
+                            <div class="progress-stats">
+                                <div class="progress-item">
+                                    <div class="progress-icon"><i class="fas fa-book-open"></i></div>
+                                    <div class="progress-details">
+                                        <div class="progress-label">Content Completed</div>
+                                        <div class="progress-value">12 / 18 modules</div>
+                                        <div class="progress-bar-container">
+                                            <div class="progress-bar" style="width: 67%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-icon"><i class="fas fa-certificate"></i></div>
+                                    <div class="progress-details">
+                                        <div class="progress-label">Certificates Earned</div>
+                                        <div class="progress-value">3 certificates</div>
+                                    </div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-icon"><i class="fas fa-fire"></i></div>
+                                    <div class="progress-details">
+                                        <div class="progress-label">Learning Streak</div>
+                                        <div class="progress-value">7 days</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Appointment Management"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="appointment-panel">
+                        <div class="appointment-overview">
+                            <h4><i class="fas fa-calendar-check"></i> Appointment Management</h4>
+                            <div class="appointment-stats">
+                                <div class="appt-stat upcoming">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <div>
+                                        <div class="appt-number">@Appointments.Count(a => a.Status == "Upcoming")</div>
+                                        <div class="appt-label">Upcoming</div>
+                                    </div>
+                                </div>
+                                <div class="appt-stat completed">
+                                    <i class="fas fa-check-circle"></i>
+                                    <div>
+                                        <div class="appt-number">@Appointments.Count(a => a.Status == "Completed")</div>
+                                        <div class="appt-label">Completed</div>
+                                    </div>
+                                </div>
+                                <div class="appt-stat cancelled">
+                                    <i class="fas fa-times-circle"></i>
+                                    <div>
+                                        <div class="appt-number">@Appointments.Count(a => a.Status == "Cancelled")</div>
+                                        <div class="appt-label">Cancelled</div>
+                                    </div>
+                                </div>
+                                <div class="appt-stat noshow">
+                                    <i class="fas fa-user-slash"></i>
+                                    <div>
+                                        <div class="appt-number">@Appointments.Count(a => a.Status == "No-Show")</div>
+                                        <div class="appt-label">No-Show</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="appointments-list">
+                            <h5><i class="fas fa-list"></i> Upcoming Appointments</h5>
+                            @foreach (var appt in Appointments.Where(a => a.Status == "Upcoming").OrderBy(a => a.DateTime))
+                            {
+                                <div class="appointment-card">
+                                    <div class="appt-date-section">
+                                        <div class="appt-date">
+                                            <div class="date-month">@appt.DateTime.ToString("MMM")</div>
+                                            <div class="date-day">@appt.DateTime.Day</div>
+                                        </div>
+                                        <div class="appt-time">@appt.DateTime.ToString("h:mm tt")</div>
+                                    </div>
+                                    <div class="appt-details-section">
+                                        <h6>@appt.AppointmentType</h6>
+                                        <div class="appt-provider">
+                                            <i class="fas fa-user-md"></i> @appt.ProviderName
+                                        </div>
+                                        <div class="appt-location">
+                                            <i class="fas fa-map-marker-alt"></i> @appt.Location
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(appt.Notes))
+                                        {
+                                            <div class="appt-notes">
+                                                <i class="fas fa-sticky-note"></i> @appt.Notes
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="appt-actions-section">
+                                        <SfButton CssClass="e-success e-small" IconCss="fas fa-check">Confirm</SfButton>
+                                        <SfButton CssClass="e-warning e-small" IconCss="fas fa-edit">Reschedule</SfButton>
+                                        <SfButton CssClass="e-danger e-small" IconCss="fas fa-times">Cancel</SfButton>
+                                        <SfButton CssClass="e-info e-small" IconCss="fas fa-comment">Message</SfButton>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="appointment-reminders">
+                            <h5><i class="fas fa-bell"></i> Automated Reminders</h5>
+                            <div class="reminder-settings">
+                                <div class="reminder-option">
+                                    <div class="reminder-info">
+                                        <i class="fas fa-envelope"></i>
+                                        <span>Email Reminders</span>
+                                    </div>
+                                    <div class="reminder-config">
+                                        <span>24 hours before</span>
+                                        <span class="status-badge active">Active</span>
+                                    </div>
+                                </div>
+                                <div class="reminder-option">
+                                    <div class="reminder-info">
+                                        <i class="fas fa-sms"></i>
+                                        <span>SMS Reminders</span>
+                                    </div>
+                                    <div class="reminder-config">
+                                        <span>2 hours before</span>
+                                        <span class="status-badge active">Active</span>
+                                    </div>
+                                </div>
+                                <div class="reminder-option">
+                                    <div class="reminder-info">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        <span>App Notifications</span>
+                                    </div>
+                                    <div class="reminder-config">
+                                        <span>30 minutes before</span>
+                                        <span class="status-badge active">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Engagement Analytics"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="analytics-dashboard">
+                        <div class="dashboard-overview">
+                            <h4><i class="fas fa-chart-pie"></i> Patient Engagement Analytics</h4>
+                            <div class="dashboard-metrics">
+                                <div class="metric-card">
+                                    <i class="fas fa-users"></i>
+                                    <div>
+                                        <div class="metric-value">@Statistics.TotalPatients</div>
+                                        <div class="metric-label">Active Patients</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <i class="fas fa-comments"></i>
+                                    <div>
+                                        <div class="metric-value">@Statistics.TotalMessages</div>
+                                        <div class="metric-label">Messages Sent</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <i class="fas fa-percentage"></i>
+                                    <div>
+                                        <div class="metric-value">@($"{Statistics.EngagementRate:F1}%")</div>
+                                        <div class="metric-label">Engagement Rate</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <i class="fas fa-clock"></i>
+                                    <div>
+                                        <div class="metric-value">@($"{Statistics.AvgResponseTime:F1}s")</div>
+                                        <div class="metric-label">Avg Response Time</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="charts-section">
+                            <div class="chart-container">
+                                <h5>Daily Active Users</h5>
+                                <SfChart>
+                                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                    <ChartSeriesCollection>
+                                        <ChartSeries DataSource="@DailyActiveUsers" XName="Date" YName="Users" Type="ChartSeriesType.Area" Fill="#3498db">
+                                        </ChartSeries>
+                                    </ChartSeriesCollection>
+                                </SfChart>
+                            </div>
+
+                            <div class="chart-container">
+                                <h5>Message Volume by Hour</h5>
+                                <SfChart>
+                                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                    <ChartSeriesCollection>
+                                        <ChartSeries DataSource="@MessageVolumeByHour" XName="Hour" YName="Messages" Type="ChartSeriesType.Column" Fill="#9b59b6">
+                                        </ChartSeries>
+                                    </ChartSeriesCollection>
+                                </SfChart>
+                            </div>
+
+                            <div class="chart-container">
+                                <h5>Content Type Distribution</h5>
+                                <SfAccumulationChart>
+                                    <AccumulationChartSeriesCollection>
+                                        <AccumulationChartSeries DataSource="@ContentTypeDistribution"
+                                                                XName="Type"
+                                                                YName="Count"
+                                                                Type="AccumulationType.Pie">
+                                            <AccumulationDataLabelSettings Visible="true" Name="Type" Position="AccumulationLabelPosition.Outside">
+                                            </AccumulationDataLabelSettings>
+                                        </AccumulationChartSeries>
+                                    </AccumulationChartSeriesCollection>
+                                </SfAccumulationChart>
+                            </div>
+                        </div>
+
+                        <div class="engagement-leaderboard">
+                            <h5><i class="fas fa-trophy"></i> Most Engaged Patients</h5>
+                            <SfGrid DataSource="@Patients.OrderByDescending(p => p.EngagementScore).Take(10).ToList()" AllowSorting="true">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(PatientProfile.PatientId)" HeaderText="Patient ID" Width="120"></GridColumn>
+                                    <GridColumn Field="@nameof(PatientProfile.PatientName)" HeaderText="Patient Name" Width="180"></GridColumn>
+                                    <GridColumn Field="@nameof(PatientProfile.EngagementScore)" HeaderText="Score" Width="100">
+                                        <Template>
+                                            @{
+                                                var patient = (context as PatientProfile)!;
+                                                <span class="engagement-score-value">@patient.EngagementScore</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(PatientProfile.MessagesCount)" HeaderText="Messages" Width="100"></GridColumn>
+                                    <GridColumn Field="@nameof(PatientProfile.ContentViewed)" HeaderText="Content" Width="100"></GridColumn>
+                                    <GridColumn Field="@nameof(PatientProfile.LastActive)" HeaderText="Last Active" Width="150" Format="d"></GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+        </TabItems>
+    </SfTab>
+</div>
+
+<style>
+    .n360-patient-engagement {
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .engagement-header {
+        margin-bottom: 30px;
+    }
+
+    .engagement-header h3 {
+        color: #2c3e50;
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .engagement-header h3 i {
+        color: #e74c3c;
+        margin-right: 10px;
+    }
+
+    .engagement-subtitle {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .engagement-tabs {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .chatbot-panel, .adherence-panel, .education-panel, .appointment-panel, .analytics-dashboard {
+        padding: 20px;
+    }
+
+    .patient-selector {
+        margin-bottom: 20px;
+    }
+
+    .patient-selector label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .chat-container {
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px solid #ecf0f1;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .chat-messages {
+        padding: 20px;
+        min-height: 400px;
+        max-height: 500px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .chat-message {
+        display: flex;
+        gap: 12px;
+        max-width: 75%;
+    }
+
+    .chat-message.patient-message {
+        margin-left: auto;
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 18px;
+        color: white;
+    }
+
+    .patient-message .message-avatar {
+        background: #3498db;
+    }
+
+    .ai-message .message-avatar {
+        background: #9b59b6;
+    }
+
+    .message-content {
+        flex: 1;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .message-time {
+        color: #95a5a6;
+    }
+
+    .message-text {
+        background: white;
+        padding: 12px 15px;
+        border-radius: 12px;
+        line-height: 1.5;
+        color: #2c3e50;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .patient-message .message-text {
+        background: #3498db;
+        color: white;
+    }
+
+    .suggested-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .action-btn {
+        border-radius: 20px !important;
+    }
+
+    .message-intent {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #e3f2fd;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #1976d2;
+    }
+
+    .chat-input-area {
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        background: white;
+        border-top: 2px solid #ecf0f1;
+    }
+
+    .chat-input {
+        flex: 1;
+    }
+
+    .send-btn {
+        min-width: 100px;
+    }
+
+    .chat-analytics {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .chat-analytics h5 {
+        margin: 0 0 15px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .analytics-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 2px solid #ecf0f1;
+    }
+
+    .analytics-item i {
+        font-size: 24px;
+        color: #3498db;
+    }
+
+    .analytics-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .analytics-label {
+        font-size: 12px;
+        color: #7f8c8d;
+    }
+
+    .adherence-overview {
+        margin-bottom: 30px;
+    }
+
+    .adherence-overview h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .adherence-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .adherence-card {
+        padding: 25px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .adherence-card i {
+        font-size: 36px;
+    }
+
+    .adherence-card.excellent {
+        background: linear-gradient(135deg, #27ae60, #229954);
+    }
+
+    .adherence-card.good {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .adherence-card.poor {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+    }
+
+    .adherence-card.missed {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .stat-text {
+        font-size: 14px;
+        opacity: 0.95;
+    }
+
+    .stat-detail {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 4px;
+    }
+
+    .medications-list {
+        margin-top: 30px;
+    }
+
+    .medications-list h5 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .medication-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-left-width: 6px;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .medication-card.adherence-excellent {
+        border-left-color: #27ae60;
+    }
+
+    .medication-card.adherence-good {
+        border-left-color: #3498db;
+    }
+
+    .medication-card.adherence-poor {
+        border-left-color: #e74c3c;
+    }
+
+    .med-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .med-info h6 {
+        margin: 0 0 5px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .med-dosage {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .adherence-score {
+        text-align: center;
+    }
+
+    .score-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .score-circle.score-excellent {
+        background: #27ae60;
+    }
+
+    .score-circle.score-good {
+        background: #3498db;
+    }
+
+    .score-circle.score-poor {
+        background: #e74c3c;
+    }
+
+    .score-label {
+        font-size: 12px;
+        color: #7f8c8d;
+    }
+
+    .med-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+
+    .detail-item label {
+        font-weight: 600;
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .detail-item span {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .missed-count {
+        color: #e74c3c !important;
+    }
+
+    .next-due {
+        color: #3498db !important;
+    }
+
+    .med-calendar {
+        margin-bottom: 20px;
+    }
+
+    .med-calendar h6 {
+        margin: 0 0 12px 0;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+    }
+
+    .calendar-day {
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        border: 2px solid;
+    }
+
+    .calendar-day.taken {
+        background: #eafaf1;
+        border-color: #27ae60;
+        color: #27ae60;
+    }
+
+    .calendar-day.missed {
+        background: #ffebee;
+        border-color: #e74c3c;
+        color: #e74c3c;
+    }
+
+    .day-label {
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .day-status i {
+        font-size: 16px;
+    }
+
+    .med-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .education-overview {
+        margin-bottom: 30px;
+    }
+
+    .education-overview h4 {
+        margin: 0 0 8px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .education-overview p {
+        margin: 0;
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .content-recommendations {
+        margin-bottom: 40px;
+    }
+
+    .content-recommendations h5 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .content-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+
+    .content-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .content-type-badge {
+        padding: 8px 15px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .content-type-badge.type-video {
+        background: #e74c3c;
+    }
+
+    .content-type-badge.type-article {
+        background: #3498db;
+    }
+
+    .content-type-badge.type-infographic {
+        background: #9b59b6;
+    }
+
+    .content-type-badge.type-interactive {
+        background: #27ae60;
+    }
+
+    .content-thumbnail {
+        height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 48px;
+    }
+
+    .content-info {
+        padding: 20px;
+    }
+
+    .content-info h6 {
+        margin: 0 0 10px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .content-description {
+        margin: 0 0 15px 0;
+        color: #7f8c8d;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .content-meta, .content-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 10px;
+        font-size: 13px;
+    }
+
+    .difficulty {
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .difficulty.difficulty-beginner {
+        background: #27ae60;
+    }
+
+    .difficulty.difficulty-intermediate {
+        background: #f39c12;
+    }
+
+    .difficulty.difficulty-advanced {
+        background: #e74c3c;
+    }
+
+    .content-actions {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        display: flex;
+        gap: 10px;
+    }
+
+    .view-btn {
+        flex: 1;
+    }
+
+    .learning-progress {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 12px;
+    }
+
+    .learning-progress h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .progress-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .progress-item {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid #ecf0f1;
+    }
+
+    .progress-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+
+    .progress-details {
+        flex: 1;
+    }
+
+    .progress-label {
+        font-weight: 600;
+        color: #7f8c8d;
+        font-size: 13px;
+        margin-bottom: 5px;
+    }
+
+    .progress-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: #ecf0f1;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2980b9);
+        transition: width 0.5s;
+    }
+
+    .appointment-overview {
+        margin-bottom: 30px;
+    }
+
+    .appointment-overview h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .appointment-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+    }
+
+    .appt-stat {
+        padding: 25px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .appt-stat i {
+        font-size: 36px;
+    }
+
+    .appt-stat.upcoming {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .appt-stat.completed {
+        background: linear-gradient(135deg, #27ae60, #229954);
+    }
+
+    .appt-stat.cancelled {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+    }
+
+    .appt-stat.noshow {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .appt-number {
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .appt-label {
+        font-size: 14px;
+        opacity: 0.95;
+    }
+
+    .appointments-list {
+        margin-bottom: 30px;
+    }
+
+    .appointments-list h5 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .appointment-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        gap: 20px;
+    }
+
+    .appt-date-section {
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .appt-date {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .date-month {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .date-day {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .appt-time {
+        font-size: 14px;
+        font-weight: 600;
+        color: #3498db;
+    }
+
+    .appt-details-section {
+        flex: 1;
+    }
+
+    .appt-details-section h6 {
+        margin: 0 0 10px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .appt-provider, .appt-location, .appt-notes {
+        margin-bottom: 8px;
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .appt-provider i, .appt-location i, .appt-notes i {
+        margin-right: 8px;
+        color: #3498db;
+    }
+
+    .appt-actions-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 120px;
+    }
+
+    .appointment-reminders {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 12px;
+    }
+
+    .appointment-reminders h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .reminder-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .reminder-option {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid #ecf0f1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .reminder-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .reminder-info i {
+        font-size: 24px;
+        color: #3498db;
+    }
+
+    .reminder-config {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .status-badge.active {
+        background: #27ae60;
+    }
+
+    .dashboard-overview {
+        margin-bottom: 30px;
+    }
+
+    .dashboard-overview h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .dashboard-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .metric-card i {
+        font-size: 36px;
+    }
+
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .metric-label {
+        font-size: 13px;
+        opacity: 0.95;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .chart-container {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .chart-container h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .engagement-leaderboard h5 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .engagement-score-value {
+        font-weight: 600;
+        color: #27ae60;
+        font-size: 16px;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+    }
+</style>

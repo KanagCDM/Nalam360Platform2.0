@@ -1,0 +1,403 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inherits LayoutComponentBase
+
+<div class="n360-main-layout @LayoutMode @ThemeClass @(IsSidebarCollapsed ? "sidebar-collapsed" : "") @CssClass" style="@Style">
+    @if (ShowHeader)
+    {
+        <N360Header LogoUrl="@LogoUrl"
+                    LogoIcon="@LogoIcon"
+                    BrandName="@BrandName"
+                    ShowLogo="@ShowHeaderLogo"
+                    ShowBrandName="@ShowBrandName"
+                    ShowNavigation="@ShowNavigation"
+                    ShowSearch="@ShowSearch"
+                    ShowNotifications="@ShowNotifications"
+                    ShowMessages="@ShowMessages"
+                    ShowUserMenu="@ShowUserMenu"
+                    ShowUserName="@ShowUserName"
+                    IsFixed="@IsHeaderFixed"
+                    IsFluid="@IsFluid"
+                    ThemeClass="@ThemeClass"
+                    NavigationItems="@NavigationItems"
+                    UserMenuItems="@UserMenuItems"
+                    UserName="@UserName"
+                    UserAvatar="@UserAvatar"
+                    UnreadNotifications="@UnreadNotifications"
+                    UnreadMessages="@UnreadMessages"
+                    SearchPlaceholder="@SearchPlaceholder"
+                    OnLogoClicked="@OnLogoClicked"
+                    OnNavItemClicked="@OnNavItemClicked"
+                    OnUserMenuItemClicked="@OnUserMenuItemClicked"
+                    OnNotificationClicked="@OnNotificationClicked"
+                    OnMessageClicked="@OnMessageClicked"
+                    OnSearchChanged="@OnSearchChanged"
+                    EnableAudit="@EnableAudit">
+            <LeftContent>@HeaderLeftContent</LeftContent>
+            <CenterContent>@HeaderCenterContent</CenterContent>
+            <RightContent>@HeaderRightContent</RightContent>
+        </N360Header>
+    }
+
+    <div class="layout-body @(IsHeaderFixed ? "with-fixed-header" : "")">
+        @if (ShowSidebar)
+        {
+            <aside class="layout-sidebar @(IsSidebarCollapsed ? "collapsed" : "") @SidebarPosition">
+                <div class="sidebar-header">
+                    @if (SidebarHeaderContent != null)
+                    {
+                        @SidebarHeaderContent
+                    }
+                    else
+                    {
+                        <h3 class="sidebar-title">@SidebarTitle</h3>
+                    }
+                    
+                    @if (ShowSidebarToggle)
+                    {
+                        <button class="sidebar-toggle" @onclick="ToggleSidebar" aria-label="Toggle sidebar">
+                            <span class="toggle-icon">@(IsSidebarCollapsed ? "→" : "←")</span>
+                        </button>
+                    }
+                </div>
+
+                <div class="sidebar-content">
+                    @if (SidebarContent != null)
+                    {
+                        @SidebarContent
+                    }
+                    else if (SidebarMenuItems != null && SidebarMenuItems.Any())
+                    {
+                        <nav class="sidebar-nav">
+                            <ul class="nav-list">
+                                @foreach (var item in SidebarMenuItems)
+                                {
+                                    @if (HasPermission(item.RequiredPermission))
+                                    {
+                                        <li class="nav-item @(item.IsActive ? "active" : "")">
+                                            <a href="@item.Href" 
+                                               class="nav-link"
+                                               @onclick="() => OnSidebarItemClick(item)"
+                                               @onclick:preventDefault="item.PreventDefault">
+                                                @if (!string.IsNullOrEmpty(item.Icon))
+                                                {
+                                                    <span class="nav-icon">@item.Icon</span>
+                                                }
+                                                @if (!IsSidebarCollapsed)
+                                                {
+                                                    <span class="nav-text">@item.Label</span>
+                                                    @if (item.Badge > 0)
+                                                    {
+                                                        <span class="nav-badge">@item.Badge</span>
+                                                    }
+                                                }
+                                            </a>
+                                            @if (item.Children != null && item.Children.Any() && !IsSidebarCollapsed)
+                                            {
+                                                <ul class="nav-submenu">
+                                                    @foreach (var child in item.Children)
+                                                    {
+                                                        @if (HasPermission(child.RequiredPermission))
+                                                        {
+                                                            <li class="submenu-item @(child.IsActive ? "active" : "")">
+                                                                <a href="@child.Href" 
+                                                                   class="submenu-link"
+                                                                   @onclick="() => OnSidebarItemClick(child)"
+                                                                   @onclick:preventDefault="child.PreventDefault">
+                                                                    <span class="submenu-text">@child.Label</span>
+                                                                </a>
+                                                            </li>
+                                                        }
+                                                    }
+                                                </ul>
+                                            }
+                                        </li>
+                                    }
+                                }
+                            </ul>
+                        </nav>
+                    }
+                </div>
+
+                @if (SidebarFooterContent != null)
+                {
+                    <div class="sidebar-footer">
+                        @SidebarFooterContent
+                    </div>
+                }
+            </aside>
+        }
+
+        <main class="layout-main @(ShowSidebar ? "with-sidebar" : "")">
+            @if (ShowBreadcrumb)
+            {
+                <div class="main-breadcrumb">
+                    @BreadcrumbContent
+                </div>
+            }
+
+            @if (ShowPageHeader)
+            {
+                <div class="main-page-header">
+                    <div class="page-header-left">
+                        <h1 class="page-title">@PageTitle</h1>
+                        @if (!string.IsNullOrEmpty(PageDescription))
+                        {
+                            <p class="page-description">@PageDescription</p>
+                        }
+                    </div>
+                    @if (PageHeaderActions != null)
+                    {
+                        <div class="page-header-actions">
+                            @PageHeaderActions
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="main-content @ContentClass">
+                @if (ContentBeforeBody != null)
+                {
+                    <div class="content-before">
+                        @ContentBeforeBody
+                    </div>
+                }
+
+                <div class="content-body">
+                    @Body
+                </div>
+
+                @if (ContentAfterBody != null)
+                {
+                    <div class="content-after">
+                        @ContentAfterBody
+                    </div>
+                }
+            </div>
+        </main>
+    </div>
+
+    @if (ShowFooter)
+    {
+        <N360Footer LogoUrl="@LogoUrl"
+                    LogoIcon="@LogoIcon"
+                    BrandName="@BrandName"
+                    ShowLogo="@ShowFooterLogo"
+                    ShowTopSection="@ShowFooterTopSection"
+                    ShowCopyright="@ShowCopyright"
+                    ShowSocialLinks="@ShowSocialLinks"
+                    ShowNewsletter="@ShowNewsletter"
+                    ShowBackToTop="@ShowBackToTop"
+                    IsFixed="@IsFooterFixed"
+                    IsFluid="@IsFluid"
+                    ThemeClass="@ThemeClass"
+                    CopyrightYear="@CopyrightYear"
+                    CopyrightText="@CopyrightText"
+                    Columns="@FooterColumns"
+                    LegalLinks="@LegalLinks"
+                    SocialLinks="@SocialLinks"
+                    NewsletterTitle="@NewsletterTitle"
+                    NewsletterDescription="@NewsletterDescription"
+                    OnLinkClicked="@OnFooterLinkClicked"
+                    OnSocialClicked="@OnSocialClicked"
+                    OnNewsletterSubscribed="@OnNewsletterSubscribed"
+                    EnableAudit="@EnableAudit">
+            <TopContent>@FooterTopContent</TopContent>
+            <BottomContent>@FooterBottomContent</BottomContent>
+        </N360Footer>
+    }
+
+    @if (ShowLoadingOverlay && IsLoading)
+    {
+        <div class="layout-loading-overlay">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <p class="loading-text">@LoadingText</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Layout Configuration
+    [Parameter] public string LayoutMode { get; set; } = "default"; // default, boxed, fluid
+    [Parameter] public string SidebarPosition { get; set; } = "left"; // left, right
+    [Parameter] public bool IsSidebarCollapsed { get; set; } = false;
+    [Parameter] public bool IsFluid { get; set; } = false;
+
+    // Component Visibility
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public bool ShowSidebar { get; set; } = true;
+    [Parameter] public bool ShowBreadcrumb { get; set; } = false;
+    [Parameter] public bool ShowPageHeader { get; set; } = true;
+
+    // Header Options
+    [Parameter] public bool ShowHeaderLogo { get; set; } = true;
+    [Parameter] public bool ShowBrandName { get; set; } = true;
+    [Parameter] public bool ShowNavigation { get; set; } = true;
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowNotifications { get; set; } = true;
+    [Parameter] public bool ShowMessages { get; set; } = true;
+    [Parameter] public bool ShowUserMenu { get; set; } = true;
+    [Parameter] public bool ShowUserName { get; set; } = true;
+    [Parameter] public bool IsHeaderFixed { get; set; } = true;
+
+    // Sidebar Options
+    [Parameter] public bool ShowSidebarToggle { get; set; } = true;
+    [Parameter] public string SidebarTitle { get; set; } = "Menu";
+
+    // Footer Options
+    [Parameter] public bool ShowFooterLogo { get; set; } = true;
+    [Parameter] public bool ShowFooterTopSection { get; set; } = true;
+    [Parameter] public bool ShowCopyright { get; set; } = true;
+    [Parameter] public bool ShowSocialLinks { get; set; } = true;
+    [Parameter] public bool ShowNewsletter { get; set; } = false;
+    [Parameter] public bool ShowBackToTop { get; set; } = true;
+    [Parameter] public bool IsFooterFixed { get; set; } = false;
+
+    // Theme & Style
+    [Parameter] public string ThemeClass { get; set; } = "light";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+    [Parameter] public string ContentClass { get; set; } = string.Empty;
+
+    // Branding
+    [Parameter] public string? LogoUrl { get; set; }
+    [Parameter] public string LogoIcon { get; set; } = "🏥";
+    [Parameter] public string BrandName { get; set; } = "Enterprise";
+
+    // User Info
+    [Parameter] public string UserName { get; set; } = "User";
+    [Parameter] public string? UserAvatar { get; set; }
+    [Parameter] public int UnreadNotifications { get; set; }
+    [Parameter] public int UnreadMessages { get; set; }
+
+    // Page Header
+    [Parameter] public string PageTitle { get; set; } = string.Empty;
+    [Parameter] public string PageDescription { get; set; } = string.Empty;
+
+    // Search
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+
+    // Footer
+    [Parameter] public int CopyrightYear { get; set; } = DateTime.Now.Year;
+    [Parameter] public string CopyrightText { get; set; } = "All rights reserved.";
+    [Parameter] public string NewsletterTitle { get; set; } = "Stay Updated";
+    [Parameter] public string NewsletterDescription { get; set; } = "Subscribe to our newsletter.";
+
+    // Loading
+    [Parameter] public bool ShowLoadingOverlay { get; set; } = true;
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public string LoadingText { get; set; } = "Loading...";
+
+    // Navigation & Content
+    [Parameter] public List<HeaderNavItem>? NavigationItems { get; set; }
+    [Parameter] public List<HeaderNavItem>? UserMenuItems { get; set; }
+    [Parameter] public List<SidebarMenuItem>? SidebarMenuItems { get; set; }
+    [Parameter] public List<FooterColumn>? FooterColumns { get; set; }
+    [Parameter] public List<FooterLink>? LegalLinks { get; set; }
+    [Parameter] public List<SocialLink>? SocialLinks { get; set; }
+
+    // Custom Content
+    [Parameter] public RenderFragment? HeaderLeftContent { get; set; }
+    [Parameter] public RenderFragment? HeaderCenterContent { get; set; }
+    [Parameter] public RenderFragment? HeaderRightContent { get; set; }
+    [Parameter] public RenderFragment? SidebarHeaderContent { get; set; }
+    [Parameter] public RenderFragment? SidebarContent { get; set; }
+    [Parameter] public RenderFragment? SidebarFooterContent { get; set; }
+    [Parameter] public RenderFragment? BreadcrumbContent { get; set; }
+    [Parameter] public RenderFragment? PageHeaderActions { get; set; }
+    [Parameter] public RenderFragment? ContentBeforeBody { get; set; }
+    [Parameter] public RenderFragment? ContentAfterBody { get; set; }
+    [Parameter] public RenderFragment? FooterTopContent { get; set; }
+    [Parameter] public RenderFragment? FooterBottomContent { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnLogoClicked { get; set; }
+    [Parameter] public EventCallback<HeaderNavItem> OnNavItemClicked { get; set; }
+    [Parameter] public EventCallback<HeaderNavItem> OnUserMenuItemClicked { get; set; }
+    [Parameter] public EventCallback<SidebarMenuItem> OnSidebarItemClicked { get; set; }
+    [Parameter] public EventCallback OnNotificationClicked { get; set; }
+    [Parameter] public EventCallback OnMessageClicked { get; set; }
+    [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+    [Parameter] public EventCallback<FooterLink> OnFooterLinkClicked { get; set; }
+    [Parameter] public EventCallback<SocialLink> OnSocialClicked { get; set; }
+    [Parameter] public EventCallback<string> OnNewsletterSubscribed { get; set; }
+    [Parameter] public EventCallback<bool> OnSidebarToggled { get; set; }
+
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+
+    private Dictionary<string, bool> _permissionCache = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _permissionCache.Clear();
+        
+        if (SidebarMenuItems != null)
+        {
+            foreach (var item in SidebarMenuItems.Where(i => !string.IsNullOrEmpty(i.RequiredPermission)))
+            {
+                _permissionCache[item.RequiredPermission!] = await PermissionService.HasPermissionAsync(item.RequiredPermission!);
+                
+                if (item.Children != null)
+                {
+                    foreach (var child in item.Children.Where(c => !string.IsNullOrEmpty(c.RequiredPermission)))
+                    {
+                        _permissionCache[child.RequiredPermission!] = await PermissionService.HasPermissionAsync(child.RequiredPermission!);
+                    }
+                }
+            }
+        }
+    }
+
+    private bool HasPermission(string? permission)
+    {
+        if (string.IsNullOrEmpty(permission)) return true;
+        return _permissionCache.TryGetValue(permission, out var hasPermission) && hasPermission;
+    }
+
+    private async Task ToggleSidebar()
+    {
+        IsSidebarCollapsed = !IsSidebarCollapsed;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "SidebarToggled",
+                Resource = "MainLayout",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Collapsed"] = IsSidebarCollapsed
+                }
+            });
+        }
+
+        await OnSidebarToggled.InvokeAsync(IsSidebarCollapsed);
+    }
+
+    private async Task OnSidebarItemClick(SidebarMenuItem item)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "SidebarItemClicked",
+                Resource = "MainLayout",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = item.Label
+                }
+            });
+        }
+        await OnSidebarItemClicked.InvokeAsync(item);
+    }
+}

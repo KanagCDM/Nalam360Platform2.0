@@ -1,0 +1,427 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject IJSRuntime JSRuntime
+
+<div class="n360-command-palette @ThemeClass @(IsOpen ? "open" : "") @CssClass" style="@Style">
+    @if (IsOpen)
+    {
+        <div class="palette-overlay" @onclick="Close"></div>
+        
+        <div class="palette-container">
+            <div class="palette-search">
+                <span class="search-icon">🔍</span>
+                <input type="text"
+                       class="search-input"
+                       placeholder="@Placeholder"
+                       @bind="@_searchQuery"
+                       @bind:event="oninput"
+                       @onkeydown="OnKeyDown"
+                       @ref="_searchInputElement"
+                       autofocus />
+                @if (!string.IsNullOrEmpty(_searchQuery))
+                {
+                    <button class="clear-button" @onclick="ClearSearch">
+                        <span class="clear-icon">×</span>
+                    </button>
+                }
+                <span class="keyboard-hint">@KeyboardHint</span>
+            </div>
+
+            @if (_filteredCommands.Any())
+            {
+                <div class="palette-results">
+                    @foreach (var (command, index) in _filteredCommands.Select((c, i) => (c, i)))
+                    {
+                        @if (HasPermission(command.RequiredPermission))
+                        {
+                            <div class="command-item @(index == _selectedIndex ? "selected" : "") @(command.IsDisabled ? "disabled" : "")"
+                                 @onclick="() => ExecuteCommand(command)"
+                                 @onmouseenter="() => _selectedIndex = index">
+                                <div class="command-left">
+                                    @if (!string.IsNullOrEmpty(command.Icon))
+                                    {
+                                        <span class="command-icon">@command.Icon</span>
+                                    }
+                                    <div class="command-info">
+                                        <div class="command-title">
+                                            @HighlightMatch(command.Title, _searchQuery)
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(command.Description))
+                                        {
+                                            <div class="command-description">@command.Description</div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="command-right">
+                                    @if (command.Category != null)
+                                    {
+                                        <span class="command-category">@command.Category</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(command.Shortcut))
+                                    {
+                                        <span class="command-shortcut">@command.Shortcut</span>
+                                    }
+                                    @if (command.RecentlyUsed)
+                                    {
+                                        <span class="recent-badge">Recent</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(_searchQuery))
+            {
+                <div class="palette-empty">
+                    <span class="empty-icon">🔎</span>
+                    <p class="empty-text">No commands found for "@_searchQuery"</p>
+                    @if (AllowCustomCommands)
+                    {
+                        <button class="empty-action" @onclick="CreateCustomCommand">
+                            Create custom command
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="palette-suggestions">
+                    @if (ShowRecentCommands && _recentCommands.Any())
+                    {
+                        <div class="suggestion-section">
+                            <h4 class="section-title">Recent Commands</h4>
+                            @foreach (var command in _recentCommands.Take(5))
+                            {
+                                @if (HasPermission(command.RequiredPermission))
+                                {
+                                    <div class="command-item" @onclick="() => ExecuteCommand(command)">
+                                        <div class="command-left">
+                                            @if (!string.IsNullOrEmpty(command.Icon))
+                                            {
+                                                <span class="command-icon">@command.Icon</span>
+                                            }
+                                            <span class="command-title">@command.Title</span>
+                                        </div>
+                                        <span class="command-shortcut">@command.Shortcut</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (ShowFrequentCommands && _frequentCommands.Any())
+                    {
+                        <div class="suggestion-section">
+                            <h4 class="section-title">Frequently Used</h4>
+                            @foreach (var command in _frequentCommands.Take(5))
+                            {
+                                @if (HasPermission(command.RequiredPermission))
+                                {
+                                    <div class="command-item" @onclick="() => ExecuteCommand(command)">
+                                        <div class="command-left">
+                                            @if (!string.IsNullOrEmpty(command.Icon))
+                                            {
+                                                <span class="command-icon">@command.Icon</span>
+                                            }
+                                            <span class="command-title">@command.Title</span>
+                                        </div>
+                                        <span class="usage-count">Used @command.UsageCount times</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="palette-footer">
+                <div class="footer-shortcuts">
+                    <span class="shortcut-item"><kbd>↑↓</kbd> Navigate</span>
+                    <span class="shortcut-item"><kbd>Enter</kbd> Execute</span>
+                    <span class="shortcut-item"><kbd>Esc</kbd> Close</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Configuration
+    [Parameter] public List<Command> Commands { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public string Placeholder { get; set; } = "Type a command or search...";
+    [Parameter] public string KeyboardHint { get; set; } = "Ctrl+K";
+    [Parameter] public bool ShowRecentCommands { get; set; } = true;
+    [Parameter] public bool ShowFrequentCommands { get; set; } = true;
+    [Parameter] public bool AllowCustomCommands { get; set; } = false;
+    [Parameter] public int MaxResults { get; set; } = 10;
+    [Parameter] public bool FuzzySearch { get; set; } = true;
+
+    // Theme & Style
+    [Parameter] public string ThemeClass { get; set; } = "light";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+
+    // Events
+    [Parameter] public EventCallback<Command> OnCommandExecuted { get; set; }
+    [Parameter] public EventCallback OnOpened { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+
+    // State
+    private string _searchQuery = string.Empty;
+    private int _selectedIndex = 0;
+    private List<Command> _filteredCommands = new();
+    private Dictionary<string, bool> _permissionCache = new();
+    private List<Command> _recentCommands = new();
+    private List<Command> _frequentCommands = new();
+    private ElementReference _searchInputElement;
+
+    protected override void OnInitialized()
+    {
+        UpdateRecentCommands();
+        UpdateFrequentCommands();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen)
+        {
+            try
+            {
+                await _searchInputElement.FocusAsync();
+            }
+            catch { }
+        }
+    }
+
+    public async Task Open()
+    {
+        IsOpen = true;
+        _searchQuery = string.Empty;
+        _selectedIndex = 0;
+        FilterCommands();
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CommandPaletteOpened",
+                Resource = "CommandPalette",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnOpened.InvokeAsync();
+        StateHasChanged();
+    }
+
+    public async Task Close()
+    {
+        IsOpen = false;
+        _searchQuery = string.Empty;
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CommandPaletteClosed",
+                Resource = "CommandPalette",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnClosed.InvokeAsync();
+    }
+
+    public async Task Toggle()
+    {
+        if (IsOpen)
+            await Close();
+        else
+            await Open();
+    }
+
+    private async Task OnSearchInput(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? string.Empty;
+        _selectedIndex = 0;
+        FilterCommands();
+    }
+
+    private void FilterCommands()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _filteredCommands = Commands.Take(MaxResults).ToList();
+            return;
+        }
+
+        var query = _searchQuery.ToLower();
+        
+        _filteredCommands = Commands
+            .Where(c => !c.IsDisabled && (
+                c.Title.ToLower().Contains(query) ||
+                c.Description?.ToLower().Contains(query) == true ||
+                c.Category?.ToLower().Contains(query) == true ||
+                c.Tags?.Any(t => t.ToLower().Contains(query)) == true ||
+                (FuzzySearch && FuzzyMatch(c.Title.ToLower(), query))
+            ))
+            .OrderByDescending(c => c.RecentlyUsed)
+            .ThenByDescending(c => c.UsageCount)
+            .ThenBy(c => c.Title.ToLower().IndexOf(query))
+            .Take(MaxResults)
+            .ToList();
+    }
+
+    private bool FuzzyMatch(string text, string query)
+    {
+        int textIndex = 0;
+        foreach (char c in query)
+        {
+            textIndex = text.IndexOf(c, textIndex);
+            if (textIndex == -1) return false;
+            textIndex++;
+        }
+        return true;
+    }
+
+    private MarkupString HighlightMatch(string text, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return new MarkupString(text);
+
+        var index = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
+        if (index == -1) return new MarkupString(text);
+
+        var before = text.Substring(0, index);
+        var match = text.Substring(index, query.Length);
+        var after = text.Substring(index + query.Length);
+
+        return new MarkupString($"{before}<mark class=\"highlight\">{match}</mark>{after}");
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _selectedIndex = Math.Min(_selectedIndex + 1, _filteredCommands.Count - 1);
+                break;
+            case "ArrowUp":
+                _selectedIndex = Math.Max(_selectedIndex - 1, 0);
+                break;
+            case "Enter":
+                if (_filteredCommands.Any() && _selectedIndex < _filteredCommands.Count)
+                {
+                    await ExecuteCommand(_filteredCommands[_selectedIndex]);
+                }
+                break;
+            case "Escape":
+                await Close();
+                break;
+        }
+    }
+
+    private async Task ExecuteCommand(Command command)
+    {
+        if (command.IsDisabled) return;
+
+        command.UsageCount++;
+        command.LastUsed = DateTime.UtcNow;
+        command.RecentlyUsed = true;
+
+        UpdateRecentCommands();
+        UpdateFrequentCommands();
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CommandExecuted",
+                Resource = "CommandPalette",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CommandTitle"] = command.Title,
+                    ["CommandId"] = command.Id
+                }
+            });
+        }
+
+        await OnCommandExecuted.InvokeAsync(command);
+        await Close();
+    }
+
+    private void UpdateRecentCommands()
+    {
+        _recentCommands = Commands
+            .Where(c => c.LastUsed.HasValue)
+            .OrderByDescending(c => c.LastUsed)
+            .Take(5)
+            .ToList();
+    }
+
+    private void UpdateFrequentCommands()
+    {
+        _frequentCommands = Commands
+            .Where(c => c.UsageCount > 0)
+            .OrderByDescending(c => c.UsageCount)
+            .Take(5)
+            .ToList();
+    }
+
+    private void ClearSearch()
+    {
+        _searchQuery = string.Empty;
+        _selectedIndex = 0;
+        FilterCommands();
+    }
+
+    private async Task CreateCustomCommand()
+    {
+        // Implement custom command creation
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _permissionCache.Clear();
+        
+        if (Commands != null)
+        {
+            foreach (var cmd in Commands.Where(c => !string.IsNullOrEmpty(c.RequiredPermission)))
+            {
+                _permissionCache[cmd.RequiredPermission!] = await PermissionService.HasPermissionAsync(cmd.RequiredPermission!);
+            }
+        }
+    }
+
+    private bool HasPermission(string? permission)
+    {
+        if (string.IsNullOrEmpty(permission)) return true;
+        return _permissionCache.TryGetValue(permission, out var hasPermission) && hasPermission;
+    }
+
+    public class Command
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Icon { get; set; }
+        public string? Category { get; set; }
+        public string? Shortcut { get; set; }
+        public List<string>? Tags { get; set; }
+        public bool IsDisabled { get; set; }
+        public int UsageCount { get; set; }
+        public DateTime? LastUsed { get; set; }
+        public bool RecentlyUsed { get; set; }
+        public string? RequiredPermission { get; set; }
+        public System.Action? OnExecute { get; set; }
+    }
+}

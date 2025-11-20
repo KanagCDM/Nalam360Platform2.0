@@ -1,10 +1,12 @@
 ﻿namespace Nalam360Enterprise.UI.Tests;
 
-public class UnitTest1
+// This file is kept for initial test project setup
+// Real component tests are in Components folder
+public class SampleTest
 {
     [Fact]
-    public void Test1()
+    public void Framework_IsWorking()
     {
-
+        Assert.True(true);
     }
 }

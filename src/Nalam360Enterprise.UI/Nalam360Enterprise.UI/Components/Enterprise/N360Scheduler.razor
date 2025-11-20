@@ -1,0 +1,783 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+<div class="n360-scheduler @GetThemeClass() @(CssClass ?? "")" style="@Style">
+    @if (_hasPermission)
+    {
+        <!-- Scheduler Toolbar -->
+        <div class="scheduler-toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-primary" @onclick="OnAddEventAsync">
+                    <span class="icon">➕</span> New Event
+                </button>
+                <div class="view-switcher">
+                    <button class="btn-view @(ViewMode == SchedulerViewMode.Day ? "active" : "")" @onclick="@(() => OnChangeViewAsync(SchedulerViewMode.Day))">Day</button>
+                    <button class="btn-view @(ViewMode == SchedulerViewMode.Week ? "active" : "")" @onclick="@(() => OnChangeViewAsync(SchedulerViewMode.Week))">Week</button>
+                    <button class="btn-view @(ViewMode == SchedulerViewMode.WorkWeek ? "active" : "")" @onclick="@(() => OnChangeViewAsync(SchedulerViewMode.WorkWeek))">Work Week</button>
+                    <button class="btn-view @(ViewMode == SchedulerViewMode.Month ? "active" : "")" @onclick="@(() => OnChangeViewAsync(SchedulerViewMode.Month))">Month</button>
+                    <button class="btn-view @(ViewMode == SchedulerViewMode.Agenda ? "active" : "")" @onclick="@(() => OnChangeViewAsync(SchedulerViewMode.Agenda))">Agenda</button>
+                </div>
+            </div>
+            <div class="toolbar-center">
+                <button class="btn-icon" @onclick="OnPreviousAsync" title="Previous">
+                    <span class="icon">◀</span>
+                </button>
+                <button class="btn btn-secondary" @onclick="OnTodayAsync">Today</button>
+                <button class="btn-icon" @onclick="OnNextAsync" title="Next">
+                    <span class="icon">▶</span>
+                </button>
+                <h3 class="current-date">@GetCurrentDateRangeText()</h3>
+            </div>
+            <div class="toolbar-right">
+                @if (Resources.Any())
+                {
+                    <select class="resource-filter" @bind="_selectedResourceId">
+                        <option value="">All Resources</option>
+                        @foreach (var resource in Resources)
+                        {
+                            <option value="@resource.Id">@resource.Name</option>
+                        }
+                    </select>
+                }
+                <button class="btn-icon" @onclick="OnRefreshAsync" title="Refresh">
+                    <span class="icon">🔄</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scheduler View -->
+        <div class="scheduler-view">
+            @if (ViewMode == SchedulerViewMode.Day || ViewMode == SchedulerViewMode.Week || ViewMode == SchedulerViewMode.WorkWeek)
+            {
+                <div class="calendar-view">
+                    <!-- Time Column -->
+                    <div class="time-column">
+                        <div class="time-header"></div>
+                        @for (var hour = Settings.StartHour.Hours; hour <= Settings.EndHour.Hours; hour++)
+                        {
+                            <div class="time-slot" style="height: @(60)px;">
+                                <span class="time-label">@FormatTime(new TimeSpan(hour, 0, 0))</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Day Columns -->
+                    <div class="days-container">
+                        @foreach (var day in GetVisibleDays())
+                        {
+                            <div class="day-column">
+                                <div class="day-header @(day.Date == DateTime.Today ? "today" : "")">
+                                    <div class="day-name">@day.ToString("ddd")</div>
+                                    <div class="day-date">@day.Day</div>
+                                </div>
+                                <div class="day-slots" @ondrop="@((e) => OnEventDrop(day))" @ondragover:preventDefault="true">
+                                    @for (var hour = Settings.StartHour.Hours; hour <= Settings.EndHour.Hours; hour++)
+                                    {
+                                        <div class="hour-slot" style="height: @(60)px;" @onclick="@(() => OnSlotClick(day.AddHours(hour)))"></div>
+                                    }
+                                    @foreach (var evt in GetEventsForDay(day))
+                                    {
+                                        var top = CalculateEventTop(evt);
+                                        var height = CalculateEventHeight(evt);
+                                        <div class="event-card @GetEventClass(evt)" 
+                                             style="top: @(top)px; height: @(height)px; background-color: @(evt.Color ?? "#2196f3");"
+                                             draggable="@(Settings.EnableDragDrop && !evt.IsLocked)"
+                                             @ondragstart="@(() => OnEventDragStart(evt))"
+                                             @onclick="@(() => OnEventClick(evt))"
+                                             @onclick:stopPropagation="true">
+                                            <div class="event-time">@evt.StartTime.ToString(Settings.TimeFormat)</div>
+                                            <div class="event-title">@evt.Title</div>
+                                            @if (!string.IsNullOrEmpty(evt.Location))
+                                            {
+                                                <div class="event-location">📍 @evt.Location</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (ViewMode == SchedulerViewMode.Month)
+            {
+                <div class="month-view">
+                    <!-- Weekday Headers -->
+                    <div class="weekday-headers">
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var day = GetWeekdayName(i);
+                            <div class="weekday-header">@day</div>
+                        }
+                    </div>
+
+                    <!-- Month Grid -->
+                    <div class="month-grid">
+                        @foreach (var week in GetMonthWeeks())
+                        {
+                            @foreach (var day in week)
+                            {
+                                var isCurrentMonth = day.Month == _currentDate.Month;
+                                var isToday = day.Date == DateTime.Today;
+                                <div class="month-cell @(!isCurrentMonth ? "other-month" : "") @(isToday ? "today" : "")"
+                                     @onclick="@(() => OnDayClick(day))">
+                                    <div class="cell-date">@day.Day</div>
+                                    <div class="cell-events">
+                                        @foreach (var evt in GetEventsForDay(day).Take(3))
+                                        {
+                                            <div class="month-event" style="background-color: @(evt.Color ?? "#2196f3");" @onclick="@(() => OnEventClick(evt))" @onclick:stopPropagation="true">
+                                                <span class="event-dot">●</span> @evt.Title
+                                            </div>
+                                        }
+                                        @if (GetEventsForDay(day).Count() > 3)
+                                        {
+                                            <div class="more-events">+@(GetEventsForDay(day).Count() - 3) more</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+            else if (ViewMode == SchedulerViewMode.Agenda)
+            {
+                <div class="agenda-view">
+                    @foreach (var dateGroup in GetAgendaEvents())
+                    {
+                        <div class="agenda-date-group">
+                            <div class="agenda-date-header">
+                                <span class="date-day">@dateGroup.Key.ToString("ddd")</span>
+                                <span class="date-full">@dateGroup.Key.ToString(Settings.DateFormat)</span>
+                            </div>
+                            <div class="agenda-events">
+                                @foreach (var evt in dateGroup.Value)
+                                {
+                                    <div class="agenda-event" @onclick="@(() => OnEventClick(evt))">
+                                        <div class="agenda-event-time">
+                                            @evt.StartTime.ToString(Settings.TimeFormat) - @evt.EndTime.ToString(Settings.TimeFormat)
+                                        </div>
+                                        <div class="agenda-event-details">
+                                            <div class="agenda-event-title" style="border-left: 4px solid @(evt.Color ?? "#2196f3");">
+                                                @evt.Title
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(evt.Location))
+                                            {
+                                                <div class="agenda-event-location">📍 @evt.Location</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(evt.ResourceName))
+                                            {
+                                                <div class="agenda-event-resource">👤 @evt.ResourceName</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Event Editor Modal -->
+        @if (_showEventModal)
+        {
+            <div class="modal-overlay" @onclick="OnCancelEvent">
+                <div class="modal-content large" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3>@(_selectedEvent?.Id != null && Events.Any(e => e.Id == _selectedEvent.Id) ? "Edit Event" : "New Event")</h3>
+                        <button class="btn-close" @onclick="OnCancelEvent">✖️</button>
+                    </div>
+                    <div class="modal-body">
+                        @if (_selectedEvent != null)
+                        {
+                            <div class="form-group">
+                                <label>Title *</label>
+                                <input type="text" class="form-control" @bind="_selectedEvent.Title" placeholder="Event title" />
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Start Date & Time *</label>
+                                    <input type="datetime-local" class="form-control" @bind="_selectedEvent.StartTime" />
+                                </div>
+                                <div class="form-group">
+                                    <label>End Date & Time *</label>
+                                    <input type="datetime-local" class="form-control" @bind="_selectedEvent.EndTime" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" @bind="_selectedEvent.IsAllDay" />
+                                    All day event
+                                </label>
+                            </div>
+
+                            @if (Resources.Any())
+                            {
+                                <div class="form-group">
+                                    <label>Resource</label>
+                                    <select class="form-control" @bind="_selectedEvent.ResourceId">
+                                        <option value="">None</option>
+                                        @foreach (var resource in Resources)
+                                        {
+                                            <option value="@resource.Id">@resource.Name (@resource.Type)</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+
+                            <div class="form-group">
+                                <label>Location</label>
+                                <input type="text" class="form-control" @bind="_selectedEvent.Location" placeholder="Event location" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea class="form-control" @bind="_selectedEvent.Description" rows="3" placeholder="Event description"></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select class="form-control" @bind="_selectedEvent.Status">
+                                        @foreach (EventStatus status in Enum.GetValues(typeof(EventStatus)))
+                                        {
+                                            <option value="@status">@status</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Priority</label>
+                                    <select class="form-control" @bind="_selectedEvent.Priority">
+                                        @foreach (EventPriority priority in Enum.GetValues(typeof(EventPriority)))
+                                        {
+                                            <option value="@priority">@priority</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Color</label>
+                                <div class="color-picker-grid">
+                                    @foreach (var color in GetEventColors())
+                                    {
+                                        <div class="color-option @(_selectedEvent.Color == color ? "selected" : "")" 
+                                             style="background-color: @color;" 
+                                             @onclick="@(() => _selectedEvent.Color = color)"></div>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (Settings.EnableConflictDetection && _eventConflicts.Any())
+                            {
+                                <div class="conflict-warning">
+                                    <strong>⚠️ Scheduling Conflicts:</strong>
+                                    @foreach (var conflict in _eventConflicts)
+                                    {
+                                        <div class="conflict-item">@conflict.Message</div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="OnSaveEventAsync">
+                            Save Event
+                        </button>
+                        @if (_selectedEvent?.Id != null && Events.Any(e => e.Id == _selectedEvent.Id))
+                        {
+                            <button class="btn btn-danger" @onclick="OnDeleteEventAsync">
+                                Delete
+                            </button>
+                        }
+                        <button class="btn btn-secondary" @onclick="OnCancelEvent">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (HideIfNoPermission)
+    {
+        <!-- Hidden -->
+    }
+    else
+    {
+        <div class="permission-denied">
+            <span class="icon">🔒</span>
+            <p>You don't have permission to view this scheduler.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<SchedulerEvent> Events { get; set; } = new();
+    [Parameter] public EventCallback<List<SchedulerEvent>> EventsChanged { get; set; }
+    [Parameter] public List<SchedulerResource> Resources { get; set; } = new();
+    [Parameter] public SchedulerViewMode ViewMode { get; set; } = SchedulerViewMode.Week;
+    [Parameter] public EventCallback<SchedulerViewMode> ViewModeChanged { get; set; }
+    [Parameter] public SchedulerSettings Settings { get; set; } = new();
+    [Parameter] public EventCallback<SchedulerEvent> OnEventCreated { get; set; }
+    [Parameter] public EventCallback<SchedulerEvent> OnEventUpdated { get; set; }
+    [Parameter] public EventCallback<SchedulerEvent> OnEventDeleted { get; set; }
+    [Parameter] public EventCallback<EventDragResult> OnEventMoved { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "Scheduler";
+    [Parameter] public string AuditAction { get; set; } = "View";
+
+    private bool _hasPermission = true;
+    private DateTime _currentDate = DateTime.Today;
+    private bool _showEventModal;
+    private SchedulerEvent? _selectedEvent;
+    private SchedulerEvent? _draggingEvent;
+    private string? _selectedResourceId;
+    private List<ScheduleConflict> _eventConflicts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (_hasPermission && EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "ViewScheduler",
+                AdditionalData = new() { ["Details"] = $"Viewed scheduler in {ViewMode} mode" }
+            });
+        }
+    }
+
+    private async Task OnChangeViewAsync(SchedulerViewMode newView)
+    {
+        ViewMode = newView;
+        await ViewModeChanged.InvokeAsync(ViewMode);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "ChangeView",
+                AdditionalData = new() { ["Details"] = $"Changed view to {ViewMode}" }
+            });
+        }
+    }
+
+    private Task OnPreviousAsync()
+    {
+        _currentDate = ViewMode switch
+        {
+            SchedulerViewMode.Day => _currentDate.AddDays(-1),
+            SchedulerViewMode.Week or SchedulerViewMode.WorkWeek => _currentDate.AddDays(-7),
+            SchedulerViewMode.Month => _currentDate.AddMonths(-1),
+            SchedulerViewMode.Agenda => _currentDate.AddDays(-7),
+            _ => _currentDate
+        };
+        return Task.CompletedTask;
+    }
+
+    private Task OnNextAsync()
+    {
+        _currentDate = ViewMode switch
+        {
+            SchedulerViewMode.Day => _currentDate.AddDays(1),
+            SchedulerViewMode.Week or SchedulerViewMode.WorkWeek => _currentDate.AddDays(7),
+            SchedulerViewMode.Month => _currentDate.AddMonths(1),
+            SchedulerViewMode.Agenda => _currentDate.AddDays(7),
+            _ => _currentDate
+        };
+        return Task.CompletedTask;
+    }
+
+    private Task OnTodayAsync()
+    {
+        _currentDate = DateTime.Today;
+        return Task.CompletedTask;
+    }
+
+    private Task OnRefreshAsync()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnAddEventAsync()
+    {
+        _selectedEvent = new SchedulerEvent
+        {
+            StartTime = _currentDate.Date.Add(new TimeSpan(9, 0, 0)),
+            EndTime = _currentDate.Date.Add(new TimeSpan(10, 0, 0))
+        };
+        _eventConflicts.Clear();
+        _showEventModal = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OnSlotClick(DateTime slotTime)
+    {
+        _selectedEvent = new SchedulerEvent
+        {
+            StartTime = slotTime,
+            EndTime = slotTime.AddMinutes(Settings.TimeSlotDuration)
+        };
+        _eventConflicts.Clear();
+        _showEventModal = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDayClick(DateTime day)
+    {
+        _currentDate = day;
+        ViewMode = SchedulerViewMode.Day;
+        return Task.CompletedTask;
+    }
+
+    private Task OnEventClick(SchedulerEvent evt)
+    {
+        _selectedEvent = new SchedulerEvent
+        {
+            Id = evt.Id,
+            Title = evt.Title,
+            Description = evt.Description,
+            StartTime = evt.StartTime,
+            EndTime = evt.EndTime,
+            IsAllDay = evt.IsAllDay,
+            Location = evt.Location,
+            ResourceId = evt.ResourceId,
+            ResourceName = evt.ResourceName,
+            Category = evt.Category,
+            Color = evt.Color,
+            Status = evt.Status,
+            Priority = evt.Priority,
+            IsLocked = evt.IsLocked
+        };
+        _eventConflicts = DetectConflicts(_selectedEvent);
+        _showEventModal = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSaveEventAsync()
+    {
+        if (_selectedEvent == null || string.IsNullOrEmpty(_selectedEvent.Title)) return;
+
+        if (Settings.EnableConflictDetection)
+        {
+            _eventConflicts = DetectConflicts(_selectedEvent);
+            if (_eventConflicts.Any() && !Settings.AllowDoubleBooking)
+            {
+                // Show conflicts and don't save
+                return;
+            }
+        }
+
+        // Update resource name if resource selected
+        if (!string.IsNullOrEmpty(_selectedEvent.ResourceId))
+        {
+            var resource = Resources.FirstOrDefault(r => r.Id == _selectedEvent.ResourceId);
+            if (resource != null)
+            {
+                _selectedEvent.ResourceName = resource.Name;
+            }
+        }
+
+        var existingEvent = Events.FirstOrDefault(e => e.Id == _selectedEvent.Id);
+        if (existingEvent != null)
+        {
+            // Update existing
+            var index = Events.IndexOf(existingEvent);
+            Events[index] = _selectedEvent;
+            await OnEventUpdated.InvokeAsync(_selectedEvent);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Resource = AuditResource,
+                    Action = "UpdateEvent",
+                    AdditionalData = new() { ["Details"] = $"Updated event: {_selectedEvent.Title}" }
+                });
+            }
+        }
+        else
+        {
+            // Create new
+            Events.Add(_selectedEvent);
+            await OnEventCreated.InvokeAsync(_selectedEvent);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Resource = AuditResource,
+                    Action = "CreateEvent",
+                    AdditionalData = new() { ["Details"] = $"Created event: {_selectedEvent.Title}" }
+                });
+            }
+        }
+
+        await EventsChanged.InvokeAsync(Events);
+        _showEventModal = false;
+        _selectedEvent = null;
+    }
+
+    private async Task OnDeleteEventAsync()
+    {
+        if (_selectedEvent == null) return;
+
+        var evt = Events.FirstOrDefault(e => e.Id == _selectedEvent.Id);
+        if (evt != null)
+        {
+            Events.Remove(evt);
+            await OnEventDeleted.InvokeAsync(evt);
+            await EventsChanged.InvokeAsync(Events);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Resource = AuditResource,
+                    Action = "DeleteEvent",
+                    AdditionalData = new() { ["Details"] = $"Deleted event: {evt.Title}" }
+                });
+            }
+        }
+
+        _showEventModal = false;
+        _selectedEvent = null;
+    }
+
+    private Task OnCancelEvent()
+    {
+        _showEventModal = false;
+        _selectedEvent = null;
+        _eventConflicts.Clear();
+        return Task.CompletedTask;
+    }
+
+    private void OnEventDragStart(SchedulerEvent evt)
+    {
+        if (!evt.IsLocked)
+        {
+            _draggingEvent = evt;
+        }
+    }
+
+    private async Task OnEventDrop(DateTime targetDate)
+    {
+        if (_draggingEvent == null) return;
+
+        var duration = _draggingEvent.EndTime - _draggingEvent.StartTime;
+        var newStart = targetDate;
+        var newEnd = newStart + duration;
+
+        var dragResult = new EventDragResult
+        {
+            Event = _draggingEvent,
+            NewStartTime = newStart,
+            NewEndTime = newEnd,
+            Conflicts = DetectConflicts(new SchedulerEvent 
+            { 
+                Id = _draggingEvent.Id,
+                StartTime = newStart, 
+                EndTime = newEnd,
+                ResourceId = _draggingEvent.ResourceId
+            })
+        };
+
+        dragResult.IsValid = !dragResult.Conflicts.Any() || Settings.AllowDoubleBooking;
+
+        if (dragResult.IsValid)
+        {
+            _draggingEvent.StartTime = newStart;
+            _draggingEvent.EndTime = newEnd;
+            await OnEventMoved.InvokeAsync(dragResult);
+        }
+
+        _draggingEvent = null;
+    }
+
+    private List<DateTime> GetVisibleDays()
+    {
+        return ViewMode switch
+        {
+            SchedulerViewMode.Day => new List<DateTime> { _currentDate },
+            SchedulerViewMode.Week => Enumerable.Range(0, 7).Select(i => GetWeekStart(_currentDate).AddDays(i)).ToList(),
+            SchedulerViewMode.WorkWeek => Enumerable.Range(0, 5).Select(i => GetWeekStart(_currentDate).AddDays(i)).ToList(),
+            _ => new List<DateTime>()
+        };
+    }
+
+    private IEnumerable<SchedulerEvent> GetEventsForDay(DateTime day)
+    {
+        var events = Events.Where(e => e.StartTime.Date == day.Date || e.EndTime.Date == day.Date);
+        
+        if (!string.IsNullOrEmpty(_selectedResourceId))
+        {
+            events = events.Where(e => e.ResourceId == _selectedResourceId);
+        }
+
+        return events.OrderBy(e => e.StartTime);
+    }
+
+    private List<List<DateTime>> GetMonthWeeks()
+    {
+        var firstDay = new DateTime(_currentDate.Year, _currentDate.Month, 1);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
+        
+        var startDate = firstDay.AddDays(-(int)firstDay.DayOfWeek);
+        var endDate = lastDay.AddDays(6 - (int)lastDay.DayOfWeek);
+        
+        var weeks = new List<List<DateTime>>();
+        var current = startDate;
+        
+        while (current <= endDate)
+        {
+            var week = Enumerable.Range(0, 7).Select(i => current.AddDays(i)).ToList();
+            weeks.Add(week);
+            current = current.AddDays(7);
+        }
+        
+        return weeks;
+    }
+
+    private Dictionary<DateTime, List<SchedulerEvent>> GetAgendaEvents()
+    {
+        var startDate = _currentDate;
+        var endDate = _currentDate.AddDays(30);
+        
+        var events = Events.Where(e => e.StartTime.Date >= startDate.Date && e.StartTime.Date <= endDate.Date);
+        
+        if (!string.IsNullOrEmpty(_selectedResourceId))
+        {
+            events = events.Where(e => e.ResourceId == _selectedResourceId);
+        }
+        
+        return events.GroupBy(e => e.StartTime.Date).ToDictionary(g => g.Key, g => g.OrderBy(e => e.StartTime).ToList());
+    }
+
+    private List<ScheduleConflict> DetectConflicts(SchedulerEvent evt)
+    {
+        var conflicts = new List<ScheduleConflict>();
+        
+        if (string.IsNullOrEmpty(evt.ResourceId)) return conflicts;
+        
+        var resource = Resources.FirstOrDefault(r => r.Id == evt.ResourceId);
+        if (resource == null) return conflicts;
+        
+        // Check for double booking
+        var overlapping = Events.Where(e => 
+            e.Id != evt.Id &&
+            e.ResourceId == evt.ResourceId &&
+            e.StartTime < evt.EndTime &&
+            e.EndTime > evt.StartTime
+        );
+        
+        foreach (var other in overlapping)
+        {
+            conflicts.Add(new ScheduleConflict
+            {
+                EventId = evt.Id,
+                ConflictingEventId = other.Id,
+                ResourceId = resource.Id,
+                ResourceName = resource.Name,
+                ConflictStart = evt.StartTime > other.StartTime ? evt.StartTime : other.StartTime,
+                ConflictEnd = evt.EndTime < other.EndTime ? evt.EndTime : other.EndTime,
+                Type = ConflictType.DoubleBooking,
+                Message = $"Conflicts with '{other.Title}' for {resource.Name}"
+            });
+        }
+        
+        return conflicts;
+    }
+
+    private double CalculateEventTop(SchedulerEvent evt)
+    {
+        var startMinutes = evt.StartTime.Hour * 60 + evt.StartTime.Minute;
+        var baseMinutes = Settings.StartHour.Hours * 60;
+        return (startMinutes - baseMinutes);
+    }
+
+    private double CalculateEventHeight(SchedulerEvent evt)
+    {
+        var duration = (evt.EndTime - evt.StartTime).TotalMinutes;
+        return Math.Max(duration, 30); // Minimum 30 minutes height
+    }
+
+    private string GetEventClass(SchedulerEvent evt)
+    {
+        var classes = new List<string>();
+        
+        if (evt.Priority == EventPriority.High || evt.Priority == EventPriority.Urgent)
+            classes.Add("high-priority");
+        
+        if (evt.Status == EventStatus.Cancelled)
+            classes.Add("cancelled");
+        
+        return string.Join(" ", classes);
+    }
+
+    private DateTime GetWeekStart(DateTime date)
+    {
+        var diff = (7 + ((int)date.DayOfWeek - (int)Settings.FirstDayOfWeek)) % 7;
+        return date.AddDays(-diff).Date;
+    }
+
+    private string GetWeekdayName(int index)
+    {
+        var day = (DayOfWeek)(((int)Settings.FirstDayOfWeek + index) % 7);
+        return day.ToString().Substring(0, 3);
+    }
+
+    private string GetCurrentDateRangeText()
+    {
+        return ViewMode switch
+        {
+            SchedulerViewMode.Day => _currentDate.ToString("MMMM dd, yyyy"),
+            SchedulerViewMode.Week or SchedulerViewMode.WorkWeek => 
+                $"{GetWeekStart(_currentDate):MMM dd} - {GetWeekStart(_currentDate).AddDays(6):MMM dd, yyyy}",
+            SchedulerViewMode.Month => _currentDate.ToString("MMMM yyyy"),
+            SchedulerViewMode.Agenda => $"{_currentDate:MMM dd} - {_currentDate.AddDays(30):MMM dd, yyyy}",
+            _ => _currentDate.ToString(Settings.DateFormat)
+        };
+    }
+
+    private string FormatTime(TimeSpan time)
+    {
+        var dt = DateTime.Today.Add(time);
+        return dt.ToString(Settings.TimeFormat);
+    }
+
+    private List<string> GetEventColors()
+    {
+        return new List<string>
+        {
+            "#2196f3", "#4caf50", "#ff9800", "#f44336", "#9c27b0",
+            "#00bcd4", "#8bc34a", "#ffc107", "#e91e63", "#3f51b5"
+        };
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+}

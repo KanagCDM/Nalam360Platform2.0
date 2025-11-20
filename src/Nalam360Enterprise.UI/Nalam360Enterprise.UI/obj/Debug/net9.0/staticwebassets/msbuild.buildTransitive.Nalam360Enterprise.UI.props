@@ -1,3 +1,3 @@
 ﻿<Project>
-  <Import Project="../buildMultiTargeting/Nalam360Enterprise.UI.props" />
+  <Import Project="..\buildMultiTargeting\Nalam360Enterprise.UI.props" />
 </Project>

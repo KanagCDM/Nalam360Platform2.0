@@ -1,0 +1,548 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-vital-signs @CssClass" dir="@(IsRtl ? "rtl" : "ltr")" @attributes="@GetHtmlAttributes()">
+    
+    @if (!string.IsNullOrEmpty(RequiredPermission) && !HasPermission)
+    {
+        if (!HideIfNoPermission)
+        {
+            <div class="n360-vital-signs__no-permission">Access Denied</div>
+        }
+        return;
+    }
+
+    <div class="n360-vital-signs__container">
+        @if (ShowTitle)
+        {
+            <div class="n360-vital-signs__header">
+                <h3 class="n360-vital-signs__title">@Title</h3>
+                @if (ShowTimestamp)
+                {
+                    <span class="n360-vital-signs__timestamp">@Timestamp.ToString("MMM dd, yyyy HH:mm")</span>
+                }
+            </div>
+        }
+
+        <div class="n360-vital-signs__grid">
+            <!-- Blood Pressure -->
+            @if (ShowBloodPressure)
+            {
+                <div class="n360-vital-signs__field @GetStatusClass(BloodPressureStatus)">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">🩺</span>
+                        Blood Pressure
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input n360-vital-signs__input--small"
+                               placeholder="Systolic"
+                               @bind="Systolic"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               min="@MinSystolic" 
+                               max="@MaxSystolic"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__separator">/</span>
+                        <input type="number" 
+                               class="n360-vital-signs__input n360-vital-signs__input--small"
+                               placeholder="Diastolic"
+                               @bind="Diastolic"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               min="@MinDiastolic" 
+                               max="@MaxDiastolic"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">mmHg</span>
+                    </div>
+                    @if (ShowRanges && BloodPressureStatus != VitalStatus.Normal)
+                    {
+                        <span class="n360-vital-signs__range-info">Normal: 90-120 / 60-80 mmHg</span>
+                    }
+                </div>
+            }
+
+            <!-- Heart Rate -->
+            @if (ShowHeartRate)
+            {
+                <div class="n360-vital-signs__field @GetStatusClass(HeartRateStatus)">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">❤️</span>
+                        Heart Rate
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter HR"
+                               @bind="HeartRate"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               min="@MinHeartRate" 
+                               max="@MaxHeartRate"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">bpm</span>
+                    </div>
+                    @if (ShowRanges && HeartRateStatus != VitalStatus.Normal)
+                    {
+                        <span class="n360-vital-signs__range-info">Normal: 60-100 bpm</span>
+                    }
+                </div>
+            }
+
+            <!-- Temperature -->
+            @if (ShowTemperature)
+            {
+                <div class="n360-vital-signs__field @GetStatusClass(TemperatureStatus)">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">🌡️</span>
+                        Temperature
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter Temp"
+                               @bind="Temperature"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               step="0.1"
+                               min="@(TemperatureUnit == TempUnit.Fahrenheit ? 95 : 35)"
+                               max="@(TemperatureUnit == TempUnit.Fahrenheit ? 107 : 42)"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">°@(TemperatureUnit == TempUnit.Fahrenheit ? "F" : "C")</span>
+                    </div>
+                    @if (ShowRanges && TemperatureStatus != VitalStatus.Normal)
+                    {
+                        <span class="n360-vital-signs__range-info">Normal: @(TemperatureUnit == TempUnit.Fahrenheit ? "97.8-99.1°F" : "36.5-37.3°C")</span>
+                    }
+                </div>
+            }
+
+            <!-- Oxygen Saturation -->
+            @if (ShowOxygenSaturation)
+            {
+                <div class="n360-vital-signs__field @GetStatusClass(OxygenSaturationStatus)">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">💨</span>
+                        Oxygen Saturation (SpO₂)
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter SpO2"
+                               @bind="OxygenSaturation"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               min="@MinOxygenSaturation" 
+                               max="100"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">%</span>
+                    </div>
+                    @if (ShowRanges && OxygenSaturationStatus != VitalStatus.Normal)
+                    {
+                        <span class="n360-vital-signs__range-info">Normal: 95-100%</span>
+                    }
+                </div>
+            }
+
+            <!-- Respiratory Rate -->
+            @if (ShowRespiratoryRate)
+            {
+                <div class="n360-vital-signs__field @GetStatusClass(RespiratoryRateStatus)">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">🫁</span>
+                        Respiratory Rate
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter RR"
+                               @bind="RespiratoryRate"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               min="@MinRespiratoryRate" 
+                               max="@MaxRespiratoryRate"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">breaths/min</span>
+                    </div>
+                    @if (ShowRanges && RespiratoryRateStatus != VitalStatus.Normal)
+                    {
+                        <span class="n360-vital-signs__range-info">Normal: 12-20 breaths/min</span>
+                    }
+                </div>
+            }
+
+            <!-- Weight -->
+            @if (ShowWeight)
+            {
+                <div class="n360-vital-signs__field">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">⚖️</span>
+                        Weight
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter Weight"
+                               @bind="Weight"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               step="0.1"
+                               min="0"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">@(WeightUnit == WeightUnitType.Pounds ? "lbs" : "kg")</span>
+                    </div>
+                </div>
+            }
+
+            <!-- Height -->
+            @if (ShowHeight)
+            {
+                <div class="n360-vital-signs__field">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">📏</span>
+                        Height
+                    </label>
+                    <div class="n360-vital-signs__input-group">
+                        <input type="number" 
+                               class="n360-vital-signs__input"
+                               placeholder="Enter Height"
+                               @bind="Height"
+                               @bind:event="oninput"
+                               @onchange="OnVitalsChanged"
+                               step="0.1"
+                               min="0"
+                               disabled="@IsReadOnly" />
+                        <span class="n360-vital-signs__unit">@(HeightUnit == HeightUnitType.Inches ? "in" : "cm")</span>
+                    </div>
+                </div>
+            }
+
+            <!-- BMI (Auto-calculated) -->
+            @if (ShowBMI && Weight.HasValue && Height.HasValue)
+            {
+                <div class="n360-vital-signs__field @GetBMIStatusClass()">
+                    <label class="n360-vital-signs__label">
+                        <span class="n360-vital-signs__icon">📊</span>
+                        BMI
+                    </label>
+                    <div class="n360-vital-signs__calculated">
+                        <span class="n360-vital-signs__bmi-value">@CalculateBMI().ToString("F1")</span>
+                        <span class="n360-vital-signs__bmi-category">@GetBMICategory()</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (ShowActions && !IsReadOnly)
+        {
+            <div class="n360-vital-signs__actions">
+                <button type="button" 
+                        class="n360-vital-signs__btn n360-vital-signs__btn--primary"
+                        @onclick="OnSaveClicked"
+                        disabled="@(!HasChanges)">
+                    Save Vitals
+                </button>
+                <button type="button" 
+                        class="n360-vital-signs__btn n360-vital-signs__btn--secondary"
+                        @onclick="OnClearClicked">
+                    Clear
+                </button>
+                @if (CustomActions != null)
+                {
+                    @CustomActions
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; } = "VitalSigns";
+    [Parameter] public string? AuditAction { get; set; } = "Record";
+
+    // Display Options
+    [Parameter] public bool ShowTitle { get; set; } = true;
+    [Parameter] public string Title { get; set; } = "Vital Signs";
+    [Parameter] public bool ShowTimestamp { get; set; } = true;
+    [Parameter] public DateTime Timestamp { get; set; } = DateTime.Now;
+    [Parameter] public bool ShowRanges { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool IsReadOnly { get; set; }
+
+    // Vital Signs Visibility
+    [Parameter] public bool ShowBloodPressure { get; set; } = true;
+    [Parameter] public bool ShowHeartRate { get; set; } = true;
+    [Parameter] public bool ShowTemperature { get; set; } = true;
+    [Parameter] public bool ShowOxygenSaturation { get; set; } = true;
+    [Parameter] public bool ShowRespiratoryRate { get; set; } = true;
+    [Parameter] public bool ShowWeight { get; set; } = true;
+    [Parameter] public bool ShowHeight { get; set; } = true;
+    [Parameter] public bool ShowBMI { get; set; } = true;
+
+    // Blood Pressure
+    [Parameter] public int? Systolic { get; set; }
+    [Parameter] public int? Diastolic { get; set; }
+    [Parameter] public int MinSystolic { get; set; } = 70;
+    [Parameter] public int MaxSystolic { get; set; } = 200;
+    [Parameter] public int MinDiastolic { get; set; } = 40;
+    [Parameter] public int MaxDiastolic { get; set; } = 130;
+
+    // Heart Rate
+    [Parameter] public int? HeartRate { get; set; }
+    [Parameter] public int MinHeartRate { get; set; } = 30;
+    [Parameter] public int MaxHeartRate { get; set; } = 200;
+
+    // Temperature
+    [Parameter] public decimal? Temperature { get; set; }
+    [Parameter] public TempUnit TemperatureUnit { get; set; } = TempUnit.Fahrenheit;
+
+    // Oxygen Saturation
+    [Parameter] public int? OxygenSaturation { get; set; }
+    [Parameter] public int MinOxygenSaturation { get; set; } = 70;
+
+    // Respiratory Rate
+    [Parameter] public int? RespiratoryRate { get; set; }
+    [Parameter] public int MinRespiratoryRate { get; set; } = 8;
+    [Parameter] public int MaxRespiratoryRate { get; set; } = 40;
+
+    // Weight & Height
+    [Parameter] public decimal? Weight { get; set; }
+    [Parameter] public decimal? Height { get; set; }
+    [Parameter] public WeightUnitType WeightUnit { get; set; } = WeightUnitType.Pounds;
+    [Parameter] public HeightUnitType HeightUnit { get; set; } = HeightUnitType.Inches;
+
+    // Events
+    [Parameter] public EventCallback<VitalSignsData> OnSave { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public EventCallback<VitalSignsData> OnVitalsChange { get; set; }
+
+    // Custom Content
+    [Parameter] public RenderFragment? CustomActions { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Internal State
+    private bool HasPermission { get; set; } = true;
+    private bool HasChanges { get; set; }
+    private VitalSignsData? _initialData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            HasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        _initialData = GetCurrentData();
+        await base.OnInitializedAsync();
+    }
+
+    private VitalStatus BloodPressureStatus => EvaluateBloodPressure();
+    private VitalStatus HeartRateStatus => EvaluateHeartRate();
+    private VitalStatus TemperatureStatus => EvaluateTemperature();
+    private VitalStatus OxygenSaturationStatus => EvaluateOxygenSaturation();
+    private VitalStatus RespiratoryRateStatus => EvaluateRespiratoryRate();
+
+    private VitalStatus EvaluateBloodPressure()
+    {
+        if (!Systolic.HasValue || !Diastolic.HasValue) return VitalStatus.Normal;
+
+        if (Systolic >= 180 || Diastolic >= 120) return VitalStatus.Critical;
+        if (Systolic >= 140 || Diastolic >= 90) return VitalStatus.Abnormal;
+        if (Systolic < 90 || Diastolic < 60) return VitalStatus.Abnormal;
+
+        return VitalStatus.Normal;
+    }
+
+    private VitalStatus EvaluateHeartRate()
+    {
+        if (!HeartRate.HasValue) return VitalStatus.Normal;
+
+        if (HeartRate < 40 || HeartRate > 140) return VitalStatus.Critical;
+        if (HeartRate < 60 || HeartRate > 100) return VitalStatus.Abnormal;
+
+        return VitalStatus.Normal;
+    }
+
+    private VitalStatus EvaluateTemperature()
+    {
+        if (!Temperature.HasValue) return VitalStatus.Normal;
+
+        var temp = Temperature.Value;
+        if (TemperatureUnit == TempUnit.Celsius)
+        {
+            temp = (temp * 9 / 5) + 32; // Convert to Fahrenheit for comparison
+        }
+
+        if (temp >= 103 || temp <= 95) return VitalStatus.Critical;
+        if (temp >= 100.4m || temp <= 97) return VitalStatus.Abnormal;
+
+        return VitalStatus.Normal;
+    }
+
+    private VitalStatus EvaluateOxygenSaturation()
+    {
+        if (!OxygenSaturation.HasValue) return VitalStatus.Normal;
+
+        if (OxygenSaturation < 90) return VitalStatus.Critical;
+        if (OxygenSaturation < 95) return VitalStatus.Abnormal;
+
+        return VitalStatus.Normal;
+    }
+
+    private VitalStatus EvaluateRespiratoryRate()
+    {
+        if (!RespiratoryRate.HasValue) return VitalStatus.Normal;
+
+        if (RespiratoryRate < 10 || RespiratoryRate > 30) return VitalStatus.Critical;
+        if (RespiratoryRate < 12 || RespiratoryRate > 20) return VitalStatus.Abnormal;
+
+        return VitalStatus.Normal;
+    }
+
+    private decimal CalculateBMI()
+    {
+        if (!Weight.HasValue || !Height.HasValue || Height.Value == 0) return 0;
+
+        var weightKg = WeightUnit == WeightUnitType.Pounds ? Weight.Value * 0.453592m : Weight.Value;
+        var heightM = HeightUnit == HeightUnitType.Inches ? Height.Value * 0.0254m : Height.Value / 100;
+
+        return weightKg / (heightM * heightM);
+    }
+
+    private string GetBMICategory()
+    {
+        var bmi = CalculateBMI();
+        if (bmi < 18.5m) return "Underweight";
+        if (bmi < 25m) return "Normal";
+        if (bmi < 30m) return "Overweight";
+        return "Obese";
+    }
+
+    private string GetBMIStatusClass()
+    {
+        var bmi = CalculateBMI();
+        if (bmi < 18.5m || bmi >= 30m) return "n360-vital-signs__field--abnormal";
+        if (bmi >= 25m) return "n360-vital-signs__field--warning";
+        return string.Empty;
+    }
+
+    private string GetStatusClass(VitalStatus status)
+    {
+        return status switch
+        {
+            VitalStatus.Critical => "n360-vital-signs__field--critical",
+            VitalStatus.Abnormal => "n360-vital-signs__field--abnormal",
+            _ => string.Empty
+        };
+    }
+
+    private async Task OnVitalsChanged()
+    {
+        HasChanges = true;
+        var data = GetCurrentData();
+        await OnVitalsChange.InvokeAsync(data);
+    }
+
+    private async Task OnSaveClicked()
+    {
+        var data = GetCurrentData();
+
+        if (EnableAudit && AuditService != null)
+        {
+            var metadata = new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "Record",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["BP"] = $"{Systolic}/{Diastolic}",
+                    ["HR"] = HeartRate ?? 0,
+                    ["Temp"] = Temperature ?? 0,
+                    ["SpO2"] = OxygenSaturation ?? 0
+                }
+            };
+            await AuditService.LogAsync(metadata);
+        }
+
+        await OnSave.InvokeAsync(data);
+        HasChanges = false;
+        _initialData = data;
+    }
+
+    private async Task OnClearClicked()
+    {
+        Systolic = null;
+        Diastolic = null;
+        HeartRate = null;
+        Temperature = null;
+        OxygenSaturation = null;
+        RespiratoryRate = null;
+        Weight = null;
+        Height = null;
+        HasChanges = false;
+
+        await OnClear.InvokeAsync();
+    }
+
+    private VitalSignsData GetCurrentData()
+    {
+        return new VitalSignsData
+        {
+            Systolic = Systolic,
+            Diastolic = Diastolic,
+            HeartRate = HeartRate,
+            Temperature = Temperature,
+            TemperatureUnit = TemperatureUnit,
+            OxygenSaturation = OxygenSaturation,
+            RespiratoryRate = RespiratoryRate,
+            Weight = Weight,
+            WeightUnit = WeightUnit,
+            Height = Height,
+            HeightUnit = HeightUnit,
+            Timestamp = Timestamp,
+            BMI = Weight.HasValue && Height.HasValue ? CalculateBMI() : null
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            ["role"] = "form",
+            ["aria-label"] = "Vital signs input form"
+        };
+        return attributes;
+    }
+
+    public enum VitalStatus { Normal, Abnormal, Critical }
+    public enum TempUnit { Fahrenheit, Celsius }
+    public enum WeightUnitType { Pounds, Kilograms }
+    public enum HeightUnitType { Inches, Centimeters }
+
+    public class VitalSignsData
+    {
+        public int? Systolic { get; set; }
+        public int? Diastolic { get; set; }
+        public int? HeartRate { get; set; }
+        public decimal? Temperature { get; set; }
+        public TempUnit TemperatureUnit { get; set; }
+        public int? OxygenSaturation { get; set; }
+        public int? RespiratoryRate { get; set; }
+        public decimal? Weight { get; set; }
+        public WeightUnitType WeightUnit { get; set; }
+        public decimal? Height { get; set; }
+        public HeightUnitType HeightUnit { get; set; }
+        public DateTime Timestamp { get; set; }
+        public decimal? BMI { get; set; }
+    }
+}

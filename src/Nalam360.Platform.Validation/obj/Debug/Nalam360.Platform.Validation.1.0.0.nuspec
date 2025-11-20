@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Validation</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Validation extensions for Nalam360 Enterprise Platform with FluentValidation helpers.</description>
+    <tags>validation fluent-validation enterprise</tags>
+    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="FluentValidation" version="11.9.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.dll" target="lib\net8.0\Nalam360.Platform.Validation.dll" />
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.xml" target="lib\net8.0\Nalam360.Platform.Validation.xml" />
+  </files>
+</package>

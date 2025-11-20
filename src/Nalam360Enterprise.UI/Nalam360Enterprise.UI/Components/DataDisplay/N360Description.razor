@@ -1,0 +1,125 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetDescriptionClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="n360-description__title">@Title</div>
+        }
+        
+        <div class="n360-description__content">
+            @if (Items != null && Items.Any())
+            {
+                @foreach (var item in Items)
+                {
+                    <div class="n360-description__item">
+                        <div class="n360-description__label" style="@GetLabelStyle()">
+                            @item.Label
+                            @if (!string.IsNullOrEmpty(item.HelpText))
+                            {
+                                <span class="n360-description__help" title="@item.HelpText">?</span>
+                            }
+                        </div>
+                        <div class="n360-description__value">
+                            @if (item.ValueContent != null)
+                            {
+                                @item.ValueContent
+                            }
+                            else
+                            {
+                                @item.Value
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                @ChildContent
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public List<DescriptionItem>? Items { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public DescriptionLayout Layout { get; set; } = DescriptionLayout.Horizontal;
+    [Parameter] public int Column { get; set; } = 3;
+    [Parameter] public string? LabelWidth { get; set; }
+    [Parameter] public DescriptionSize Size { get; set; } = DescriptionSize.Default;
+    [Parameter] public bool Bordered { get; set; }
+    [Parameter] public bool Colon { get; set; } = true;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetDescriptionClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-description",
+            $"n360-description--{Layout.ToString().ToLower()}",
+            $"n360-description--{Size.ToString().ToLower()}",
+            $"n360-description--column-{Column}"
+        };
+        
+        if (Bordered)
+        {
+            classes.Add("n360-description--bordered");
+        }
+        
+        if (Colon)
+        {
+            classes.Add("n360-description--colon");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetLabelStyle()
+    {
+        if (!string.IsNullOrEmpty(LabelWidth))
+        {
+            return $"width: {LabelWidth};";
+        }
+        return string.Empty;
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

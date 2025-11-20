@@ -1,0 +1,169 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (_visible && (!HideIfNoPermission || _hasPermission))
+{
+    <div class="@GetAlertClass()" style="@Style" @attributes="GetHtmlAttributes()">
+        @if (ShowIcon)
+        {
+            <div class="n360-alert__icon">
+                @if (CustomIcon != null)
+                {
+                    @CustomIcon
+                }
+                else
+                {
+                    <span class="@GetDefaultIconClass()"></span>
+                }
+            </div>
+        }
+        
+        <div class="n360-alert__content">
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <div class="n360-alert__title">@Title</div>
+            }
+            
+            <div class="n360-alert__message">
+                @if (ChildContent != null)
+                {
+                    @ChildContent
+                }
+                else
+                {
+                    @Message
+                }
+            </div>
+            
+            @if (ActionContent != null)
+            {
+                <div class="n360-alert__actions">
+                    @ActionContent
+                </div>
+            }
+        </div>
+        
+        @if (Closable)
+        {
+            <button type="button" class="n360-alert__close" @onclick="HandleCloseAsync" aria-label="Close alert">
+                @if (CloseIcon != null)
+                {
+                    @CloseIcon
+                }
+                else
+                {
+                    <span>×</span>
+                }
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public AlertType Type { get; set; } = AlertType.Info;
+    [Parameter] public bool Closable { get; set; }
+    [Parameter] public bool ShowIcon { get; set; } = true;
+    [Parameter] public RenderFragment? CustomIcon { get; set; }
+    [Parameter] public RenderFragment? CloseIcon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? ActionContent { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _visible = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task HandleCloseAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Close",
+                Resource = AuditResource ?? "Alert",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Type", Type.ToString() },
+                    { "Title", Title ?? string.Empty },
+                    { "Message", Message ?? string.Empty }
+                }
+            });
+        }
+        
+        _visible = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private string GetAlertClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-alert",
+            $"n360-alert--{Type.ToString().ToLower()}"
+        };
+        
+        if (!string.IsNullOrEmpty(Title))
+        {
+            classes.Add("n360-alert--with-title");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetDefaultIconClass()
+    {
+        return Type switch
+        {
+            AlertType.Success => "n360-icon-check-circle",
+            AlertType.Warning => "n360-icon-exclamation-circle",
+            AlertType.Error => "n360-icon-times-circle",
+            _ => "n360-icon-info-circle"
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "role", "alert" }
+        };
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

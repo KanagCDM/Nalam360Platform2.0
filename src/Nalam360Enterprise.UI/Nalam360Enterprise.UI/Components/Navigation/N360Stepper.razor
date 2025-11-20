@@ -1,0 +1,257 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetStepperClass()" style="@Style" @attributes="GetHtmlAttributes()">
+        @for (int i = 0; i < Steps.Count; i++)
+        {
+            var index = i;
+            var step = Steps[i];
+            var stepStatus = GetStepStatus(index);
+            
+            <div class="n360-stepper__step @GetStepClass(index, stepStatus)" @onclick="() => HandleStepClickAsync(index)">
+                <div class="n360-stepper__step-icon">
+                    @if (stepStatus == StepStatus.Completed)
+                    {
+                        @if (step.CompletedIcon != null)
+                        {
+                            @step.CompletedIcon
+                        }
+                        else
+                        {
+                            <span class="n360-icon-check"></span>
+                        }
+                    }
+                    else if (stepStatus == StepStatus.Error)
+                    {
+                        @if (step.ErrorIcon != null)
+                        {
+                            @step.ErrorIcon
+                        }
+                        else
+                        {
+                            <span class="n360-icon-times"></span>
+                        }
+                    }
+                    else
+                    {
+                        @if (step.Icon != null)
+                        {
+                            @step.Icon
+                        }
+                        else
+                        {
+                            <span>@(index + 1)</span>
+                        }
+                    }
+                </div>
+                
+                <div class="n360-stepper__step-content">
+                    <div class="n360-stepper__step-title">@step.Title</div>
+                    @if (!string.IsNullOrEmpty(step.Description))
+                    {
+                        <div class="n360-stepper__step-description">@step.Description</div>
+                    }
+                    @if (step.SubTitle != null)
+                    {
+                        <div class="n360-stepper__step-subtitle">@step.SubTitle</div>
+                    }
+                </div>
+                
+                @if (Orientation == StepperOrientation.Horizontal && i < Steps.Count - 1)
+                {
+                    <div class="n360-stepper__connector"></div>
+                }
+            </div>
+            
+            @if (Orientation == StepperOrientation.Vertical && index == CurrentStep && step.Content != null)
+            {
+                <div class="n360-stepper__step-panel">
+                    @step.Content
+                </div>
+            }
+        }
+    </div>
+    
+    @if (Orientation == StepperOrientation.Horizontal && Steps.Count > 0 && CurrentStep < Steps.Count && Steps[CurrentStep].Content != null)
+    {
+        <div class="n360-stepper__content">
+            @Steps[CurrentStep].Content
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public List<StepItem> Steps { get; set; } = new();
+    [Parameter] public int CurrentStep { get; set; }
+    [Parameter] public EventCallback<int> CurrentStepChanged { get; set; }
+    [Parameter] public StepperOrientation Orientation { get; set; } = StepperOrientation.Horizontal;
+    [Parameter] public bool Clickable { get; set; }
+    [Parameter] public StepperSize Size { get; set; } = StepperSize.Default;
+    
+    // Events
+    [Parameter] public EventCallback<int> OnStepChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task HandleStepClickAsync(int index)
+    {
+        if (!Clickable || index == CurrentStep)
+        {
+            return;
+        }
+        
+        var step = Steps[index];
+        if (step.Disabled)
+        {
+            return;
+        }
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "StepChange",
+                Resource = AuditResource ?? "Stepper",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "FromStep", CurrentStep },
+                    { "ToStep", index },
+                    { "StepTitle", step.Title }
+                }
+            });
+        }
+        
+        CurrentStep = index;
+        await CurrentStepChanged.InvokeAsync(index);
+        await OnStepChange.InvokeAsync(index);
+    }
+
+    private StepStatus GetStepStatus(int index)
+    {
+        var step = Steps[index];
+        
+        if (step.Status.HasValue)
+        {
+            return step.Status.Value;
+        }
+        
+        if (index < CurrentStep)
+        {
+            return StepStatus.Completed;
+        }
+        else if (index == CurrentStep)
+        {
+            return StepStatus.Active;
+        }
+        else
+        {
+            return StepStatus.Pending;
+        }
+    }
+
+    private string GetStepperClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-stepper",
+            $"n360-stepper--{Orientation.ToString().ToLower()}",
+            $"n360-stepper--{Size.ToString().ToLower()}"
+        };
+        
+        if (Clickable)
+        {
+            classes.Add("n360-stepper--clickable");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetStepClass(int index, StepStatus status)
+    {
+        var classes = new List<string> 
+        { 
+            $"n360-stepper__step--{status.ToString().ToLower()}"
+        };
+        
+        if (Steps[index].Disabled)
+        {
+            classes.Add("n360-stepper__step--disabled");
+        }
+        
+        if (index == CurrentStep)
+        {
+            classes.Add("n360-stepper__step--current");
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        attributes["role"] = "navigation";
+        attributes["aria-label"] = "Step progress";
+
+        return attributes;
+    }
+
+    public async Task NextStepAsync()
+    {
+        if (CurrentStep < Steps.Count - 1)
+        {
+            await HandleStepClickAsync(CurrentStep + 1);
+        }
+    }
+
+    public async Task PreviousStepAsync()
+    {
+        if (CurrentStep > 0)
+        {
+            await HandleStepClickAsync(CurrentStep - 1);
+        }
+    }
+
+    public async Task GoToStepAsync(int index)
+    {
+        if (index >= 0 && index < Steps.Count)
+        {
+            await HandleStepClickAsync(index);
+        }
+    }
+}

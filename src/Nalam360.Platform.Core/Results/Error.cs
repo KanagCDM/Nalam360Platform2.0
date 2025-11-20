@@ -39,4 +39,19 @@ public sealed record Error
 
     public static Error Internal(string message = "An internal error occurred") 
         => new("INTERNAL_ERROR", message);
+
+    public static Error Internal(string code, string message) 
+        => new(code, message);
+
+    public static Error Database(string code, string message)
+        => new(code, message);
+
+    public static Error Unexpected(string code, string message)
+        => new(code, message);
+
+    public static Error Unavailable(string code, string message) 
+        => new(code, message);
+
+    public static Error TooManyRequests(string code, string message) 
+        => new(code, message);
 }

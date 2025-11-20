@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <nav class="navbar navbar-dark bg-dark flex-column p-3">
+            <a class="navbar-brand mb-3" href="#">
+                <strong>Nalam360</strong>
+            </a>
+            <ul class="nav flex-column w-100">
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="/">
+                        <span class="oi oi-home" aria-hidden="true"></span> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="/forms">
+                        <span class="oi oi-list" aria-hidden="true"></span> Forms
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="/data">
+                        <span class="oi oi-grid-three-up" aria-hidden="true"></span> Data
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://github.com/KanagCDM/Nalam360EnterprisePlatform" target="_blank">GitHub</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

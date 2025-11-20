@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Tenancy</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Multi-tenancy support for Nalam360 Enterprise Platform.</description>
+    <tags>multi-tenancy saas enterprise</tags>
+    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\bin\Debug\net8.0\Nalam360.Platform.Tenancy.dll" target="lib\net8.0\Nalam360.Platform.Tenancy.dll" />
+    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\bin\Debug\net8.0\Nalam360.Platform.Tenancy.xml" target="lib\net8.0\Nalam360.Platform.Tenancy.xml" />
+  </files>
+</package>

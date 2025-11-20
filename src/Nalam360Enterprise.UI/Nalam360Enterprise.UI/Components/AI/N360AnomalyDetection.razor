@@ -1,0 +1,618 @@
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.DropDowns
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-anomaly-detection" @attributes="GetAccessibilityAttributes()">
+    @if (!string.IsNullOrEmpty(RequiredPermission) && !HasPermission)
+    {
+        if (HideIfNoPermission)
+        {
+            return;
+        }
+        <div class="alert alert-warning">
+            <i class="fas fa-lock"></i> You don't have permission to view anomaly detection.
+        </div>
+        return;
+    }
+    }
+
+    <div class="anomaly-header">
+        <div class="header-left">
+            <h3>
+                <i class="fas fa-exclamation-triangle"></i> AI Anomaly Detection
+                @if (UseRealAI)
+                {
+                    <span class="badge bg-success ms-2">🤖 Real AI</span>
+                }
+            </h3>
+            <p class="text-muted">Real-time detection of outliers and unusual patterns across clinical and operational data</p>
+        </div>
+        <div class="header-right">
+            <label class="me-3">
+                Detection Type:
+                <SfDropDownList TValue="string" TItem="string"
+                                DataSource="@DetectionTypes"
+                                @bind-Value="SelectedDetectionType"
+                                Width="200px">
+                    <DropDownListEvents TValue="string" TItem="string" ValueChange="OnDetectionTypeChanged"></DropDownListEvents>
+                </SfDropDownList>
+            </label>
+            <button @onclick="RunDetection" class="btn btn-primary" disabled="@IsAnalyzing">
+                <i class="fas fa-search @(IsAnalyzing ? "fa-spin" : "")"></i> Run Detection
+            </button>
+        </div>
+    </div>
+
+    @if (IsAnalyzing)
+    {
+        <div class="analysis-progress">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Analyzing data...</span>
+            </div>
+            <h5>AI Analysis in Progress</h5>
+            <p>Scanning @SelectedDetectionType data for anomalies using machine learning algorithms...</p>
+        </div>
+    }
+    else if (CurrentAnalysisResult != null)
+    {
+        <div class="anomaly-summary">
+            <div class="summary-card critical">
+                <div class="card-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Critical Anomalies</div>
+                    <div class="card-value">@CurrentAnalysisResult.CriticalCount</div>
+                    <div class="card-subtext">Immediate attention required</div>
+                </div>
+            </div>
+            <div class="summary-card warning">
+                <div class="card-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Warnings</div>
+                    <div class="card-value">@CurrentAnalysisResult.WarningCount</div>
+                    <div class="card-subtext">Review recommended</div>
+                </div>
+            </div>
+            <div class="summary-card info">
+                <div class="card-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Info Anomalies</div>
+                    <div class="card-value">@(CurrentAnalysisResult?.InfoCount ?? 0)</div>
+                    <div class="card-subtext">Monitor for trends</div>
+                </div>
+            </div>
+            <div class="summary-card accuracy">
+                <div class="card-icon">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Detection Accuracy</div>
+                    <div class="card-value">@CurrentAnalysisResult.Accuracy.ToString("P1")</div>
+                    <div class="card-subtext">Model confidence</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detection-visualization">
+            <h5>Anomaly Distribution Over Time</h5>
+            <SfChart Height="350px">
+                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" LabelFormat="MMM dd HH:mm"></ChartPrimaryXAxis>
+                <ChartPrimaryYAxis Title="Anomaly Score" Minimum="0" Maximum="100"></ChartPrimaryYAxis>
+                <ChartSeriesCollection>
+                    <ChartSeries DataSource="@TimeSeriesData" XName="Timestamp" YName="Score" 
+                                 Type="ChartSeriesType.Line" Fill="#2196F3" Width="2">
+                        <ChartMarker Visible="true" Height="6" Width="6"></ChartMarker>
+                    </ChartSeries>
+                    <ChartSeries DataSource="@AnomalyPoints" XName="Timestamp" YName="Score" 
+                                 Type="ChartSeriesType.Scatter" Fill="#F44336">
+                        <ChartMarker Height="12" Width="12"></ChartMarker>
+                    </ChartSeries>
+                </ChartSeriesCollection>
+                <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                <ChartLegendSettings Visible="false"></ChartLegendSettings>
+            </SfChart>
+        </div>
+
+        <div class="anomaly-details-grid">
+            <div class="grid-header">
+                <h5>Detected Anomalies</h5>
+                <div class="filter-controls">
+                    <label class="me-3">
+                        <input type="checkbox" @bind="ShowCritical" @bind:after="FilterAnomalies" /> Critical
+                    </label>
+                    <label class="me-3">
+                        <input type="checkbox" @bind="ShowWarning" @bind:after="FilterAnomalies" /> Warning
+                    </label>
+                    <label>
+                        <input type="checkbox" @bind="ShowInfo" @bind:after="FilterAnomalies" /> Info
+                    </label>
+                </div>
+            </div>
+            <SfGrid DataSource="@FilteredAnomalies" AllowPaging="true" PageSize="10" AllowSorting="true">
+                <GridPageSettings PageSize="10"></GridPageSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(AnomalyItem.DetectedAt)" HeaderText="Detected" Format="g" Width="150"></GridColumn>
+                    <GridColumn HeaderText="Severity" Width="100">
+                        <Template>
+                            @{
+                                var anomaly = context as AnomalyItem;
+                                var severityClass = anomaly!.Severity == "Critical" ? "danger" : anomaly.Severity == "Warning" ? "warning" : "info";
+                                <span class="badge bg-@severityClass">@anomaly.Severity</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(AnomalyItem.Category)" HeaderText="Category" Width="120"></GridColumn>
+                    <GridColumn Field="@nameof(AnomalyItem.Entity)" HeaderText="Entity" Width="150"></GridColumn>
+                    <GridColumn Field="@nameof(AnomalyItem.Description)" HeaderText="Description" Width="300"></GridColumn>
+                    <GridColumn HeaderText="Anomaly Score" Width="120">
+                        <Template>
+                            @{
+                                var anomaly = context as AnomalyItem;
+                                var scoreColor = anomaly!.Score >= 80 ? "danger" : anomaly.Score >= 60 ? "warning" : "info";
+                                <div class="score-badge">
+                                    <span class="text-@scoreColor fw-bold">@anomaly.Score.ToString("F1")</span>
+                                    <div class="progress mt-1" style="height: 4px;">
+                                        <div class="progress-bar bg-@scoreColor" style="width: @anomaly.Score%"></div>
+                                    </div>
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="150">
+                        <Template>
+                            @{
+                                var anomaly = context as AnomalyItem;
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ViewDetails(anomaly!)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success me-1" @onclick="() => AcknowledgeAnomaly(anomaly!)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => DismissAnomaly(anomaly!)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+
+        <div class="analysis-insights">
+            <div class="insight-section">
+                <h5>Pattern Analysis</h5>
+                <div class="patterns-grid">
+                    @foreach (var pattern in DetectedPatterns)
+                    {
+                        <div class="pattern-card">
+                            <div class="pattern-header">
+                                <i class="fas fa-chart-line text-primary"></i>
+                                <strong>@pattern.Name</strong>
+                            </div>
+                            <p class="pattern-description">@pattern.Description</p>
+                            <div class="pattern-metrics">
+                                <span class="metric">
+                                    <i class="fas fa-calendar-alt"></i> Frequency: @pattern.Frequency
+                                </span>
+                                <span class="metric">
+                                    <i class="fas fa-percentage"></i> Confidence: @pattern.Confidence%
+                                </span>
+                            </div>
+                            <div class="pattern-recommendation">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb"></i> @pattern.Recommendation
+                                </small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="insight-section">
+                <h5>Root Cause Analysis</h5>
+                <div class="root-causes-list">
+                    @foreach (var cause in RootCauses)
+                    {
+                        <div class="root-cause-item">
+                            <div class="cause-header">
+                                <div class="cause-icon">
+                                    <i class="fas fa-sitemap"></i>
+                                </div>
+                                <div class="cause-content">
+                                    <h6>@cause.Factor</h6>
+                                    <p>@cause.Description</p>
+                                </div>
+                            </div>
+                            <div class="cause-impact">
+                                <label>Impact Level:</label>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar @GetImpactColor(cause.Impact)" 
+                                         style="width: @cause.Impact%">
+                                        @cause.Impact%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cause-actions">
+                                <strong>Recommended Actions:</strong>
+                                <ul>
+                                    @foreach (var action in cause.RecommendedActions)
+                                    {
+                                        <li>@action</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="model-info">
+            <h5>Detection Model Information</h5>
+            <div class="model-details">
+                <div class="model-metric">
+                    <label>Algorithm:</label>
+                    <span>@CurrentAnalysisResult?.ModelName</span>
+                </div>
+                <div class="model-metric">
+                    <label>Training Data:</label>
+                    <span>@CurrentAnalysisResult?.TrainingDataSize records</span>
+                </div>
+                <div class="model-metric">
+                    <label>Last Updated:</label>
+                    <span>@CurrentAnalysisResult?.ModelLastUpdated.ToString("g")</span>
+                </div>
+                <div class="model-metric">
+                    <label>Detection Rate:</label>
+                    <span>@CurrentAnalysisResult?.TruePositiveRate.ToString("F1")%</span>
+                </div>
+                <div class="model-metric">
+                    <label>False Positive Rate:</label>
+                    <span>@CurrentAnalysisResult?.FalsePositiveRate.ToString("F1")%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button @onclick="ExportAnomalies" class="btn btn-primary">
+                <i class="fas fa-download"></i> Export Report
+            </button>
+            <button @onclick="ConfigureAlerts" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-bell"></i> Configure Alerts
+            </button>
+            <button @onclick="RetainModel" class="btn btn-outline-info ms-2">
+                <i class="fas fa-sync-alt"></i> Retrain Model
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-search fa-3x text-muted"></i>
+            <h4>No Analysis Results</h4>
+            <p>Select a detection type and click "Run Detection" to identify anomalies in your data.</p>
+        </div>
+    }
+</div>
+
+<style>
+    .n360-anomaly-detection {
+        padding: 1rem;
+    }
+
+    .anomaly-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .analysis-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        text-align: center;
+    }
+
+    .anomaly-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .summary-card.critical .card-icon { background: linear-gradient(135deg, #F44336, #E57373); }
+    .summary-card.warning .card-icon { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+    .summary-card.info .card-icon { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+    .summary-card.accuracy .card-icon { background: linear-gradient(135deg, #4CAF50, #81C784); }
+
+    .card-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin-right: 1.5rem;
+    }
+
+    .card-content {
+        flex: 1;
+    }
+
+    .card-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .card-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+        line-height: 1;
+    }
+
+    .card-subtext {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+
+    .detection-visualization {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .detection-visualization h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .anomaly-details-grid {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .grid-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .filter-controls label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+
+    .score-badge {
+        text-align: center;
+    }
+
+    .analysis-insights {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .insight-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .insight-section h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .patterns-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .pattern-card {
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+        border-left: 4px solid #2196F3;
+    }
+
+    .pattern-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .pattern-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin: 0.5rem 0;
+    }
+
+    .pattern-metrics {
+        display: flex;
+        gap: 1.5rem;
+        margin: 0.5rem 0;
+    }
+
+    .metric {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .pattern-recommendation {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .root-causes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .root-cause-item {
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+    }
+
+    .cause-header {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .cause-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #2196F3;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cause-content h6 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+    }
+
+    .cause-content p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .cause-impact {
+        margin-bottom: 1rem;
+    }
+
+    .cause-impact label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .cause-actions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .cause-actions ul {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1.5rem;
+    }
+
+    .cause-actions li {
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .model-info {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .model-info h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .model-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .model-metric {
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+    }
+
+    .model-metric label {
+        display: block;
+        font-weight: 600;
+        color: #666;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .model-metric span {
+        display: block;
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        padding-top: 1rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #666;
+    }
+
+    .empty-state h4 {
+        margin: 1rem 0;
+    }
+</style>

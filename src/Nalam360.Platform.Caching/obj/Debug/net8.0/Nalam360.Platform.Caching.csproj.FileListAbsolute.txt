@@ -1,0 +1,15 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\bin\Debug\net8.0\Nalam360.Platform.Caching.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\bin\Debug\net8.0\Nalam360.Platform.Caching.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\bin\Debug\net8.0\Nalam360.Platform.Caching.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\bin\Debug\net8.0\Nalam360.Platform.Caching.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.csproj.AssemblyReference.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\refint\Nalam360.Platform.Caching.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\Nalam360.Platform.Caching.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Caching\obj\Debug\net8.0\ref\Nalam360.Platform.Caching.dll

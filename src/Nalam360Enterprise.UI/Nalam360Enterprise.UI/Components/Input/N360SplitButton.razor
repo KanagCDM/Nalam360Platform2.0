@@ -1,0 +1,217 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetSplitButtonClass()" style="@Style" @attributes="GetHtmlAttributes()">
+        <button type="@ButtonType"
+                class="n360-split-button__main"
+                @onclick="HandleMainClickAsync"
+                disabled="@Disabled">
+            @if (Icon != null)
+            {
+                <span class="n360-split-button__icon">@Icon</span>
+            }
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                <span>@Text</span>
+            }
+        </button>
+        
+        <button type="button"
+                class="n360-split-button__dropdown"
+                @onclick="ToggleDropdownAsync"
+                disabled="@Disabled"
+                aria-haspopup="true"
+                aria-expanded="@_isDropdownOpen">
+            @if (DropdownIcon != null)
+            {
+                @DropdownIcon
+            }
+            else
+            {
+                <span class="n360-icon-chevron-down"></span>
+            }
+        </button>
+        
+        @if (_isDropdownOpen)
+        {
+            <div class="n360-split-button__menu @GetMenuPositionClass()">
+                @if (MenuItems != null && MenuItems.Any())
+                {
+                    @foreach (var item in MenuItems)
+                    {
+                        @if (item.IsDivider)
+                        {
+                            <div class="n360-split-button__menu-divider"></div>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="n360-split-button__menu-item @(item.Disabled ? "n360-split-button__menu-item--disabled" : "") @(item.Danger ? "n360-split-button__menu-item--danger" : "")"
+                                    @onclick="() => HandleMenuItemClickAsync(item)"
+                                    disabled="@item.Disabled">
+                                @if (item.Icon != null)
+                                {
+                                    <span class="n360-split-button__menu-icon">@item.Icon</span>
+                                }
+                                <span class="n360-split-button__menu-text">@item.Text</span>
+                            </button>
+                        }
+                    }
+                }
+                else if (MenuContent != null)
+                {
+                    @MenuContent
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public RenderFragment? DropdownIcon { get; set; }
+    [Parameter] public List<SplitButtonMenuItem> MenuItems { get; set; } = new();
+    [Parameter] public RenderFragment? MenuContent { get; set; }
+    [Parameter] public ButtonStyle ButtonStyle { get; set; } = ButtonStyle.Default;
+    [Parameter] public ButtonSize Size { get; set; } = ButtonSize.Default;
+    [Parameter] public MenuPlacement MenuPlacement { get; set; } = MenuPlacement.BottomEnd;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string ButtonType { get; set; } = "button";
+    
+    // Events
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public EventCallback<SplitButtonMenuItem> OnMenuItemClick { get; set; }
+    [Parameter] public EventCallback<bool> OnDropdownToggle { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isDropdownOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task HandleMainClickAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "MainButtonClick",
+                Resource = AuditResource ?? "SplitButton",
+                AdditionalData = new Dictionary<string, object> {
+                    { "Text", Text ?? string.Empty }
+                }
+            });
+        }
+        
+        await OnClick.InvokeAsync();
+    }
+
+    private async Task ToggleDropdownAsync()
+    {
+        _isDropdownOpen = !_isDropdownOpen;
+        await OnDropdownToggle.InvokeAsync(_isDropdownOpen);
+    }
+
+    private async Task HandleMenuItemClickAsync(SplitButtonMenuItem item)
+    {
+        if (item.Disabled)
+        {
+            return;
+        }
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "MainButtonClick",
+                Resource = AuditResource ?? "SplitButton",
+                AdditionalData = new Dictionary<string, object> {
+                    { "Text", Text ?? string.Empty }
+                }
+            });
+        }
+        
+        _isDropdownOpen = false;
+        await item.OnClick.InvokeAsync();
+        await OnMenuItemClick.InvokeAsync(item);
+    }
+
+    private string GetSplitButtonClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-split-button",
+            $"n360-split-button--{ButtonStyle.ToString().ToLower()}",
+            $"n360-split-button--{Size.ToString().ToLower()}"
+        };
+        
+        if (Disabled)
+        {
+            classes.Add("n360-split-button--disabled");
+        }
+        
+        if (_isDropdownOpen)
+        {
+            classes.Add("n360-split-button--open");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetMenuPositionClass()
+    {
+        return MenuPlacement switch
+        {
+            MenuPlacement.BottomStart => "n360-split-button__menu--bottom-start",
+            MenuPlacement.BottomEnd => "n360-split-button__menu--bottom-end",
+            MenuPlacement.TopStart => "n360-split-button__menu--top-start",
+            MenuPlacement.TopEnd => "n360-split-button__menu--top-end",
+            _ => "n360-split-button__menu--bottom-end"
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

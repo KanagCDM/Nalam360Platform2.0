@@ -1,0 +1,36 @@
+{
+  "AI": {
+    "AzureOpenAI": {
+      "Endpoint": "https://your-resource-name.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15-preview",
+      "ApiKey": "your-azure-openai-api-key-here",
+      "DeploymentName": "gpt-4",
+      "TimeoutSeconds": 120,
+      "MaxRetries": 3,
+      "CircuitBreakerThreshold": 5
+    },
+    "Compliance": {
+      "EnableHIPAACompliance": true,
+      "AutoDeIdentifyPHI": true,
+      "AllowedRegions": [ "us", "usa", "united-states", "us-east", "us-west" ],
+      "ValidateDataResidency": true,
+      "ValidateEncryption": true
+    },
+    "Caching": {
+      "EnableCaching": true,
+      "CacheDurationMinutes": 15,
+      "CacheType": "Memory"
+    },
+    "MLModels": {
+      "ModelsPath": "wwwroot/models",
+      "EnablePreloading": false,
+      "PreloadModels": [ "readmission-risk", "length-of-stay" ]
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Nalam360Enterprise.UI.Core.AI": "Debug",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

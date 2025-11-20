@@ -1,0 +1,113 @@
+name: CI Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for versioning
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore Nalam360EnterprisePlatform.sln
+    
+    - name: Build solution
+      run: dotnet build Nalam360EnterprisePlatform.sln --configuration Release --no-restore
+    
+    - name: Run Platform Tests
+      run: dotnet test tests/Nalam360.Platform.Tests/Nalam360.Platform.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=platform-tests.trx"
+    
+    - name: Run UI Tests
+      run: dotnet test tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=ui-tests.trx"
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          **/TestResults/*.trx
+    
+    - name: Pack Platform NuGet Packages
+      run: |
+        dotnet pack src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Domain/Nalam360.Platform.Domain.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Application/Nalam360.Platform.Application.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Caching/Nalam360.Platform.Caching.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Documentation/Nalam360.Platform.Documentation.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.FeatureFlags/Nalam360.Platform.FeatureFlags.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Integration/Nalam360.Platform.Integration.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Observability/Nalam360.Platform.Observability.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Resilience/Nalam360.Platform.Resilience.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Security/Nalam360.Platform.Security.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Serialization/Nalam360.Platform.Serialization.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Tenancy/Nalam360.Platform.Tenancy.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Nalam360.Platform.Validation/Nalam360.Platform.Validation.csproj --configuration Release --no-build --output ./artifacts
+    
+    - name: Pack UI Library NuGet Package
+      run: dotnet pack src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj --configuration Release --no-build --output ./artifacts
+    
+    - name: Upload NuGet Packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./artifacts/*.nupkg
+        retention-days: 30
+    
+    - name: Build Summary
+      if: always()
+      run: |
+        echo "### Build Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Artifacts generated:" >> $GITHUB_STEP_SUMMARY
+        echo "- Platform modules (14 packages)" >> $GITHUB_STEP_SUMMARY
+        echo "- UI library (1 package)" >> $GITHUB_STEP_SUMMARY
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore Nalam360EnterprisePlatform.sln
+    
+    - name: Check code formatting
+      run: dotnet format Nalam360EnterprisePlatform.sln --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+    
+    - name: Build with warnings as errors
+      run: dotnet build Nalam360EnterprisePlatform.sln --configuration Release -warnaserror
+      continue-on-error: true

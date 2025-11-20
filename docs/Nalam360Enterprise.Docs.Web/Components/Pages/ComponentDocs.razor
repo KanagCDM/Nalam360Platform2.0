@@ -1,0 +1,1175 @@
+@page "/components/{ComponentName}"
+@using System.Reflection
+@using Microsoft.AspNetCore.Components.Rendering
+@using Nalam360Enterprise.Docs.Web.Services
+@inject NavigationManager Navigation
+@inject ComponentMetadataService MetadataService
+
+<PageTitle>@ComponentName - Nalam360 Components</PageTitle>
+
+<div class="component-docs-page">
+    <div class="page-header">
+        <div class="header-top">
+            <h1 class="component-title">@ComponentName</h1>
+            <div class="component-badges">
+                <span class="badge badge-primary">@ComponentCategory</span>
+                <span class="badge badge-success">Interactive</span>
+                <span class="badge badge-info">v1.0</span>
+            </div>
+        </div>
+        <p class="component-description-header">@ComponentDescription</p>
+    </div>
+
+    <div class="tabs-container">
+        <div class="tabs-navigation">
+            <button class="tab-btn @(activeTab == "overview" ? "active" : "")" @onclick="@(() => SetTab("overview"))">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">Overview</span>
+            </button>
+            <button class="tab-btn @(activeTab == "playground" ? "active" : "")" @onclick="@(() => SetTab("playground"))">
+                <span class="tab-icon">🎮</span>
+                <span class="tab-label">Playground</span>
+            </button>
+            <button class="tab-btn @(activeTab == "api" ? "active" : "")" @onclick="@(() => SetTab("api"))">
+                <span class="tab-icon">📚</span>
+                <span class="tab-label">API Reference</span>
+            </button>
+            <button class="tab-btn @(activeTab == "examples" ? "active" : "")" @onclick="@(() => SetTab("examples"))">
+                <span class="tab-icon">💻</span>
+                <span class="tab-label">Examples</span>
+            </button>
+            <button class="tab-btn @(activeTab == "accessibility" ? "active" : "")" @onclick="@(() => SetTab("accessibility"))">
+                <span class="tab-icon">♿</span>
+                <span class="tab-label">Accessibility</span>
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            @if (activeTab == "overview")
+            {
+                <div class="overview-section">
+                    <h2>Overview</h2>
+                    <p>@ComponentDescription</p>
+                    
+                    <h3>When to Use</h3>
+                    <ul>
+                        @foreach (var usage in WhenToUse)
+                        {
+                            <li>@usage</li>
+                        }
+                    </ul>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        @foreach (var feature in KeyFeatures)
+                        {
+                            <li>@feature</li>
+                        }
+                    </ul>
+                </div>
+            }
+            else if (activeTab == "playground")
+            {
+                <div class="playground-section">
+                    <div class="playground-layout">
+                        <div class="preview-panel">
+                            <h3>Live Preview</h3>
+                            <div class="component-preview">
+                                @RenderComponent()
+                            </div>
+                        </div>
+
+                        <div class="controls-panel">
+                            <h3>Component Properties</h3>
+                            <div class="property-controls">
+                                @RenderPropertyControls()
+                            </div>
+
+                            <div class="code-output">
+                                <h3>Generated Code</h3>
+                                <pre><code>@GenerateCode()</code></pre>
+                                <button class="btn btn-sm" @onclick="CopyCode">Copy Code</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (activeTab == "api")
+            {
+                <div class="api-section">
+                    <h2>API Reference</h2>
+                    
+                    <h3>Parameters</h3>
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var param in ComponentParameters)
+                            {
+                                <tr>
+                                    <td><code>@param.Name</code></td>
+                                    <td><code>@param.Type</code></td>
+                                    <td><code>@param.DefaultValue</code></td>
+                                    <td>@param.Description</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (ComponentEvents.Any())
+                    {
+                        <h3>Events</h3>
+                        <table class="api-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var evt in ComponentEvents)
+                                {
+                                    <tr>
+                                        <td><code>@evt.Name</code></td>
+                                        <td><code>@evt.Type</code></td>
+                                        <td>@evt.Description</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    @if (ComponentMethods.Any())
+                    {
+                        <h3>Methods</h3>
+                        <table class="api-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Returns</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var method in ComponentMethods)
+                                {
+                                    <tr>
+                                        <td><code>@method.Name</code></td>
+                                        <td><code>@method.ReturnType</code></td>
+                                        <td>@method.Description</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            }
+            else if (activeTab == "examples")
+            {
+                <div class="examples-section">
+                    <h2>Examples</h2>
+                    @foreach (var example in CodeExamples)
+                    {
+                        <div class="example-card">
+                            <h3>@example.Title</h3>
+                            <p>@example.Description</p>
+                            <div class="example-preview">
+                                @((MarkupString)example.PreviewHtml)
+                            </div>
+                            <pre><code class="language-razor">@example.Code</code></pre>
+                        </div>
+                    }
+                </div>
+            }
+            else if (activeTab == "accessibility")
+            {
+                <div class="accessibility-section">
+                    <h2>Accessibility</h2>
+                    
+                    <h3>WCAG Compliance</h3>
+                    <ul>
+                        <li><strong>WCAG 2.1 Level:</strong> @AccessibilityLevel</li>
+                        <li><strong>Keyboard Navigation:</strong> @(SupportsKeyboard ? "✓ Supported" : "✗ Not Supported")</li>
+                        <li><strong>Screen Reader:</strong> @(SupportsScreenReader ? "✓ Optimized" : "✗ Not Optimized")</li>
+                        <li><strong>High Contrast:</strong> @(SupportsHighContrast ? "✓ Supported" : "✗ Not Supported")</li>
+                    </ul>
+
+                    <h3>Keyboard Shortcuts</h3>
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var shortcut in KeyboardShortcuts)
+                            {
+                                <tr>
+                                    <td><kbd>@shortcut.Key</kbd></td>
+                                    <td>@shortcut.Action</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <h3>ARIA Attributes</h3>
+                    <p>This component uses the following ARIA attributes:</p>
+                    <ul>
+                        @foreach (var aria in AriaAttributes)
+                        {
+                            <li><code>@aria</code></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .component-docs-page {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .page-header {
+        margin-bottom: var(--spacing-2xl);
+        padding-bottom: var(--spacing-xl);
+        border-bottom: 2px solid var(--neutral-200);
+    }
+
+    .header-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
+        flex-wrap: wrap;
+    }
+
+    .component-title {
+        font-size: 2.75rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .component-badges {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+    }
+
+    .component-description-header {
+        font-size: 1.125rem;
+        color: var(--neutral-600);
+        max-width: 800px;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .tabs-container {
+        margin-bottom: var(--spacing-2xl);
+    }
+
+    .tabs-navigation {
+        display: flex;
+        gap: var(--spacing-xs);
+        border-bottom: 2px solid var(--neutral-200);
+        overflow-x: auto;
+        padding-bottom: 0;
+    }
+
+    .tab-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--neutral-600);
+        transition: all var(--transition-base);
+        white-space: nowrap;
+        position: relative;
+        margin-bottom: -2px;
+    }
+
+    .tab-btn:hover {
+        color: var(--primary-600);
+        background: var(--primary-50);
+        border-bottom-color: var(--primary-300);
+    }
+
+    .tab-btn.active {
+        color: var(--primary-700);
+        border-bottom-color: var(--primary-600);
+        background: linear-gradient(to top, var(--primary-50), transparent);
+    }
+
+    .tab-icon {
+        font-size: 1.125rem;
+    }
+
+    .tab-label {
+        font-size: 0.9375rem;
+    }
+
+    .tab-content-area {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Overview Section */
+    .overview-section {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-2xl);
+        box-shadow: var(--shadow-md);
+    }
+
+    .overview-section h2 {
+        font-size: 1.875rem;
+        margin-bottom: var(--spacing-lg);
+        color: var(--neutral-900);
+    }
+
+    .overview-section h3 {
+        font-size: 1.375rem;
+        margin-top: var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
+        color: var(--neutral-800);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .overview-section h3::before {
+        content: '▸';
+        color: var(--primary-600);
+        font-weight: 700;
+    }
+
+    .overview-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .overview-section li {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        background: var(--neutral-50);
+        border-left: 3px solid var(--primary-500);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+    }
+
+    .overview-section li:hover {
+        background: var(--primary-50);
+        border-left-color: var(--primary-600);
+        transform: translateX(4px);
+    }
+
+    /* Playground Section */
+    .playground-section {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xl);
+    }
+
+    .playground-layout {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: var(--spacing-xl);
+    }
+
+    .preview-panel,
+    .controls-panel {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+    }
+
+    .preview-panel h3,
+    .controls-panel h3 {
+        margin: 0 0 var(--spacing-lg) 0;
+        font-size: 1.25rem;
+        color: var(--neutral-900);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .preview-panel h3::before {
+        content: '👁️';
+    }
+
+    .controls-panel h3::before {
+        content: '🎛️';
+    }
+
+    .component-preview {
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--neutral-50), var(--neutral-100));
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-2xl);
+        border: 2px dashed var(--neutral-300);
+    }
+
+    .code-output {
+        margin-top: var(--spacing-xl);
+        padding-top: var(--spacing-xl);
+        border-top: 1px solid var(--neutral-200);
+    }
+
+    .code-output h3 {
+        font-size: 1rem;
+        margin-bottom: var(--spacing-md);
+        color: var(--neutral-700);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .code-output h3::before {
+        content: '⚡';
+    }
+
+    .code-output pre {
+        position: relative;
+        background: var(--neutral-900);
+        color: var(--neutral-100);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        overflow-x: auto;
+        margin: 0 0 var(--spacing-md) 0;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .code-output pre code {
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    /* API Section */
+    .api-section {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-2xl);
+        box-shadow: var(--shadow-md);
+    }
+
+    .api-section h2 {
+        font-size: 1.875rem;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .api-section h3 {
+        font-size: 1.375rem;
+        margin-top: var(--spacing-2xl);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 2px solid var(--neutral-200);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .api-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: var(--spacing-lg) 0;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .api-table thead {
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+        color: white;
+    }
+
+    .api-table th {
+        padding: var(--spacing-md) var(--spacing-lg);
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .api-table tbody tr {
+        background: white;
+        transition: background var(--transition-fast);
+    }
+
+    .api-table tbody tr:hover {
+        background: var(--primary-50);
+    }
+
+    .api-table tbody tr:not(:last-child) {
+        border-bottom: 1px solid var(--neutral-200);
+    }
+
+    .api-table td {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: 0.9375rem;
+    }
+
+    .api-table code {
+        background: var(--neutral-100);
+        color: var(--primary-700);
+        padding: 0.125rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.875rem;
+        border: 1px solid var(--neutral-200);
+    }
+
+    /* Examples Section */
+    .examples-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xl);
+    }
+
+    .example-card {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-2xl);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--neutral-200);
+        transition: all var(--transition-base);
+    }
+
+    .example-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .example-card h3 {
+        margin-top: 0;
+        margin-bottom: var(--spacing-md);
+        font-size: 1.375rem;
+        color: var(--neutral-900);
+    }
+
+    .example-card p {
+        color: var(--neutral-600);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .example-preview {
+        background: linear-gradient(135deg, var(--neutral-50), var(--neutral-100));
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        margin-bottom: var(--spacing-lg);
+        border: 2px dashed var(--neutral-300);
+    }
+
+    /* Accessibility Section */
+    .accessibility-section {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-2xl);
+        box-shadow: var(--shadow-md);
+    }
+
+    .accessibility-section h2 {
+        font-size: 1.875rem;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .accessibility-section h3 {
+        font-size: 1.375rem;
+        margin-top: var(--spacing-2xl);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .accessibility-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+        margin: var(--spacing-lg) 0;
+    }
+
+    .accessibility-badge {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        background: var(--success-light);
+        color: #065f46;
+        border-radius: var(--radius-lg);
+        font-weight: 600;
+        font-size: 0.9375rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .accessibility-badge::before {
+        content: '✓';
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 1024px) {
+        .playground-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .component-title {
+            font-size: 2rem;
+        }
+
+        .tabs-navigation {
+            gap: 0;
+        }
+
+        .tab-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.8125rem;
+        }
+
+        .tab-icon {
+            font-size: 1rem;
+        }
+
+        .tab-label {
+            display: none;
+        }
+
+        .overview-section,
+        .api-section,
+        .accessibility-section,
+        .example-card,
+        .preview-panel,
+        .controls-panel {
+            padding: var(--spacing-lg);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string ComponentName { get; set; } = string.Empty;
+
+    private string activeTab = "overview";
+    private Dictionary<string, object> componentProps = new();
+    private ComponentMetadata? metadata;
+
+    protected override void OnParametersSet()
+    {
+        metadata = MetadataService.GetMetadata(ComponentName);
+        if (metadata == null)
+        {
+            // Use default metadata if component not found
+            metadata = new ComponentMetadata
+            {
+                Name = ComponentName,
+                Category = "Unknown",
+                Description = $"Documentation for {ComponentName} is being prepared.",
+                WhenToUse = new[] { "Documentation coming soon" },
+                KeyFeatures = new[] { "Component is available in the library" },
+                Parameters = Array.Empty<ComponentParameter>(),
+                Events = Array.Empty<ComponentEvent>(),
+                Methods = Array.Empty<ComponentMethod>(),
+                CodeExamples = new[] { new CodeExample("Basic Usage", "Example coming soon", $"<{ComponentName} />", "") },
+                AccessibilityLevel = "AA",
+                SupportsKeyboard = true,
+                SupportsScreenReader = true,
+                SupportsHighContrast = true,
+                KeyboardShortcuts = Array.Empty<KeyboardShortcut>(),
+                AriaAttributes = Array.Empty<string>()
+            };
+        }
+    }
+
+    // Component metadata - now loaded from service
+    private string ComponentCategory => metadata?.Category ?? "Unknown";
+    private string ComponentDescription => metadata?.Description ?? "";
+    private List<string> WhenToUse => metadata?.WhenToUse.ToList() ?? new();
+    private List<string> KeyFeatures => metadata?.KeyFeatures.ToList() ?? new();
+
+    // API documentation - now loaded from service
+    private List<ComponentParameter> ComponentParameters => metadata?.Parameters.ToList() ?? new();
+    private List<ComponentEvent> ComponentEvents => metadata?.Events.ToList() ?? new();
+    private List<ComponentMethod> ComponentMethods => metadata?.Methods.ToList() ?? new();
+
+    // Examples - now loaded from service
+    private List<CodeExample> CodeExamples => metadata?.CodeExamples.ToList() ?? new();
+
+    // Accessibility - now loaded from service
+    private string AccessibilityLevel => metadata?.AccessibilityLevel ?? "N/A";
+    private bool SupportsKeyboard => metadata?.SupportsKeyboard ?? false;
+    private bool SupportsScreenReader => metadata?.SupportsScreenReader ?? false;
+    private bool SupportsHighContrast => metadata?.SupportsHighContrast ?? false;
+    private List<KeyboardShortcut> KeyboardShortcuts => metadata?.KeyboardShortcuts.ToList() ?? new();
+    private List<string> AriaAttributes => metadata?.AriaAttributes.ToList() ?? new();
+
+    private void SetTab(string tab) => activeTab = tab;
+
+    private RenderFragment RenderComponent() => builder =>
+    {
+        // Dynamic component rendering based on component name
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "dynamic-component-preview");
+        
+        switch (ComponentName)
+        {
+            case "N360Button":
+                builder.OpenElement(2, "button");
+                builder.AddAttribute(3, "class", $"n360-btn n360-btn-{componentProps.GetValueOrDefault("variant", "primary")} n360-btn-{componentProps.GetValueOrDefault("size", "medium")}");
+                builder.AddAttribute(4, "disabled", Convert.ToBoolean(componentProps.GetValueOrDefault("disabled", false)));
+                if (componentProps.ContainsKey("icon"))
+                {
+                    builder.OpenElement(5, "i");
+                    builder.AddAttribute(6, "class", $"icon-{componentProps["icon"]}");
+                    builder.CloseElement();
+                    builder.AddContent(7, " ");
+                }
+                builder.AddContent(8, componentProps.GetValueOrDefault("text", "Click Me"));
+                builder.CloseElement();
+                break;
+                
+            case "N360TextBox":
+                builder.OpenElement(2, "input");
+                builder.AddAttribute(3, "type", Convert.ToBoolean(componentProps.GetValueOrDefault("isPassword", false)) ? "password" : "text");
+                builder.AddAttribute(4, "class", "n360-textbox");
+                builder.AddAttribute(5, "placeholder", componentProps.GetValueOrDefault("placeholder", "Enter text..."));
+                builder.AddAttribute(6, "disabled", Convert.ToBoolean(componentProps.GetValueOrDefault("disabled", false)));
+                builder.AddAttribute(7, "readonly", Convert.ToBoolean(componentProps.GetValueOrDefault("readonly", false)));
+                if (componentProps.ContainsKey("maxLength"))
+                {
+                    builder.AddAttribute(8, "maxlength", componentProps["maxLength"]);
+                }
+                builder.CloseElement();
+                break;
+                
+            case "N360CheckBox":
+                builder.OpenElement(2, "label");
+                builder.AddAttribute(3, "class", "n360-checkbox-container");
+                builder.OpenElement(4, "input");
+                builder.AddAttribute(5, "type", "checkbox");
+                builder.AddAttribute(6, "checked", Convert.ToBoolean(componentProps.GetValueOrDefault("checked", false)));
+                builder.AddAttribute(7, "disabled", Convert.ToBoolean(componentProps.GetValueOrDefault("disabled", false)));
+                builder.CloseElement();
+                builder.OpenElement(8, "span");
+                builder.AddAttribute(9, "class", "checkmark");
+                builder.CloseElement();
+                builder.AddContent(10, " ");
+                builder.AddContent(11, componentProps.GetValueOrDefault("label", "Checkbox Label"));
+                builder.CloseElement();
+                break;
+                
+            case "N360Switch":
+                builder.OpenElement(2, "label");
+                builder.AddAttribute(3, "class", "n360-switch");
+                builder.OpenElement(4, "input");
+                builder.AddAttribute(5, "type", "checkbox");
+                builder.AddAttribute(6, "checked", Convert.ToBoolean(componentProps.GetValueOrDefault("checked", false)));
+                builder.AddAttribute(7, "disabled", Convert.ToBoolean(componentProps.GetValueOrDefault("disabled", false)));
+                builder.CloseElement();
+                builder.OpenElement(8, "span");
+                builder.AddAttribute(9, "class", "slider");
+                builder.CloseElement();
+                builder.CloseElement();
+                break;
+                
+            case "N360Alert":
+                builder.OpenElement(2, "div");
+                builder.AddAttribute(3, "class", $"n360-alert n360-alert-{componentProps.GetValueOrDefault("type", "info")}");
+                builder.OpenElement(4, "i");
+                builder.AddAttribute(5, "class", GetAlertIcon(componentProps.GetValueOrDefault("type", "info").ToString()));
+                builder.CloseElement();
+                builder.AddContent(6, " ");
+                builder.AddContent(7, componentProps.GetValueOrDefault("message", "This is an alert message"));
+                builder.CloseElement();
+                break;
+                
+            case "N360Badge":
+                builder.OpenElement(2, "span");
+                builder.AddAttribute(3, "class", $"n360-badge n360-badge-{componentProps.GetValueOrDefault("variant", "primary")}");
+                builder.AddContent(4, componentProps.GetValueOrDefault("text", "Badge"));
+                builder.CloseElement();
+                break;
+                
+            case "N360Progress":
+                builder.OpenElement(2, "div");
+                builder.AddAttribute(3, "class", "n360-progress");
+                builder.OpenElement(4, "div");
+                builder.AddAttribute(5, "class", "n360-progress-bar");
+                builder.AddAttribute(6, "style", $"width: {componentProps.GetValueOrDefault("value", 50)}%");
+                builder.AddContent(7, $"{componentProps.GetValueOrDefault("value", 50)}%");
+                builder.CloseElement();
+                builder.CloseElement();
+                break;
+                
+            default:
+                // Generic preview for undocumented components
+                builder.OpenElement(2, "div");
+                builder.AddAttribute(3, "class", "component-placeholder");
+                builder.OpenElement(4, "div");
+                builder.AddAttribute(5, "class", "placeholder-icon");
+                builder.AddContent(6, "🎨");
+                builder.CloseElement();
+                builder.OpenElement(7, "p");
+                builder.AddContent(8, $"{ComponentName} Component");
+                builder.CloseElement();
+                builder.OpenElement(9, "small");
+                builder.AddContent(10, "Interactive playground coming soon");
+                builder.CloseElement();
+                builder.CloseElement();
+                break;
+        }
+        
+        builder.CloseElement(); // Close dynamic-component-preview div
+    };
+
+    private string GetAlertIcon(string type)
+    {
+        return type switch
+        {
+            "success" => "icon-check-circle",
+            "error" => "icon-x-circle",
+            "warning" => "icon-alert-triangle",
+            "info" => "icon-info",
+            _ => "icon-info"
+        };
+    }
+
+    private RenderFragment RenderPropertyControls() => builder =>
+    {
+        if (metadata == null || !metadata.Parameters.Any())
+        {
+            builder.OpenElement(0, "p");
+            builder.AddContent(1, "No configurable properties for playground.");
+            builder.CloseElement();
+            return;
+        }
+
+        int sequence = 0;
+        foreach (var param in metadata.Parameters.Take(8)) // Show first 8 parameters
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", "property-control");
+            
+            // Label
+            builder.OpenElement(sequence++, "label");
+            builder.AddContent(sequence++, $"{param.Name}:");
+            builder.CloseElement();
+            
+            // Input based on parameter type
+            if (param.Type.Contains("bool", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.OpenElement(sequence++, "input");
+                builder.AddAttribute(sequence++, "type", "checkbox");
+                builder.AddAttribute(sequence++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+                    this, e => UpdateProperty(param.Name.ToLower(), e.Value)));
+                builder.CloseElement();
+            }
+            else if (param.Type.Contains("int", StringComparison.OrdinalIgnoreCase) || 
+                     param.Type.Contains("decimal", StringComparison.OrdinalIgnoreCase) ||
+                     param.Type.Contains("double", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.OpenElement(sequence++, "input");
+                builder.AddAttribute(sequence++, "type", "number");
+                builder.AddAttribute(sequence++, "value", componentProps.GetValueOrDefault(param.Name.ToLower(), param.DefaultValue));
+                builder.AddAttribute(sequence++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(
+                    this, e => UpdateProperty(param.Name.ToLower(), e.Value)));
+                builder.CloseElement();
+            }
+            else if (param.Name.Contains("Variant", StringComparison.OrdinalIgnoreCase) ||
+                     param.Name.Contains("Type", StringComparison.OrdinalIgnoreCase) ||
+                     param.Name.Contains("Size", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.OpenElement(sequence++, "select");
+                builder.AddAttribute(sequence++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+                    this, e => UpdateProperty(param.Name.ToLower(), e.Value)));
+                
+                var options = GetOptionsForParameter(param.Name, param.Type);
+                foreach (var option in options)
+                {
+                    builder.OpenElement(sequence++, "option");
+                    builder.AddAttribute(sequence++, "value", option);
+                    builder.AddContent(sequence++, option);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(sequence++, "input");
+                builder.AddAttribute(sequence++, "type", "text");
+                builder.AddAttribute(sequence++, "value", componentProps.GetValueOrDefault(param.Name.ToLower(), param.DefaultValue));
+                builder.AddAttribute(sequence++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(
+                    this, e => UpdateProperty(param.Name.ToLower(), e.Value)));
+                builder.CloseElement();
+            }
+            
+            // Description
+            builder.OpenElement(sequence++, "small");
+            builder.AddAttribute(sequence++, "class", "property-description");
+            builder.AddContent(sequence++, param.Description);
+            builder.CloseElement();
+            
+            builder.CloseElement(); // Close property-control div
+        }
+    };
+
+    private string[] GetOptionsForParameter(string paramName, string paramType)
+    {
+        if (paramName.Contains("Variant", StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { "primary", "secondary", "success", "danger", "warning", "info", "link" };
+        }
+        if (paramName.Contains("Size", StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { "small", "medium", "large" };
+        }
+        if (paramName.Contains("Type", StringComparison.OrdinalIgnoreCase) && ComponentName.Contains("Alert"))
+        {
+            return new[] { "success", "error", "warning", "info" };
+        }
+        return new[] { "default" };
+    }
+
+    private void UpdateProperty(string propertyName, object? value)
+    {
+        if (value != null)
+        {
+            componentProps[propertyName] = value;
+            StateHasChanged();
+        }
+    }
+
+    private string GenerateCode()
+    {
+        if (metadata == null) return $"<{ComponentName} />";
+        
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"<{ComponentName}");
+        
+        foreach (var prop in componentProps)
+        {
+            if (prop.Value is bool boolVal)
+            {
+                if (boolVal)
+                    sb.Append($"\n    {char.ToUpper(prop.Key[0])}{prop.Key.Substring(1)}=\"true\"");
+            }
+            else if (prop.Value is int || prop.Value is decimal || prop.Value is double)
+            {
+                sb.Append($"\n    {char.ToUpper(prop.Key[0])}{prop.Key.Substring(1)}=\"{prop.Value}\"");
+            }
+            else
+            {
+                sb.Append($"\n    {char.ToUpper(prop.Key[0])}{prop.Key.Substring(1)}=\"{prop.Value}\"");
+            }
+        }
+        
+        sb.Append(" />");
+        return sb.ToString();
+    }
+
+    private async Task CopyCode()
+    {
+        // Copy to clipboard using JS interop would go here
+        // For now, just show a visual indication
+        await Task.CompletedTask;
+    }
+}
+
+<style>
+    .component-docs-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .component-header {
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .component-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .component-meta {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .badge-primary {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .badge-info {
+        background-color: #06b6d4;
+        color: white;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-weight: 500;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .tab-button:hover {
+        color: #3b82f6;
+    }
+
+    .tab-button.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+    }
+
+    .playground-layout {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 2rem;
+    }
+
+    .preview-panel, .controls-panel {
+        background: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+    }
+
+    .component-preview {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .api-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+
+    .api-table th,
+    .api-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .api-table th {
+        background: #f9fafb;
+        font-weight: 600;
+    }
+
+    .api-table code {
+        background: #f3f4f6;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .example-card {
+        background: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .example-card h3 {
+        margin-top: 0;
+    }
+
+    .example-preview {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    pre {
+        background: #1f2937;
+        color: #f9fafb;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+    }
+
+    kbd {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        padding: 0.125rem 0.375rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+</style>

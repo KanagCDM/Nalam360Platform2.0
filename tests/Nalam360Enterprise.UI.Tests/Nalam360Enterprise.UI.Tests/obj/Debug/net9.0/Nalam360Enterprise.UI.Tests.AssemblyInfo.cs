@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nalam360Enterprise.UI.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+edd3982f1a38baeeb42aa78fcc49d92c1dd57152")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360Enterprise.UI.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360Enterprise.UI.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

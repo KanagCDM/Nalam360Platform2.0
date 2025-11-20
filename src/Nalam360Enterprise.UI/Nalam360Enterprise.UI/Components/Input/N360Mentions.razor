@@ -1,0 +1,225 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetMentionsClass()" @attributes="@GetHtmlAttributes()">
+        <textarea class="n360-mentions__input"
+                  placeholder="@Placeholder"
+                  @bind="_textValue"
+                  @bind:event="oninput"
+                  @bind:after="HandleInputAsync"
+                  @onkeydown="HandleKeyDownAsync"
+                  disabled="@Disabled"
+                  rows="@Rows"></textarea>
+        
+        @if (_showSuggestions && _filteredSuggestions.Any())
+        {
+            <div class="n360-mentions__dropdown" style="@GetDropdownStyle()">
+                @foreach (var suggestion in _filteredSuggestions)
+                {
+                    var index = _filteredSuggestions.IndexOf(suggestion);
+                    
+                    <div class="n360-mentions__item @(index == _selectedIndex ? "n360-mentions__item--selected" : "")"
+                         @onclick="() => HandleSelectAsync(suggestion)"
+                         @onmouseenter="() => _selectedIndex = index">
+                        @if (ItemTemplate != null)
+                        {
+                            @ItemTemplate(suggestion)
+                        }
+                        else
+                        {
+                            <span class="n360-mentions__item-text">@GetSuggestionDisplay(suggestion)</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public List<object> Suggestions { get; set; } = new();
+    [Parameter] public Func<object, string> ValueSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<object, string> DisplaySelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public RenderFragment<object>? ItemTemplate { get; set; }
+    [Parameter] public string Prefix { get; set; } = "@";
+    [Parameter] public string Placeholder { get; set; } = "Type @ to mention someone";
+    [Parameter] public int Rows { get; set; } = 3;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool AutoSize { get; set; }
+    [Parameter] public int MinRows { get; set; } = 3;
+    [Parameter] public int MaxRows { get; set; } = 8;
+    
+    // Events
+    [Parameter] public EventCallback<MentionEventArgs> OnMention { get; set; }
+    [Parameter] public EventCallback<string> OnSearch { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private string _textValue = string.Empty;
+    private bool _showSuggestions;
+    private List<object> _filteredSuggestions = new();
+    private int _selectedIndex;
+    private int _mentionStartPos = -1;
+    private string _searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _textValue = Value ?? string.Empty;
+    }
+
+    private async Task HandleInputAsync()
+    {
+        await ValueChanged.InvokeAsync(_textValue);
+        
+        // Check for mention trigger
+        var cursorPos = _textValue.Length; // Simplified - would need JS interop for real cursor position
+        
+        if (_textValue.Length > 0 && _textValue[cursorPos - 1].ToString() == Prefix)
+        {
+            _mentionStartPos = cursorPos;
+            _searchText = string.Empty;
+            _showSuggestions = true;
+            _filteredSuggestions = Suggestions;
+            _selectedIndex = 0;
+            await OnSearch.InvokeAsync(string.Empty);
+        }
+        else if (_mentionStartPos >= 0)
+        {
+            _searchText = _textValue.Substring(_mentionStartPos, cursorPos - _mentionStartPos);
+            _filteredSuggestions = Suggestions
+                .Where(s => DisplaySelector(s).Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            _showSuggestions = _filteredSuggestions.Any();
+            await OnSearch.InvokeAsync(_searchText);
+        }
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (!_showSuggestions) return;
+        
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _selectedIndex = Math.Min(_selectedIndex + 1, _filteredSuggestions.Count - 1);
+                break;
+            case "ArrowUp":
+                _selectedIndex = Math.Max(_selectedIndex - 1, 0);
+                break;
+            case "Enter":
+                if (_selectedIndex >= 0 && _selectedIndex < _filteredSuggestions.Count)
+                {
+                    await HandleSelectAsync(_filteredSuggestions[_selectedIndex]);
+                }
+                break;
+            case "Escape":
+                _showSuggestions = false;
+                break;
+        }
+    }
+
+    private async Task HandleSelectAsync(object suggestion)
+    {
+        var mentionValue = ValueSelector(suggestion);
+        var mentionDisplay = DisplaySelector(suggestion);
+        
+        // Replace the mention text
+        if (_mentionStartPos >= 0)
+        {
+            var before = _textValue.Substring(0, _mentionStartPos - 1);
+            var after = _textValue.Substring(_textValue.Length);
+            _textValue = $"{before}{Prefix}{mentionDisplay} {after}";
+        }
+        
+        _showSuggestions = false;
+        _mentionStartPos = -1;
+        
+        await ValueChanged.InvokeAsync(_textValue);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Mention",
+                Resource = AuditResource ?? "Mentions",
+                AdditionalData = new Dictionary<string, object> {
+                    { "MentionedValue", mentionValue },
+                    { "MentionedDisplay", mentionDisplay }
+                }
+            });
+        }
+        
+        await OnMention.InvokeAsync(new MentionEventArgs(suggestion, mentionValue, mentionDisplay));
+    }
+
+    private string GetSuggestionDisplay(object suggestion)
+    {
+        return DisplaySelector(suggestion);
+    }
+
+    private string GetMentionsClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-mentions"
+        };
+        
+        if (Disabled)
+        {
+            classes.Add("n360-mentions--disabled");
+        }
+        
+        if (_showSuggestions)
+        {
+            classes.Add("n360-mentions--open");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetDropdownStyle()
+    {
+        // In real implementation, calculate position based on cursor
+        return Style ?? string.Empty;
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

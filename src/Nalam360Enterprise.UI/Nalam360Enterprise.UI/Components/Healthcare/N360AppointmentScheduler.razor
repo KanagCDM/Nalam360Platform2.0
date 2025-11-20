@@ -1,0 +1,538 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Syncfusion.Blazor.Schedule
+@using ScheduleActionEventArgs = Syncfusion.Blazor.Schedule.ActionEventArgs<N360AppointmentScheduler.AppointmentData>
+@using ScheduleDataBindingEventArgs = Syncfusion.Blazor.Schedule.DataBindingEventArgs<N360AppointmentScheduler.AppointmentData>
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-appointment-scheduler @CssClass" dir="@(IsRtl ? "rtl" : "ltr")" @attributes="@GetHtmlAttributes()">
+    
+    @if (!string.IsNullOrEmpty(RequiredPermission) && !HasPermission)
+    {
+        if (!HideIfNoPermission)
+        {
+            <div class="n360-appointment-scheduler__no-permission">Access Denied</div>
+        }
+        return;
+    }
+
+    <div class="n360-appointment-scheduler__container">
+        @if (ShowHeader)
+        {
+            <div class="n360-appointment-scheduler__header">
+                <h3 class="n360-appointment-scheduler__title">@Title</h3>
+                @if (ShowProviderSelector && Providers?.Any() == true)
+                {
+                    <div class="n360-appointment-scheduler__provider-selector">
+                        <label>Provider:</label>
+                        <select @bind="SelectedProviderId" @bind:after="OnProviderChanged" class="n360-appointment-scheduler__select">
+                            <option value="">All Providers</option>
+                            @foreach (var provider in Providers)
+                            {
+                                <option value="@provider.Id">@provider.Name (@provider.Specialty)</option>
+                            }
+                        </select>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="n360-appointment-scheduler__calendar">
+            <SfSchedule TValue="AppointmentData"
+                        @ref="_schedule"
+                        Height="@Height"
+                        CurrentView="@CurrentView"
+                        SelectedDate="@SelectedDate"
+                        Timezone="@Timezone"
+                        StartHour="@StartHour"
+                        EndHour="@EndHour"
+                        EventSettings="@_eventSettings"
+                        CssClass="@InternalCssClass"
+                        Created="OnScheduleCreated"
+                        DataBinding="OnDataBinding"
+                        ActionBegin="OnActionBegin"
+                        ActionComplete="OnActionComplete"
+                        EventRendered="OnEventRendered"
+                        PopupOpen="OnPopupOpen">
+                <ScheduleViews>
+                    @if (ShowDayView)
+                    {
+                        <ScheduleView Option="View.Day" />
+                    }
+                    @if (ShowWeekView)
+                    {
+                        <ScheduleView Option="View.Week" />
+                    }
+                    @if (ShowWorkWeekView)
+                    {
+                        <ScheduleView Option="View.WorkWeek" />
+                    }
+                    @if (ShowMonthView)
+                    {
+                        <ScheduleView Option="View.Month" />
+                    }
+                    @if (ShowAgendaView)
+                    {
+                        <ScheduleView Option="View.Agenda" />
+                    }
+                </ScheduleViews>
+                <ScheduleEventSettings TValue="AppointmentData" 
+                                       DataSource="@FilteredAppointments"
+                                       EnableTooltip="@EnableTooltip">
+                    <ScheduleField>
+                        <FieldSubject Name="Subject" />
+                        <FieldStartTime Name="StartTime" />
+                        <FieldEndTime Name="EndTime" />
+                        <FieldDescription Name="Description" />
+                        <FieldIsAllDay Name="IsAllDay" />
+                        <FieldRecurrenceRule Name="RecurrenceRule" />
+                    </ScheduleField>
+                </ScheduleEventSettings>
+                @if (EnableQuickInfo)
+                {
+                    <ScheduleQuickInfoTemplates>
+                        <HeaderTemplate>
+                            <div class="n360-appointment-scheduler__quick-header">
+                                @if (context is AppointmentData appointment)
+                                {
+                                    <div class="n360-appointment-scheduler__quick-title">
+                                        <span class="@GetAppointmentTypeIcon(appointment.Type)"></span>
+                                        @appointment.Subject
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(appointment.PatientName))
+                                    {
+                                        <div class="n360-appointment-scheduler__patient-info">
+                                            <strong>Patient:</strong> @appointment.PatientName
+                                            @if (!string.IsNullOrEmpty(appointment.PatientMRN))
+                                            {
+                                                <span>(MRN: @appointment.PatientMRN)</span>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </HeaderTemplate>
+                        <ContentTemplate>
+                            <div class="n360-appointment-scheduler__quick-content">
+                                @if (context is AppointmentData appointment)
+                                {
+                                    <div class="n360-appointment-scheduler__detail-row">
+                                        <span class="n360-appointment-scheduler__icon">📅</span>
+                                        <strong>Date:</strong> @appointment.StartTime.ToString("MMM dd, yyyy")
+                                    </div>
+                                    <div class="n360-appointment-scheduler__detail-row">
+                                        <span class="n360-appointment-scheduler__icon">⏰</span>
+                                        <strong>Time:</strong> @appointment.StartTime.ToString("hh:mm tt") - @appointment.EndTime.ToString("hh:mm tt")
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(appointment.ProviderName))
+                                    {
+                                        <div class="n360-appointment-scheduler__detail-row">
+                                            <span class="n360-appointment-scheduler__icon">👨‍⚕️</span>
+                                            <strong>Provider:</strong> @appointment.ProviderName
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(appointment.Location))
+                                    {
+                                        <div class="n360-appointment-scheduler__detail-row">
+                                            <span class="n360-appointment-scheduler__icon">📍</span>
+                                            <strong>Location:</strong> @appointment.Location
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(appointment.Description))
+                                    {
+                                        <div class="n360-appointment-scheduler__detail-row">
+                                            <span class="n360-appointment-scheduler__icon">📝</span>
+                                            <strong>Notes:</strong> @appointment.Description
+                                        </div>
+                                    }
+                                    <div class="n360-appointment-scheduler__detail-row">
+                                        <span class="n360-appointment-scheduler__icon @GetStatusIcon(appointment.Status)"></span>
+                                        <strong>Status:</strong> 
+                                        <span class="n360-appointment-scheduler__status n360-appointment-scheduler__status--@appointment.Status.ToString().ToLower()">
+                                            @appointment.Status
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </ContentTemplate>
+                        <FooterTemplate>
+                            <div class="n360-appointment-scheduler__quick-actions">
+                                @if (context is AppointmentData appointment)
+                                {
+                                    @if (ShowEditButton && appointment.Status != AppointmentStatus.Completed && appointment.Status != AppointmentStatus.Cancelled)
+                                    {
+                                        <button type="button" class="n360-appointment-scheduler__action-btn n360-appointment-scheduler__action-btn--edit"
+                                                @onclick="() => OnEditAppointment(appointment)">
+                                            Edit
+                                        </button>
+                                    }
+                                    @if (ShowCheckInButton && appointment.Status == AppointmentStatus.Confirmed)
+                                    {
+                                        <button type="button" class="n360-appointment-scheduler__action-btn n360-appointment-scheduler__action-btn--checkin"
+                                                @onclick="() => OnCheckIn(appointment)">
+                                            Check In
+                                        </button>
+                                    }
+                                    @if (ShowCompleteButton && appointment.Status == AppointmentStatus.CheckedIn)
+                                    {
+                                        <button type="button" class="n360-appointment-scheduler__action-btn n360-appointment-scheduler__action-btn--complete"
+                                                @onclick="() => OnComplete(appointment)">
+                                            Complete
+                                        </button>
+                                    }
+                                    @if (ShowCancelButton && appointment.Status != AppointmentStatus.Completed && appointment.Status != AppointmentStatus.Cancelled)
+                                    {
+                                        <button type="button" class="n360-appointment-scheduler__action-btn n360-appointment-scheduler__action-btn--cancel"
+                                                @onclick="() => OnCancelAppointment(appointment)">
+                                            Cancel
+                                        </button>
+                                    }
+                                }
+                            </div>
+                        </FooterTemplate>
+                    </ScheduleQuickInfoTemplates>
+                }
+            </SfSchedule>
+        </div>
+
+        @if (ShowLegend)
+        {
+            <div class="n360-appointment-scheduler__legend">
+                <div class="n360-appointment-scheduler__legend-title">Appointment Types:</div>
+                <div class="n360-appointment-scheduler__legend-items">
+                    @foreach (var type in Enum.GetValues<AppointmentType>())
+                    {
+                        <div class="n360-appointment-scheduler__legend-item">
+                            <span class="n360-appointment-scheduler__legend-color n360-appointment-scheduler__legend-color--@type.ToString().ToLower()"></span>
+                            <span>@GetAppointmentTypeLabel(type)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (ShowStatistics && AppointmentStatistics != null)
+        {
+            <div class="n360-appointment-scheduler__statistics">
+                <div class="n360-appointment-scheduler__stat-card">
+                    <div class="n360-appointment-scheduler__stat-value">@AppointmentStatistics.TotalAppointments</div>
+                    <div class="n360-appointment-scheduler__stat-label">Total</div>
+                </div>
+                <div class="n360-appointment-scheduler__stat-card n360-appointment-scheduler__stat-card--confirmed">
+                    <div class="n360-appointment-scheduler__stat-value">@AppointmentStatistics.ConfirmedAppointments</div>
+                    <div class="n360-appointment-scheduler__stat-label">Confirmed</div>
+                </div>
+                <div class="n360-appointment-scheduler__stat-card n360-appointment-scheduler__stat-card--checkedin">
+                    <div class="n360-appointment-scheduler__stat-value">@AppointmentStatistics.CheckedInAppointments</div>
+                    <div class="n360-appointment-scheduler__stat-label">Checked In</div>
+                </div>
+                <div class="n360-appointment-scheduler__stat-card n360-appointment-scheduler__stat-card--completed">
+                    <div class="n360-appointment-scheduler__stat-value">@AppointmentStatistics.CompletedAppointments</div>
+                    <div class="n360-appointment-scheduler__stat-label">Completed</div>
+                </div>
+                <div class="n360-appointment-scheduler__stat-card n360-appointment-scheduler__stat-card--cancelled">
+                    <div class="n360-appointment-scheduler__stat-value">@AppointmentStatistics.CancelledAppointments</div>
+                    <div class="n360-appointment-scheduler__stat-label">Cancelled</div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; } = "AppointmentScheduler";
+
+    // Display Options
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public string Title { get; set; } = "Appointment Scheduler";
+    [Parameter] public string Height { get; set; } = "650px";
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public bool ShowProviderSelector { get; set; } = true;
+
+    // Schedule Configuration
+    [Parameter] public View CurrentView { get; set; } = View.Week;
+    [Parameter] public DateTime SelectedDate { get; set; } = DateTime.Today;
+    [Parameter] public string Timezone { get; set; } = "UTC";
+    [Parameter] public string StartHour { get; set; } = "08:00";
+    [Parameter] public string EndHour { get; set; } = "18:00";
+
+    // View Options
+    [Parameter] public bool ShowDayView { get; set; } = true;
+    [Parameter] public bool ShowWeekView { get; set; } = true;
+    [Parameter] public bool ShowWorkWeekView { get; set; } = true;
+    [Parameter] public bool ShowMonthView { get; set; } = true;
+    [Parameter] public bool ShowAgendaView { get; set; } = true;
+
+    // Quick Info Options
+    [Parameter] public bool EnableQuickInfo { get; set; } = true;
+    [Parameter] public bool EnableTooltip { get; set; } = true;
+    [Parameter] public bool ShowEditButton { get; set; } = true;
+    [Parameter] public bool ShowCheckInButton { get; set; } = true;
+    [Parameter] public bool ShowCompleteButton { get; set; } = true;
+    [Parameter] public bool ShowCancelButton { get; set; } = true;
+
+    // Data
+    [Parameter] public List<AppointmentData> Appointments { get; set; } = new();
+    [Parameter] public List<ProviderInfo> Providers { get; set; } = new();
+    [Parameter] public string? SelectedProviderId { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentCreated { get; set; }
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentUpdated { get; set; }
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentDeleted { get; set; }
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentCheckIn { get; set; }
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentComplete { get; set; }
+    [Parameter] public EventCallback<AppointmentData> OnAppointmentCancel { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Internal State
+    private bool HasPermission { get; set; } = true;
+    private SfSchedule<AppointmentData>? _schedule;
+    private ScheduleEventSettings<AppointmentData> _eventSettings = new();
+    private List<AppointmentData> FilteredAppointments => GetFilteredAppointments();
+    private AppointmentStatisticsData? AppointmentStatistics => CalculateStatistics();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            HasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private List<AppointmentData> GetFilteredAppointments()
+    {
+        if (string.IsNullOrEmpty(SelectedProviderId))
+            return Appointments;
+
+        return Appointments.Where(a => a.ProviderId == SelectedProviderId).ToList();
+    }
+
+    private AppointmentStatisticsData CalculateStatistics()
+    {
+        var filtered = FilteredAppointments;
+        return new AppointmentStatisticsData
+        {
+            TotalAppointments = filtered.Count,
+            ConfirmedAppointments = filtered.Count(a => a.Status == AppointmentStatus.Confirmed),
+            CheckedInAppointments = filtered.Count(a => a.Status == AppointmentStatus.CheckedIn),
+            CompletedAppointments = filtered.Count(a => a.Status == AppointmentStatus.Completed),
+            CancelledAppointments = filtered.Count(a => a.Status == AppointmentStatus.Cancelled)
+        };
+    }
+
+    private async Task OnProviderChanged()
+    {
+        if (_schedule != null)
+        {
+            await _schedule.RefreshEventsAsync();
+        }
+    }
+
+    private void OnScheduleCreated() { }
+
+    private void OnDataBinding(ScheduleDataBindingEventArgs args) { }
+
+    private async Task OnActionBegin(ScheduleActionEventArgs args)
+    {
+        if (args.ActionType == ActionType.EventCreate && args.AddedRecords?.Any() == true)
+        {
+            var appointment = args.AddedRecords.First();
+            await OnAppointmentCreated.InvokeAsync(appointment);
+            await LogAuditAsync("Create", appointment);
+        }
+        else if (args.ActionType == ActionType.EventChange && args.ChangedRecords?.Any() == true)
+        {
+            var appointment = args.ChangedRecords.First();
+            await OnAppointmentUpdated.InvokeAsync(appointment);
+            await LogAuditAsync("Update", appointment);
+        }
+        else if (args.ActionType == ActionType.EventRemove && args.DeletedRecords?.Any() == true)
+        {
+            var appointment = args.DeletedRecords.First();
+            await OnAppointmentDeleted.InvokeAsync(appointment);
+            await LogAuditAsync("Delete", appointment);
+        }
+    }
+
+    private void OnActionComplete(ScheduleActionEventArgs args) { }
+
+    private void OnEventRendered(EventRenderedArgs<AppointmentData> args)
+    {
+        if (args.Data != null)
+        {
+            args.CssClasses = new List<string> 
+            { 
+                $"n360-appointment--{args.Data.Type.ToString().ToLower()}",
+                $"n360-appointment--{args.Data.Status.ToString().ToLower()}"
+            };
+        }
+    }
+
+    private void OnPopupOpen(PopupOpenEventArgs<AppointmentData> args)
+    {
+        // Customize popup if needed
+    }
+
+    private async Task OnEditAppointment(AppointmentData appointment)
+    {
+        // Implementation for editing
+        await OnAppointmentUpdated.InvokeAsync(appointment);
+    }
+
+    private async Task OnCheckIn(AppointmentData appointment)
+    {
+        appointment.Status = AppointmentStatus.CheckedIn;
+        await OnAppointmentCheckIn.InvokeAsync(appointment);
+        await LogAuditAsync("CheckIn", appointment);
+        StateHasChanged();
+    }
+
+    private async Task OnComplete(AppointmentData appointment)
+    {
+        appointment.Status = AppointmentStatus.Completed;
+        await OnAppointmentComplete.InvokeAsync(appointment);
+        await LogAuditAsync("Complete", appointment);
+        StateHasChanged();
+    }
+
+    private async Task OnCancelAppointment(AppointmentData appointment)
+    {
+        appointment.Status = AppointmentStatus.Cancelled;
+        await OnAppointmentCancel.InvokeAsync(appointment);
+        await LogAuditAsync("Cancel", appointment);
+        StateHasChanged();
+    }
+
+    private string GetAppointmentTypeIcon(AppointmentType type) => type switch
+    {
+        AppointmentType.Checkup => "🩺",
+        AppointmentType.FollowUp => "🔄",
+        AppointmentType.Procedure => "⚕️",
+        AppointmentType.Surgery => "🏥",
+        AppointmentType.Consultation => "💬",
+        AppointmentType.Emergency => "🚨",
+        _ => "📅"
+    };
+
+    private string GetAppointmentTypeLabel(AppointmentType type) => type switch
+    {
+        AppointmentType.Checkup => "Checkup",
+        AppointmentType.FollowUp => "Follow-Up",
+        AppointmentType.Procedure => "Procedure",
+        AppointmentType.Surgery => "Surgery",
+        AppointmentType.Consultation => "Consultation",
+        AppointmentType.Emergency => "Emergency",
+        _ => "Other"
+    };
+
+    private string GetStatusIcon(AppointmentStatus status) => status switch
+    {
+        AppointmentStatus.Scheduled => "📅",
+        AppointmentStatus.Confirmed => "✅",
+        AppointmentStatus.CheckedIn => "🟢",
+        AppointmentStatus.Completed => "✔️",
+        AppointmentStatus.Cancelled => "❌",
+        AppointmentStatus.NoShow => "⚠️",
+        _ => "❓"
+    };
+
+    private async Task LogAuditAsync(string action, AppointmentData appointment)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            var metadata = new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = action,
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["AppointmentId"] = appointment.Id ?? "New",
+                    ["Patient"] = appointment.PatientName ?? "Unknown",
+                    ["Provider"] = appointment.ProviderName ?? "Unknown",
+                    ["Date"] = appointment.StartTime.ToString("yyyy-MM-dd HH:mm"),
+                    ["Type"] = appointment.Type.ToString(),
+                    ["Status"] = appointment.Status.ToString()
+                }
+            };
+            await AuditService.LogAsync(metadata);
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        return new Dictionary<string, object>
+        {
+            ["role"] = "application",
+            ["aria-label"] = "Appointment scheduler calendar"
+        };
+    }
+
+    // Data Models
+    public class AppointmentData
+    {
+        public string? Id { get; set; }
+        public string Subject { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string? Description { get; set; }
+        public bool IsAllDay { get; set; }
+        public string? RecurrenceRule { get; set; }
+        public string? PatientName { get; set; }
+        public string? PatientMRN { get; set; }
+        public string? ProviderId { get; set; }
+        public string? ProviderName { get; set; }
+        public string? Location { get; set; }
+        public AppointmentType Type { get; set; } = AppointmentType.Checkup;
+        public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
+    }
+
+    public class ProviderInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Specialty { get; set; } = string.Empty;
+    }
+
+    public class AppointmentStatisticsData
+    {
+        public int TotalAppointments { get; set; }
+        public int ConfirmedAppointments { get; set; }
+        public int CheckedInAppointments { get; set; }
+        public int CompletedAppointments { get; set; }
+        public int CancelledAppointments { get; set; }
+    }
+
+    public enum AppointmentType
+    {
+        Checkup,
+        FollowUp,
+        Procedure,
+        Surgery,
+        Consultation,
+        Emergency
+    }
+
+    public enum AppointmentStatus
+    {
+        Scheduled,
+        Confirmed,
+        CheckedIn,
+        Completed,
+        Cancelled,
+        NoShow
+    }
+}

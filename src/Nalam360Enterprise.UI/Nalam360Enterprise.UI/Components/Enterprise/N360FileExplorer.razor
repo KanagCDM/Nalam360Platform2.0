@@ -1,0 +1,1174 @@
+@using Microsoft.AspNetCore.Components
+@using System.Linq
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TFile where TFile : class
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-file-explorer @CssClass @GetThemeClass()" dir="@(IsRtl ? "rtl" : "ltr")" @attributes="GetHtmlAttributes()">
+    <!-- Toolbar -->
+    <div class="file-explorer-toolbar">
+        <div class="toolbar-left">
+            <div class="navigation-controls">
+                <SfButton CssClass="btn-nav" IconCss="e-icons e-arrow-left" Disabled="@(!CanNavigateBack())" @onclick="NavigateBackAsync">Back</SfButton>
+                <SfButton CssClass="btn-nav" IconCss="e-icons e-arrow-right" Disabled="@(!CanNavigateForward())" @onclick="NavigateForwardAsync">Forward</SfButton>
+                <SfButton CssClass="btn-nav" IconCss="e-icons e-arrow-up" Disabled="@(!CanNavigateUp())" @onclick="NavigateUpAsync">Up</SfButton>
+            </div>
+            
+            <div class="breadcrumb-container">
+                @foreach (var (segment, index) in GetBreadcrumbSegments().Select((s, i) => (s, i)))
+                {
+                    <button class="breadcrumb-item" @onclick="() => NavigateToBreadcrumbAsync(index)">
+                        @if (index == 0)
+                        {
+                            <span class="icon">🏠</span>
+                        }
+                        <span>@segment</span>
+                    </button>
+                    @if (index < GetBreadcrumbSegments().Count - 1)
+                    {
+                        <span class="breadcrumb-separator">/</span>
+                    }
+                }
+            </div>
+        </div>
+        
+        <div class="toolbar-center">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" 
+                       @bind="SearchQuery" 
+                       @bind:event="oninput"
+                       @bind:after="OnSearchChangedAsync"
+                       placeholder="Search files and folders..." 
+                       class="search-input" />
+                @if (!string.IsNullOrWhiteSpace(SearchQuery))
+                {
+                    <button class="clear-search" @onclick="ClearSearch">✕</button>
+                }
+            </div>
+        </div>
+        
+        <div class="toolbar-right">
+            <div class="view-controls">
+                <SfButton CssClass="@GetViewButtonClass("grid")" IconCss="e-icons e-grid" @onclick='() => ChangeView("grid")' />
+                <SfButton CssClass="@GetViewButtonClass("list")" IconCss="e-icons e-list" @onclick='() => ChangeView("list")' />
+                <SfButton CssClass="@GetViewButtonClass("details")" IconCss="e-icons e-table" @onclick='() => ChangeView("details")' />
+            </div>
+            
+            @if (AllowUpload && CanUpload())
+            {
+                <SfButton CssClass="btn-upload btn-primary" IconCss="e-icons e-upload" @onclick="ShowUploadDialogAsync">Upload</SfButton>
+            }
+            
+            @if (AllowNewFolder && CanCreateFolder())
+            {
+                <SfButton CssClass="btn-new-folder" IconCss="e-icons e-folder-add" @onclick="ShowNewFolderDialogAsync">New Folder</SfButton>
+            }
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="file-explorer-content">
+        <!-- Sidebar -->
+        @if (ShowSidebar)
+        {
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h4>Quick Access</h4>
+                    <div class="sidebar-items">
+                        @foreach (var item in QuickAccessItems)
+                        {
+                            <button class="sidebar-item @(IsCurrentPath(item.Path) ? "active" : "")" 
+                                    @onclick="() => NavigateToPathAsync(item.Path)">
+                                <span class="icon">@item.Icon</span>
+                                <span class="label">@item.Label</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                
+                @if (EnableFavorites && FavoriteFiles.Any())
+                {
+                    <div class="sidebar-section">
+                        <h4>Favorites</h4>
+                        <div class="sidebar-items">
+                            @foreach (var file in FavoriteFiles.Take(5))
+                            {
+                                <button class="sidebar-item" @onclick="() => OpenFileAsync(file)">
+                                    <span class="icon">@GetFileIcon(file)</span>
+                                    <span class="label">@GetFileName(file)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                
+                @if (ShowStorageInfo)
+                {
+                    <div class="sidebar-section storage-info">
+                        <h4>Storage</h4>
+                        <div class="storage-bar">
+                            <div class="storage-used" style="width: @(GetStoragePercentage())%"></div>
+                        </div>
+                        <div class="storage-text">
+                            @FormatFileSize(UsedStorage) of @FormatFileSize(TotalStorage) used
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- File/Folder Display Area -->
+        <div class="display-area">
+            @if (IsLoading)
+            {
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading files...</p>
+                </div>
+            }
+            else if (!GetFilteredFiles().Any())
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">📁</div>
+                    <h4>@(string.IsNullOrWhiteSpace(SearchQuery) ? "No files or folders" : "No results found")</h4>
+                    <p>@(string.IsNullOrWhiteSpace(SearchQuery) ? "This folder is empty" : $"Try a different search term")</p>
+                </div>
+            }
+            else
+            {
+                @if (CurrentView == "grid")
+                {
+                    <div class="grid-view">
+                        @foreach (var file in GetFilteredFiles())
+                        {
+                            <div class="grid-item @(IsSelected(file) ? "selected" : "") @(IsDragOver(file) ? "drag-over" : "")"
+                                 @onclick="() => HandleFileClickAsync(file)"
+                                 @ondblclick="() => HandleFileDoubleClickAsync(file)"
+                                 @oncontextmenu="(e) => ShowContextMenuAsync(e, file)"
+                                 @oncontextmenu:preventDefault
+                                 draggable="@(EnableDragDrop.ToString().ToLower())"
+                                 @ondragstart="(e) => HandleDragStart(e, file)"
+                                 @ondragover="(e) => HandleDragOver(e, file)"
+                                 @ondrop="(e) => HandleDropAsync(e, file)">
+                                
+                                <div class="file-icon">
+                                    @if (IsFolder(file))
+                                    {
+                                        <span class="folder-icon">📁</span>
+                                    }
+                                    else if (ShowThumbnails && HasThumbnail(file))
+                                    {
+                                        <img src="@GetThumbnailUrl(file)" alt="@GetFileName(file)" class="thumbnail" />
+                                    }
+                                    else
+                                    {
+                                        <span class="file-type-icon">@GetFileIcon(file)</span>
+                                    }
+                                </div>
+                                
+                                <div class="file-name" title="@GetFileName(file)">@GetFileName(file)</div>
+                                
+                                @if (ShowFileSize && !IsFolder(file))
+                                {
+                                    <div class="file-size">@FormatFileSize(GetFileSize(file))</div>
+                                }
+                                
+                                @if (EnableFavorites)
+                                {
+                                    <button class="favorite-toggle @(IsFavorite(file) ? "active" : "")" 
+                                            @onclick="() => ToggleFavoriteAsync(file)"
+                                            @onclick:stopPropagation="true">
+                                        ⭐
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else if (CurrentView == "list")
+                {
+                    <div class="list-view">
+                        @foreach (var file in GetFilteredFiles())
+                        {
+                            <div class="list-item @(IsSelected(file) ? "selected" : "")"
+                                 @onclick="() => HandleFileClickAsync(file)"
+                                 @ondblclick="() => HandleFileDoubleClickAsync(file)"
+                                 @oncontextmenu="(e) => ShowContextMenuAsync(e, file)"
+                                 @oncontextmenu:preventDefault
+                                 draggable="@(EnableDragDrop.ToString().ToLower())"
+                                 @ondragstart="(e) => HandleDragStart(e, file)"
+                                 @ondragover="(e) => HandleDragOver(e, file)"
+                                 @ondrop="(e) => HandleDropAsync(e, file)">
+                                
+                                <div class="list-item-icon">
+                                    @if (IsFolder(file))
+                                    {
+                                        <span>📁</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@GetFileIcon(file)</span>
+                                    }
+                                </div>
+                                
+                                <div class="list-item-name">@GetFileName(file)</div>
+                                
+                                <div class="list-item-actions">
+                                    @if (EnableFavorites)
+                                    {
+                                        <button class="action-btn favorite-btn @(IsFavorite(file) ? "active" : "")" 
+                                                @onclick="() => ToggleFavoriteAsync(file)"
+                                                @onclick:stopPropagation="true">
+                                            ⭐
+                                        </button>
+                                    }
+                                    
+                                    @if (AllowDownload && !IsFolder(file))
+                                    {
+                                        <button class="action-btn" @onclick="() => DownloadFileAsync(file)" @onclick:stopPropagation="true">
+                                            💾
+                                        </button>
+                                    }
+                                    
+                                    @if (CanDeleteFile(file))
+                                    {
+                                        <button class="action-btn delete-btn" @onclick="() => DeleteFileAsync(file)" @onclick:stopPropagation="true">
+                                            🗑️
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (CurrentView == "details")
+                {
+                    <div class="details-view">
+                        <div class="details-header">
+                            <div class="details-col col-name" @onclick='() => ToggleSortAsync("name")'>
+                                Name @GetSortIndicator("name")
+                            </div>
+                            <div class="details-col col-modified" @onclick='() => ToggleSortAsync("modified")'>
+                                Modified @GetSortIndicator("modified")
+                            </div>
+                            <div class="details-col col-size" @onclick='() => ToggleSortAsync("size")'>
+                                Size @GetSortIndicator("size")
+                            </div>
+                            <div class="details-col col-type">Type</div>
+                            <div class="details-col col-actions">Actions</div>
+                        </div>
+                        
+                        <div class="details-rows">
+                            @foreach (var file in GetFilteredFiles())
+                            {
+                                <div class="details-row @(IsSelected(file) ? "selected" : "")"
+                                     @onclick="() => HandleFileClickAsync(file)"
+                                     @ondblclick="() => HandleFileDoubleClickAsync(file)"
+                                     @oncontextmenu="(e) => ShowContextMenuAsync(e, file)"
+                                     @oncontextmenu:preventDefault
+                                     draggable="@(EnableDragDrop.ToString().ToLower())"
+                                     @ondragstart="(e) => HandleDragStart(e, file)"
+                                     @ondragover="(e) => HandleDragOver(e, file)"
+                                     @ondrop="(e) => HandleDropAsync(e, file)">
+                                    
+                                    <div class="details-col col-name">
+                                        <span class="file-icon">@(IsFolder(file) ? "📁" : GetFileIcon(file))</span>
+                                        <span class="file-name">@GetFileName(file)</span>
+                                    </div>
+                                    <div class="details-col col-modified">
+                                        @FormatDate(GetModifiedDate(file))
+                                    </div>
+                                    <div class="details-col col-size">
+                                        @(IsFolder(file) ? "-" : FormatFileSize(GetFileSize(file)))
+                                    </div>
+                                    <div class="details-col col-type">
+                                        @(IsFolder(file) ? "Folder" : GetFileType(file))
+                                    </div>
+                                    <div class="details-col col-actions">
+                                        @if (EnableFavorites)
+                                        {
+                                            <button class="action-btn @(IsFavorite(file) ? "active" : "")" 
+                                                    @onclick="() => ToggleFavoriteAsync(file)"
+                                                    @onclick:stopPropagation="true">
+                                                ⭐
+                                            </button>
+                                        }
+                                        @if (AllowDownload && !IsFolder(file))
+                                        {
+                                            <button class="action-btn" @onclick="() => DownloadFileAsync(file)" @onclick:stopPropagation="true">
+                                                💾
+                                            </button>
+                                        }
+                                        @if (CanDeleteFile(file))
+                                        {
+                                            <button class="action-btn" @onclick="() => DeleteFileAsync(file)" @onclick:stopPropagation="true">
+                                                🗑️
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Selection Info Bar -->
+    @if (SelectedFiles.Any())
+    {
+        <div class="selection-bar">
+            <div class="selection-info">
+                <span class="selection-count">@SelectedFiles.Count selected</span>
+                @if (SelectedFiles.Count == 1)
+                {
+                    var file = SelectedFiles.First();
+                    <span class="selection-details">
+                        @GetFileName(file) - @(IsFolder(file) ? "Folder" : FormatFileSize(GetFileSize(file)))
+                    </span>
+                }
+                else
+                {
+                    <span class="selection-details">
+                        @FormatFileSize(SelectedFiles.Where(f => !IsFolder(f)).Sum(f => GetFileSize(f)))
+                    </span>
+                }
+            </div>
+            
+            <div class="selection-actions">
+                @if (AllowDownload)
+                {
+                    <SfButton CssClass="btn-sm" @onclick="DownloadSelectedAsync">Download</SfButton>
+                }
+                @if (EnableMove)
+                {
+                    <SfButton CssClass="btn-sm" @onclick="MoveSelectedAsync">Move</SfButton>
+                }
+                @if (EnableCopy)
+                {
+                    <SfButton CssClass="btn-sm" @onclick="CopySelectedAsync">Copy</SfButton>
+                }
+                @if (CanDeleteSelected())
+                {
+                    <SfButton CssClass="btn-sm btn-danger" @onclick="DeleteSelectedAsync">Delete</SfButton>
+                }
+                <SfButton CssClass="btn-sm" @onclick="ClearSelection">Clear</SfButton>
+            </div>
+        </div>
+    }
+
+    <!-- Context Menu -->
+    @if (ShowContextMenu)
+    {
+        <div class="context-menu" style="left: @(ContextMenuX)px; top: @(ContextMenuY)px;">
+            @if (ContextMenuFile != null)
+            {
+                <button class="context-item" @onclick="() => OpenFileAsync(ContextMenuFile)">
+                    <span class="icon">📂</span>
+                    <span>Open</span>
+                </button>
+                
+                @if (AllowDownload && !IsFolder(ContextMenuFile))
+                {
+                    <button class="context-item" @onclick="() => DownloadFileAsync(ContextMenuFile)">
+                        <span class="icon">💾</span>
+                        <span>Download</span>
+                    </button>
+                }
+                
+                @if (AllowRename && CanRenameFile(ContextMenuFile))
+                {
+                    <button class="context-item" @onclick="() => ShowRenameDialogAsync(ContextMenuFile)">
+                        <span class="icon">✏️</span>
+                        <span>Rename</span>
+                    </button>
+                }
+                
+                <div class="context-divider"></div>
+                
+                @if (EnableCopy)
+                {
+                    <button class="context-item" @onclick="() => CopyFileAsync(ContextMenuFile)">
+                        <span class="icon">📋</span>
+                        <span>Copy</span>
+                    </button>
+                }
+                
+                @if (EnableMove)
+                {
+                    <button class="context-item" @onclick="() => MoveFileAsync(ContextMenuFile)">
+                        <span class="icon">✂️</span>
+                        <span>Move</span>
+                    </button>
+                }
+                
+                <div class="context-divider"></div>
+                
+                @if (CanDeleteFile(ContextMenuFile))
+                {
+                    <button class="context-item delete" @onclick="() => DeleteFileAsync(ContextMenuFile)">
+                        <span class="icon">🗑️</span>
+                        <span>Delete</span>
+                    </button>
+                }
+                
+                <button class="context-item" @onclick="() => ShowPropertiesAsync(ContextMenuFile)">
+                    <span class="icon">ℹ️</span>
+                    <span>Properties</span>
+                </button>
+            }
+        </div>
+        
+        <div class="context-menu-backdrop" @onclick="CloseContextMenu"></div>
+    }
+
+    <!-- Upload Dialog -->
+    @if (ShowUploadDialog)
+    {
+        <div class="modal-overlay" @onclick="CloseUploadDialog">
+            <div class="modal-dialog" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>Upload Files</h3>
+                    <button class="close-btn" @onclick="CloseUploadDialog">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-area @(IsDraggingFile ? "dragging" : "")"
+                         @ondragenter="HandleUploadDragEnter"
+                         @ondragleave="HandleUploadDragLeave"
+                         @ondragover:preventDefault
+                         @ondrop="HandleUploadDropAsync"
+                         @ondrop:preventDefault>
+                        <div class="upload-icon">📤</div>
+                        <p>Drag and drop files here</p>
+                        <p class="upload-hint">or</p>
+                        <SfButton CssClass="btn-browse">Browse Files</SfButton>
+                    </div>
+                    
+                    @if (UploadQueue.Any())
+                    {
+                        <div class="upload-queue">
+                            <h4>Upload Queue (@UploadQueue.Count files)</h4>
+                            @foreach (var upload in UploadQueue)
+                            {
+                                <div class="upload-item">
+                                    <span class="file-name">@upload.Name</span>
+                                    <span class="file-size">@FormatFileSize(upload.Size)</span>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: @(upload.Progress)%"></div>
+                                    </div>
+                                    <span class="progress-text">@upload.Progress%</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <SfButton CssClass="btn-cancel" @onclick="CloseUploadDialog">Cancel</SfButton>
+                    <SfButton CssClass="btn-primary" Disabled="@(!UploadQueue.Any())" @onclick="StartUploadAsync">Upload</SfButton>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- New Folder Dialog -->
+    @if (ShowNewFolderDialog)
+    {
+        <div class="modal-overlay" @onclick="CloseNewFolderDialog">
+            <div class="modal-dialog modal-sm" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>New Folder</h3>
+                    <button class="close-btn" @onclick="CloseNewFolderDialog">✕</button>
+                </div>
+                <div class="modal-body">
+                    <label>Folder Name</label>
+                    <input type="text" @bind="NewFolderName" class="form-input" placeholder="Enter folder name..." />
+                </div>
+                <div class="modal-footer">
+                    <SfButton CssClass="btn-cancel" @onclick="CloseNewFolderDialog">Cancel</SfButton>
+                    <SfButton CssClass="btn-primary" Disabled="@(string.IsNullOrWhiteSpace(NewFolderName))" @onclick="CreateFolderAsync">Create</SfButton>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Properties Dialog -->
+    @if (ShowPropertiesDialog && PropertiesFile != null)
+    {
+        <div class="modal-overlay" @onclick="ClosePropertiesDialog">
+            <div class="modal-dialog" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>Properties</h3>
+                    <button class="close-btn" @onclick="ClosePropertiesDialog">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="properties-grid">
+                        <div class="property-row">
+                            <span class="property-label">Name:</span>
+                            <span class="property-value">@GetFileName(PropertiesFile)</span>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Type:</span>
+                            <span class="property-value">@(IsFolder(PropertiesFile) ? "Folder" : GetFileType(PropertiesFile))</span>
+                        </div>
+                        @if (!IsFolder(PropertiesFile))
+                        {
+                            <div class="property-row">
+                                <span class="property-label">Size:</span>
+                                <span class="property-value">@FormatFileSize(GetFileSize(PropertiesFile))</span>
+                            </div>
+                        }
+                        <div class="property-row">
+                            <span class="property-label">Modified:</span>
+                            <span class="property-value">@GetModifiedDate(PropertiesFile).ToString("F")</span>
+                        </div>
+                        <div class="property-row">
+                            <span class="property-label">Path:</span>
+                            <span class="property-value">@GetFilePath(PropertiesFile)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <SfButton CssClass="btn-primary" @onclick="ClosePropertiesDialog">Close</SfButton>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<TFile> Files { get; set; } = new();
+    [Parameter] public EventCallback<List<TFile>> FilesChanged { get; set; }
+    [Parameter] public string CurrentPath { get; set; } = "/";
+    [Parameter] public EventCallback<string> CurrentPathChanged { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // File Access Functions
+    [Parameter] public Func<TFile, string> FileNameFunc { get; set; } = file => file?.ToString() ?? "";
+    [Parameter] public Func<TFile, string> FilePathFunc { get; set; } = file => "/";
+    [Parameter] public Func<TFile, long> FileSizeFunc { get; set; } = file => 0;
+    [Parameter] public Func<TFile, DateTime> ModifiedDateFunc { get; set; } = file => DateTime.Now;
+    [Parameter] public Func<TFile, bool> IsFolderFunc { get; set; } = file => false;
+    [Parameter] public Func<TFile, string> FileTypeFunc { get; set; } = file => "File";
+    [Parameter] public Func<TFile, string?> ThumbnailUrlFunc { get; set; } = file => null;
+    [Parameter] public Func<TFile, bool> CanDeleteFunc { get; set; } = file => true;
+    [Parameter] public Func<TFile, bool> CanRenameFunc { get; set; } = file => true;
+    
+    // Events
+    [Parameter] public EventCallback<TFile> OnFileSelected { get; set; }
+    [Parameter] public EventCallback<TFile> OnFileOpened { get; set; }
+    [Parameter] public EventCallback<TFile> OnFileDeleted { get; set; }
+    [Parameter] public EventCallback<TFile> OnFileDownloaded { get; set; }
+    [Parameter] public EventCallback<(TFile File, string NewName)> OnFileRenamed { get; set; }
+    [Parameter] public EventCallback<string> OnFolderCreated { get; set; }
+    [Parameter] public EventCallback<List<TFile>> OnFilesUploaded { get; set; }
+    [Parameter] public EventCallback<string> OnPathChanged { get; set; }
+    
+    // Feature Flags
+    [Parameter] public bool ShowSidebar { get; set; } = true;
+    [Parameter] public bool ShowThumbnails { get; set; } = true;
+    [Parameter] public bool ShowFileSize { get; set; } = true;
+    [Parameter] public bool ShowStorageInfo { get; set; } = true;
+    [Parameter] public bool AllowUpload { get; set; } = true;
+    [Parameter] public bool AllowDownload { get; set; } = true;
+    [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public bool AllowRename { get; set; } = true;
+    [Parameter] public bool AllowNewFolder { get; set; } = true;
+    [Parameter] public bool EnableDragDrop { get; set; } = true;
+    [Parameter] public bool EnableFavorites { get; set; } = true;
+    [Parameter] public bool EnableCopy { get; set; } = true;
+    [Parameter] public bool EnableMove { get; set; } = true;
+    [Parameter] public bool EnableMultiSelect { get; set; } = true;
+    
+    // Configuration
+    [Parameter] public long TotalStorage { get; set; } = 10737418240; // 10 GB
+    [Parameter] public long UsedStorage { get; set; }
+    [Parameter] public List<QuickAccessItem> QuickAccessItems { get; set; } = new();
+    [Parameter] public List<TFile> FavoriteFiles { get; set; } = new();
+    
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "FileExplorer";
+    
+    // Accessibility
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    // State
+    private string CurrentView = "grid";
+    private string SearchQuery = "";
+    private string SortBy = "name";
+    private bool SortAscending = true;
+    private List<TFile> SelectedFiles = new();
+    private List<string> NavigationHistory = new();
+    private int NavigationIndex = -1;
+    private bool IsLoading = false;
+    private bool _canUpload = true;
+    private bool _canCreateFolder = true;
+    
+    // Context Menu
+    private bool ShowContextMenu = false;
+    private TFile? ContextMenuFile;
+    private double ContextMenuX;
+    private double ContextMenuY;
+    
+    // Dialogs
+    private bool ShowUploadDialog = false;
+    private bool ShowNewFolderDialog = false;
+    private bool ShowPropertiesDialog = false;
+    private TFile? PropertiesFile;
+    private string NewFolderName = "";
+    private List<UploadItem> UploadQueue = new();
+    private bool IsDraggingFile = false;
+    
+    // Drag & Drop
+    private TFile? DraggedFile;
+    private TFile? DropTargetFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _canUpload = await CanPerformActionAsync("upload");
+        _canCreateFolder = await CanPerformActionAsync("create_folder");
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ViewFiles",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Path"] = CurrentPath
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        NavigationHistory.Add(CurrentPath);
+        NavigationIndex = 0;
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(AriaLabel)) attrs["aria-label"] = AriaLabel;
+        if (AdditionalAttributes != null)
+        {
+            foreach (var attr in AdditionalAttributes)
+            {
+                attrs[attr.Key] = attr.Value;
+            }
+        }
+        return attrs;
+    }
+
+    private string GetThemeClass() => "theme-light";
+
+    private async Task<bool> CanPerformActionAsync(string action)
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            return await PermissionService.HasPermissionAsync($"{RequiredPermission}_{action}");
+        }
+        return true;
+    }
+
+    private bool CanUpload() => _canUpload;
+    private bool CanCreateFolder() => _canCreateFolder;
+
+    // File Access
+    private string GetFileName(TFile file) => FileNameFunc(file);
+    private string GetFilePath(TFile file) => FilePathFunc(file);
+    private long GetFileSize(TFile file) => FileSizeFunc(file);
+    private DateTime GetModifiedDate(TFile file) => ModifiedDateFunc(file);
+    private bool IsFolder(TFile file) => IsFolderFunc(file);
+    private string GetFileType(TFile file) => FileTypeFunc(file);
+    private string? GetThumbnailUrl(TFile file) => ThumbnailUrlFunc(file);
+    private bool CanDeleteFile(TFile file) => AllowDelete && CanDeleteFunc(file);
+    private bool CanRenameFile(TFile file) => AllowRename && CanRenameFunc(file);
+    
+    private bool HasThumbnail(TFile file) => !string.IsNullOrEmpty(GetThumbnailUrl(file));
+
+    // File Filtering
+    private List<TFile> GetFilteredFiles()
+    {
+        var filtered = Files.Where(f => GetFilePath(f).StartsWith(CurrentPath) || 
+                                        GetFilePath(f) == CurrentPath.TrimEnd('/')).ToList();
+        
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            filtered = filtered.Where(f => GetFileName(f).Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        
+        // Sorting
+        filtered = (SortBy, SortAscending) switch
+        {
+            ("name", true) => filtered.OrderBy(f => IsFolder(f) ? 0 : 1).ThenBy(f => GetFileName(f)).ToList(),
+            ("name", false) => filtered.OrderBy(f => IsFolder(f) ? 0 : 1).ThenByDescending(f => GetFileName(f)).ToList(),
+            ("modified", true) => filtered.OrderBy(f => GetModifiedDate(f)).ToList(),
+            ("modified", false) => filtered.OrderByDescending(f => GetModifiedDate(f)).ToList(),
+            ("size", true) => filtered.OrderBy(f => GetFileSize(f)).ToList(),
+            ("size", false) => filtered.OrderByDescending(f => GetFileSize(f)).ToList(),
+            _ => filtered
+        };
+        
+        return filtered;
+    }
+
+    // Navigation
+    private List<string> GetBreadcrumbSegments()
+    {
+        if (CurrentPath == "/") return new List<string> { "Home" };
+        var segments = CurrentPath.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+        segments.Insert(0, "Home");
+        return segments;
+    }
+
+    private bool CanNavigateBack() => NavigationIndex > 0;
+    private bool CanNavigateForward() => NavigationIndex < NavigationHistory.Count - 1;
+    private bool CanNavigateUp() => CurrentPath != "/";
+
+    private async Task NavigateBackAsync()
+    {
+        if (CanNavigateBack())
+        {
+            NavigationIndex--;
+            await NavigateToPathAsync(NavigationHistory[NavigationIndex], false);
+        }
+    }
+
+    private async Task NavigateForwardAsync()
+    {
+        if (CanNavigateForward())
+        {
+            NavigationIndex++;
+            await NavigateToPathAsync(NavigationHistory[NavigationIndex], false);
+        }
+    }
+
+    private async Task NavigateUpAsync()
+    {
+        if (CanNavigateUp())
+        {
+            var parentPath = CurrentPath.TrimEnd('/');
+            var lastSlash = parentPath.LastIndexOf('/');
+            var newPath = lastSlash > 0 ? parentPath.Substring(0, lastSlash) : "/";
+            await NavigateToPathAsync(newPath);
+        }
+    }
+
+    private async Task NavigateToBreadcrumbAsync(int index)
+    {
+        var segments = GetBreadcrumbSegments();
+        if (index == 0)
+        {
+            await NavigateToPathAsync("/");
+        }
+        else
+        {
+            var path = "/" + string.Join("/", segments.Skip(1).Take(index));
+            await NavigateToPathAsync(path);
+        }
+    }
+
+    private async Task NavigateToPathAsync(string path, bool addToHistory = true)
+    {
+        CurrentPath = path;
+        await CurrentPathChanged.InvokeAsync(CurrentPath);
+        await OnPathChanged.InvokeAsync(CurrentPath);
+        
+        if (addToHistory)
+        {
+            NavigationHistory = NavigationHistory.Take(NavigationIndex + 1).ToList();
+            NavigationHistory.Add(path);
+            NavigationIndex = NavigationHistory.Count - 1;
+        }
+        
+        ClearSelection();
+        StateHasChanged();
+    }
+
+    private bool IsCurrentPath(string path) => CurrentPath == path;
+
+    // File Operations
+    private async Task HandleFileClickAsync(TFile file)
+    {
+        if (EnableMultiSelect && IsSelected(file))
+        {
+            SelectedFiles.Remove(file);
+        }
+        else
+        {
+            if (!EnableMultiSelect)
+            {
+                SelectedFiles.Clear();
+            }
+            SelectedFiles.Add(file);
+        }
+        
+        await OnFileSelected.InvokeAsync(file);
+        StateHasChanged();
+    }
+
+    private async Task HandleFileDoubleClickAsync(TFile file)
+    {
+        if (IsFolder(file))
+        {
+            await NavigateToPathAsync(GetFilePath(file));
+        }
+        else
+        {
+            await OpenFileAsync(file);
+        }
+    }
+
+    private async Task OpenFileAsync(TFile file)
+    {
+        await OnFileOpened.InvokeAsync(file);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "OpenFile",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["FileName"] = GetFileName(file),
+                    ["FilePath"] = GetFilePath(file)
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
+    private async Task DeleteFileAsync(TFile file)
+    {
+        await OnFileDeleted.InvokeAsync(file);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "DeleteFile",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["FileName"] = GetFileName(file)
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        CloseContextMenu();
+    }
+
+    private async Task DownloadFileAsync(TFile file)
+    {
+        await OnFileDownloaded.InvokeAsync(file);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "DownloadFile",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["FileName"] = GetFileName(file)
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        CloseContextMenu();
+    }
+
+    // Selection
+    private bool IsSelected(TFile file) => SelectedFiles.Contains(file);
+    private void ClearSelection() => SelectedFiles.Clear();
+    private bool CanDeleteSelected() => SelectedFiles.All(f => CanDeleteFile(f));
+
+    private async Task DeleteSelectedAsync()
+    {
+        foreach (var file in SelectedFiles.ToList())
+        {
+            await DeleteFileAsync(file);
+        }
+        ClearSelection();
+    }
+
+    private async Task DownloadSelectedAsync()
+    {
+        foreach (var file in SelectedFiles.Where(f => !IsFolder(f)))
+        {
+            await DownloadFileAsync(file);
+        }
+    }
+
+    private async Task MoveSelectedAsync()
+    {
+        // Implementation would show move dialog
+    }
+
+    private async Task CopySelectedAsync()
+    {
+        // Implementation would show copy dialog
+    }
+
+    // View Management
+    private void ChangeView(string view)
+    {
+        CurrentView = view;
+        StateHasChanged();
+    }
+
+    private string GetViewButtonClass(string view)
+    {
+        return $"btn-view{(CurrentView == view ? " active" : "")}";
+    }
+
+    // Sorting
+    private async Task ToggleSortAsync(string column)
+    {
+        if (SortBy == column)
+        {
+            SortAscending = !SortAscending;
+        }
+        else
+        {
+            SortBy = column;
+            SortAscending = true;
+        }
+        StateHasChanged();
+    }
+
+    private string GetSortIndicator(string column)
+    {
+        if (SortBy != column) return "";
+        return SortAscending ? "▲" : "▼";
+    }
+
+    // Search
+    private async Task OnSearchChangedAsync()
+    {
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        SearchQuery = "";
+        StateHasChanged();
+    }
+
+    // Context Menu
+    private async Task ShowContextMenuAsync(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, TFile file)
+    {
+        ContextMenuFile = file;
+        ContextMenuX = e.ClientX;
+        ContextMenuY = e.ClientY;
+        ShowContextMenu = true;
+        StateHasChanged();
+    }
+
+    private void CloseContextMenu()
+    {
+        ShowContextMenu = false;
+        ContextMenuFile = default;
+    }
+
+    // Dialogs
+    private async Task ShowUploadDialogAsync()
+    {
+        ShowUploadDialog = true;
+        StateHasChanged();
+    }
+
+    private void CloseUploadDialog()
+    {
+        ShowUploadDialog = false;
+        UploadQueue.Clear();
+    }
+
+    private async Task ShowNewFolderDialogAsync()
+    {
+        ShowNewFolderDialog = true;
+        StateHasChanged();
+    }
+
+    private void CloseNewFolderDialog()
+    {
+        ShowNewFolderDialog = false;
+        NewFolderName = "";
+    }
+
+    private async Task ShowPropertiesAsync(TFile file)
+    {
+        PropertiesFile = file;
+        ShowPropertiesDialog = true;
+        CloseContextMenu();
+        StateHasChanged();
+    }
+
+    private void ClosePropertiesDialog()
+    {
+        ShowPropertiesDialog = false;
+        PropertiesFile = default;
+    }
+
+    private async Task ShowRenameDialogAsync(TFile file)
+    {
+        // Implementation would show rename dialog
+        CloseContextMenu();
+    }
+
+    private async Task CreateFolderAsync()
+    {
+        await OnFolderCreated.InvokeAsync(NewFolderName);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CreateFolder",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["FolderName"] = NewFolderName,
+                    ["Path"] = CurrentPath
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        CloseNewFolderDialog();
+    }
+
+    private async Task StartUploadAsync()
+    {
+        // Implementation would handle actual file upload
+        CloseUploadDialog();
+    }
+
+    // Drag & Drop
+    private void HandleDragStart(Microsoft.AspNetCore.Components.Web.DragEventArgs e, TFile file)
+    {
+        DraggedFile = file;
+    }
+
+    private void HandleDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs e, TFile file)
+    {
+        if (IsFolder(file))
+        {
+            DropTargetFile = file;
+        }
+    }
+
+    private async Task HandleDropAsync(Microsoft.AspNetCore.Components.Web.DragEventArgs e, TFile targetFile)
+    {
+        if (DraggedFile != null && IsFolder(targetFile))
+        {
+            // Implementation would move dragged file to target folder
+        }
+        DraggedFile = default;
+        DropTargetFile = default;
+    }
+
+    private bool IsDragOver(TFile file) => DropTargetFile != null && DropTargetFile.Equals(file);
+
+    private void HandleUploadDragEnter()
+    {
+        IsDraggingFile = true;
+    }
+
+    private void HandleUploadDragLeave()
+    {
+        IsDraggingFile = false;
+    }
+
+    private async Task HandleUploadDropAsync(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        IsDraggingFile = false;
+        // Implementation would handle dropped files
+    }
+
+    // Favorites
+    private bool IsFavorite(TFile file) => FavoriteFiles.Contains(file);
+    
+    private async Task ToggleFavoriteAsync(TFile file)
+    {
+        if (IsFavorite(file))
+        {
+            FavoriteFiles.Remove(file);
+        }
+        else
+        {
+            FavoriteFiles.Add(file);
+        }
+        StateHasChanged();
+    }
+
+    // File Operations (stubs)
+    private async Task CopyFileAsync(TFile file)
+    {
+        CloseContextMenu();
+    }
+
+    private async Task MoveFileAsync(TFile file)
+    {
+        CloseContextMenu();
+    }
+
+    // Helpers
+    private string GetFileIcon(TFile file)
+    {
+        var type = GetFileType(file).ToLower();
+        return type switch
+        {
+            "pdf" => "📄",
+            "doc" or "docx" => "📝",
+            "xls" or "xlsx" => "📊",
+            "ppt" or "pptx" => "📽️",
+            "jpg" or "jpeg" or "png" or "gif" => "🖼️",
+            "mp4" or "avi" or "mov" => "🎬",
+            "mp3" or "wav" => "🎵",
+            "zip" or "rar" => "🗜️",
+            "txt" => "📃",
+            _ => "📄"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        var span = DateTime.Now - date;
+        if (span.TotalDays < 1) return date.ToString("h:mm tt");
+        if (span.TotalDays < 7) return date.ToString("ddd, h:mm tt");
+        return date.ToString("MMM d, yyyy");
+    }
+
+    private double GetStoragePercentage()
+    {
+        return TotalStorage > 0 ? (double)UsedStorage / TotalStorage * 100 : 0;
+    }
+}

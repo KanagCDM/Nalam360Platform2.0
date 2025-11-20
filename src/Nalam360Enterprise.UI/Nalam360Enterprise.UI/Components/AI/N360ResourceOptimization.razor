@@ -1,0 +1,746 @@
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Schedule
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-resource-optimization" @attributes="GetHtmlAttributes()">
+    @if (!string.IsNullOrEmpty(RequiredPermission))
+    {
+        if (!HasPermission && HideIfNoPermission)
+        {
+            return;
+        }
+        if (!HasPermission)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> You don't have permission to view resource optimization.
+            </div>
+            return;
+        }
+    }
+
+    <div class="optimization-header">
+        <div class="header-left">
+            <h3>
+                <i class="fas fa-chart-line"></i> AI Resource Optimization
+                @if (UseRealAI)
+                {
+                    <span class="badge bg-success ms-2">🤖 Real AI</span>
+                }
+            </h3>
+            <p class="text-muted">Intelligent allocation and scheduling across all healthcare resources</p>
+        </div>
+        <div class="header-right">
+            <button @onclick="RunOptimization" class="btn btn-primary" disabled="@IsOptimizing">
+                <i class="fas fa-magic @(IsOptimizing ? "fa-spin" : "")"></i> Run AI Optimization
+            </button>
+            <button @onclick="RefreshData" class="btn btn-outline-secondary ms-2" disabled="@IsLoading">
+                <i class="fas fa-sync-alt @(IsLoading ? "fa-spin" : "")"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    @if (IsOptimizing)
+    {
+        <div class="optimization-progress">
+            <div class="progress-content">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Optimizing resources...</span>
+                </div>
+                <h5>AI Optimization in Progress</h5>
+                <p>Analyzing resource utilization patterns and generating optimal schedules...</p>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: @OptimizationProgress%"
+                         aria-valuenow="@OptimizationProgress" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        @OptimizationProgress%
+                    </div>
+                </div>
+                <small class="text-muted mt-2">@CurrentOptimizationStep</small>
+            </div>
+        </div>
+    }
+    else if (OptimizationResult != null)
+    {
+        <div class="optimization-summary">
+            <div class="summary-card efficiency">
+                <div class="card-icon">
+                    <i class="fas fa-tachometer-alt"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Overall Efficiency</div>
+                    <div class="card-value">@OptimizationResult.OverallEfficiency.ToString("F1")%</div>
+                    <div class="card-change positive">
+                        <i class="fas fa-arrow-up"></i> +@OptimizationResult.EfficiencyImprovement.ToString("F1")%
+                    </div>
+                </div>
+            </div>
+            <div class="summary-card cost">
+                <div class="card-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Cost Savings</div>
+                    <div class="card-value">$@OptimizationResult.EstimatedSavings.ToString("N0")</div>
+                    <div class="card-change positive">
+                        <i class="fas fa-arrow-down"></i> -@OptimizationResult.CostReduction.ToString("F1")%
+                    </div>
+                </div>
+            </div>
+            <div class="summary-card utilization">
+                <div class="card-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Resource Utilization</div>
+                    <div class="card-value">@OptimizationResult.ResourceUtilization.ToString("F1")%</div>
+                    <div class="card-change positive">
+                        <i class="fas fa-arrow-up"></i> +@OptimizationResult.UtilizationImprovement.ToString("F1")%
+                    </div>
+                </div>
+            </div>
+            <div class="summary-card wait-time">
+                <div class="card-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-label">Avg Wait Time</div>
+                    <div class="card-value">@OptimizationResult.AverageWaitTime min</div>
+                    <div class="card-change positive">
+                        <i class="fas fa-arrow-down"></i> -@OptimizationResult.WaitTimeReduction.ToString("F1")%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="resource-tabs">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "staff" ? "active" : "")" 
+                            @onclick='() => ActiveTab = "staff"' 
+                            type="button">
+                        <i class="fas fa-users"></i> Staff Scheduling
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "beds" ? "active" : "")" 
+                            @onclick='() => ActiveTab = "beds"' 
+                            type="button">
+                        <i class="fas fa-bed"></i> Bed Management
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "equipment" ? "active" : "")" 
+                            @onclick='() => ActiveTab = "equipment"' 
+                            type="button">
+                        <i class="fas fa-stethoscope"></i> Equipment
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "or" ? "active" : "")" 
+                            @onclick='() => ActiveTab = "or"' 
+                            type="button">
+                        <i class="fas fa-procedures"></i> OR Scheduling
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                @if (ActiveTab == "staff")
+                {
+                    <div class="tab-pane active">
+                        <div class="optimization-section">
+                            <h5>Staff Allocation Optimization</h5>
+                            <div class="section-grid">
+                                <div class="chart-container">
+                                    <SfChart Title="Staff Utilization by Department" Height="350px">
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryYAxis Title="Utilization %" Minimum="0" Maximum="100"></ChartPrimaryYAxis>
+                                        <ChartSeriesCollection>
+                                            <ChartSeries DataSource="@StaffUtilization" XName="Department" YName="CurrentUtilization" 
+                                                         Name="Current" Type="ChartSeriesType.Column" Fill="#FFC107"></ChartSeries>
+                                            <ChartSeries DataSource="@StaffUtilization" XName="Department" YName="OptimizedUtilization" 
+                                                         Name="Optimized" Type="ChartSeriesType.Column" Fill="#4CAF50"></ChartSeries>
+                                        </ChartSeriesCollection>
+                                        <ChartLegendSettings Visible="true"></ChartLegendSettings>
+                                        <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                                    </SfChart>
+                                </div>
+                                <div class="recommendations-panel">
+                                    <h6>AI Recommendations</h6>
+                                    @foreach (var rec in StaffRecommendations)
+                                    {
+                                        var priorityClass = rec.Priority == "High" ? "danger" : rec.Priority == "Medium" ? "warning" : "info";
+                                        <div class="recommendation-item">
+                                            <div class="rec-header">
+                                                <span class="badge bg-@priorityClass">@rec.Priority</span>
+                                                <strong>@rec.Department</strong>
+                                            </div>
+                                            <p class="rec-description">@rec.Recommendation</p>
+                                            <div class="rec-impact">
+                                                <small><i class="fas fa-chart-line"></i> Impact: @rec.ExpectedImpact</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="staff-grid">
+                                <SfGrid DataSource="@StaffSchedule" AllowPaging="true" PageSize="10">
+                                    <GridColumns>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.StaffName)" HeaderText="Staff Member" Width="150"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.Role)" HeaderText="Role" Width="120"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.Department)" HeaderText="Department" Width="120"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.CurrentShift)" HeaderText="Current Shift" Width="120"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.OptimizedShift)" HeaderText="Optimized Shift" Width="120">
+                                            <Template>
+                                                @{
+                                                    var staff = context as StaffScheduleItem;
+                                                    <span class="badge bg-success">@staff!.OptimizedShift</span>
+                                                }
+                                            </Template>
+                                        </GridColumn>
+                                        <GridColumn Field="@nameof(StaffScheduleItem.UtilizationRate)" HeaderText="Utilization" Width="100">
+                                            <Template>
+                                                @{
+                                                    var staff = context as StaffScheduleItem;
+                                                    <span>@staff!.UtilizationRate.ToString("F1")%</span>
+                                                }
+                                            </Template>
+                                        </GridColumn>
+                                        <GridColumn HeaderText="Status" Width="100">
+                                            <Template>
+                                                @{
+                                                    var staff = context as StaffScheduleItem;
+                                                    var statusClass = staff!.Status == "Optimal" ? "success" : staff.Status == "Underutilized" ? "warning" : "danger";
+                                                    <span class="badge bg-@statusClass">@staff.Status</span>
+                                                }
+                                            </Template>
+                                        </GridColumn>
+                                    </GridColumns>
+                                </SfGrid>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (ActiveTab == "beds")
+                {
+                    <div class="tab-pane active">
+                        <div class="optimization-section">
+                            <h5>Bed Capacity Management</h5>
+                            <div class="bed-overview">
+                                <div class="bed-stat">
+                                    <div class="stat-value">@BedData.TotalBeds</div>
+                                    <div class="stat-label">Total Beds</div>
+                                </div>
+                                <div class="bed-stat occupied">
+                                    <div class="stat-value">@BedData.OccupiedBeds</div>
+                                    <div class="stat-label">Occupied</div>
+                                </div>
+                                <div class="bed-stat available">
+                                    <div class="stat-value">@BedData.AvailableBeds</div>
+                                    <div class="stat-label">Available</div>
+                                </div>
+                                <div class="bed-stat turnover">
+                                    <div class="stat-value">@BedData.AverageTurnoverTime min</div>
+                                    <div class="stat-label">Avg Turnover</div>
+                                </div>
+                                <div class="bed-stat occupancy">
+                                    <div class="stat-value">@BedData.OccupancyRate.ToString("F1")%</div>
+                                    <div class="stat-label">Occupancy Rate</div>
+                                </div>
+                            </div>
+                            <div class="section-grid">
+                                <div class="chart-container">
+                                    <SfChart Title="Bed Occupancy by Unit" Height="350px">
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryYAxis Title="Beds" Minimum="0"></ChartPrimaryYAxis>
+                                        <ChartSeriesCollection>
+                                            <ChartSeries DataSource="@BedOccupancyByUnit" XName="Unit" YName="Occupied" 
+                                                         Name="Occupied" Type="ChartSeriesType.StackingColumn" Fill="#F44336"></ChartSeries>
+                                            <ChartSeries DataSource="@BedOccupancyByUnit" XName="Unit" YName="Available" 
+                                                         Name="Available" Type="ChartSeriesType.StackingColumn" Fill="#4CAF50"></ChartSeries>
+                                        </ChartSeriesCollection>
+                                        <ChartLegendSettings Visible="true"></ChartLegendSettings>
+                                        <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                                    </SfChart>
+                                </div>
+                                <div class="predictions-panel">
+                                    <h6>Predictive Insights</h6>
+                                    @foreach (var prediction in BedPredictions)
+                                    {
+                                        <div class="prediction-item">
+                                            <div class="prediction-header">
+                                                <i class="fas fa-brain text-primary"></i>
+                                                <strong>@prediction.Unit</strong>
+                                            </div>
+                                            <p>@prediction.Prediction</p>
+                                            <div class="prediction-action">
+                                                <small class="text-primary"><i class="fas fa-lightbulb"></i> @prediction.RecommendedAction</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (ActiveTab == "equipment")
+                {
+                    <div class="tab-pane active">
+                        <div class="optimization-section">
+                            <h5>Equipment Utilization & Maintenance</h5>
+                            <div class="section-grid">
+                                <div class="chart-container">
+                                    <SfChart Title="Equipment Usage Patterns" Height="350px">
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryYAxis Title="Utilization %" Minimum="0" Maximum="100"></ChartPrimaryYAxis>
+                                        <ChartSeriesCollection>
+                                            <ChartSeries DataSource="@EquipmentUtilization" XName="Equipment" YName="Utilization" 
+                                                         Type="ChartSeriesType.Bar" Fill="#2196F3">
+                                                <ChartMarker>
+                                                    <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top"></ChartDataLabel>
+                                                </ChartMarker>
+                                            </ChartSeries>
+                                        </ChartSeriesCollection>
+                                        <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                                    </SfChart>
+                                </div>
+                                <div class="equipment-alerts">
+                                    <h6>Alerts & Maintenance</h6>
+                                    @foreach (var alert in EquipmentAlerts)
+                                    {
+                                        var alertClass = alert.Severity == "Critical" ? "danger" : alert.Severity == "Warning" ? "warning" : "info";
+                                        <div class="alert alert-@alertClass">
+                                            <div class="alert-header">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <strong>@alert.Equipment</strong>
+                                            </div>
+                                            <p>@alert.Message</p>
+                                            <small class="text-muted">@alert.Action</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <SfGrid DataSource="@EquipmentInventory" AllowPaging="true" PageSize="10">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(EquipmentItem.Name)" HeaderText="Equipment" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(EquipmentItem.Type)" HeaderText="Type" Width="120"></GridColumn>
+                                    <GridColumn Field="@nameof(EquipmentItem.Location)" HeaderText="Location" Width="120"></GridColumn>
+                                    <GridColumn HeaderText="Utilization" Width="120">
+                                        <Template>
+                                            @{
+                                                var equipment = context as EquipmentItem;
+                                                var utilColor = equipment!.Utilization >= 80 ? "success" : equipment.Utilization >= 50 ? "warning" : "danger";
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-@utilColor" style="width: @equipment.Utilization%">
+                                                        @equipment.Utilization.ToString("F0")%
+                                                    </div>
+                                                </div>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(EquipmentItem.MaintenanceDue)" HeaderText="Maintenance Due" Width="120" Format="d"></GridColumn>
+                                    <GridColumn HeaderText="Status" Width="100">
+                                        <Template>
+                                            @{
+                                                var equipment = context as EquipmentItem;
+                                                var statusClass = equipment!.Status == "Available" ? "success" : equipment.Status == "In Use" ? "primary" : "danger";
+                                                <span class="badge bg-@statusClass">@equipment.Status</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </div>
+                }
+
+                @if (ActiveTab == "or")
+                {
+                    <div class="tab-pane active">
+                        <div class="optimization-section">
+                            <h5>Operating Room Schedule Optimization</h5>
+                            <div class="or-stats">
+                                <div class="or-stat">
+                                    <div class="stat-icon"><i class="fas fa-procedures"></i></div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@ORData.TotalRooms</div>
+                                        <div class="stat-label">OR Rooms</div>
+                                    </div>
+                                </div>
+                                <div class="or-stat">
+                                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@ORData.ScheduledProcedures</div>
+                                        <div class="stat-label">Scheduled Today</div>
+                                    </div>
+                                </div>
+                                <div class="or-stat">
+                                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@ORData.AverageTurnoverTime min</div>
+                                        <div class="stat-label">Turnover Time</div>
+                                    </div>
+                                </div>
+                                <div class="or-stat">
+                                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@ORData.Utilization.ToString("F1")%</div>
+                                        <div class="stat-label">Utilization</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="section-grid">
+                                <div class="chart-container">
+                                    <SfChart Title="OR Utilization by Time Block" Height="350px">
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryYAxis Title="Utilization %" Minimum="0" Maximum="100"></ChartPrimaryYAxis>
+                                        <ChartSeriesCollection>
+                                            <ChartSeries DataSource="@ORUtilizationByTime" XName="TimeBlock" YName="Utilization" 
+                                                         Type="ChartSeriesType.Area" Fill="#9C27B0" Opacity="0.6">
+                                                <ChartMarker Visible="true" Height="8" Width="8"></ChartMarker>
+                                            </ChartSeries>
+                                        </ChartSeriesCollection>
+                                        <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                                    </SfChart>
+                                </div>
+                                <div class="or-optimization-panel">
+                                    <h6>Schedule Optimization</h6>
+                                    @foreach (var opt in OROptimizations)
+                                    {
+                                        <div class="optimization-suggestion">
+                                            <div class="suggestion-header">
+                                                <i class="fas fa-lightbulb text-warning"></i>
+                                                <strong>@opt.Room</strong>
+                                            </div>
+                                            <p>@opt.Suggestion</p>
+                                            <div class="suggestion-benefit">
+                                                <span class="badge bg-success">Time Saved: @opt.TimeSavings min</span>
+                                                <span class="badge bg-info ms-2">Cost: $@opt.CostSavings</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <SfGrid DataSource="@ORSchedule" AllowPaging="true" PageSize="10">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ORScheduleItem.Room)" HeaderText="OR Room" Width="100"></GridColumn>
+                                    <GridColumn Field="@nameof(ORScheduleItem.ProcedureType)" HeaderText="Procedure" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(ORScheduleItem.Surgeon)" HeaderText="Surgeon" Width="120"></GridColumn>
+                                    <GridColumn Field="@nameof(ORScheduleItem.ScheduledStart)" HeaderText="Scheduled Start" Width="130" Format="t"></GridColumn>
+                                    <GridColumn Field="@nameof(ORScheduleItem.EstimatedDuration)" HeaderText="Duration (min)" Width="110"></GridColumn>
+                                    <GridColumn Field="@nameof(ORScheduleItem.OptimizedStart)" HeaderText="Optimized Start" Width="130" Format="t">
+                                        <Template>
+                                            @{
+                                                var schedule = context as ORScheduleItem;
+                                                <span class="badge bg-primary">@schedule!.OptimizedStart.ToString("HH:mm")</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn HeaderText="Status" Width="100">
+                                        <Template>
+                                            @{
+                                                var schedule = context as ORScheduleItem;
+                                                var statusClass = schedule!.Status == "On Time" ? "success" : schedule.Status == "Delayed" ? "warning" : "info";
+                                                <span class="badge bg-@statusClass">@schedule.Status</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="optimization-actions">
+            <button @onclick="ApplyOptimization" class="btn btn-success btn-lg">
+                <i class="fas fa-check"></i> Apply Optimization
+            </button>
+            <button @onclick="ExportReport" class="btn btn-outline-primary btn-lg ms-3">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+            <button @onclick="ScheduleOptimization" class="btn btn-outline-secondary btn-lg ms-3">
+                <i class="fas fa-calendar"></i> Schedule Auto-Optimization
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-chart-line fa-3x text-muted"></i>
+            <h4>No Optimization Results</h4>
+            <p>Click "Run AI Optimization" to analyze and optimize resource allocation.</p>
+        </div>
+    }
+</div>
+
+<style>
+    .n360-resource-optimization {
+        padding: 1rem;
+    }
+
+    .optimization-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .optimization-progress {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+    .progress-content {
+        text-align: center;
+        max-width: 500px;
+    }
+
+    .optimization-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin-right: 1.5rem;
+    }
+
+    .summary-card.efficiency .card-icon { background: linear-gradient(135deg, #4CAF50, #81C784); }
+    .summary-card.cost .card-icon { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+    .summary-card.utilization .card-icon { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+    .summary-card.wait-time .card-icon { background: linear-gradient(135deg, #9C27B0, #BA68C8); }
+
+    .card-content {
+        flex: 1;
+    }
+
+    .card-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .card-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-change {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .card-change.positive {
+        color: #4CAF50;
+    }
+
+    .resource-tabs {
+        margin-bottom: 2rem;
+    }
+
+    .nav-tabs {
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #666;
+        padding: 1rem 1.5rem;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #2196F3;
+        border-bottom-color: #2196F3;
+        background: transparent;
+    }
+
+    .tab-content {
+        padding: 2rem 0;
+    }
+
+    .optimization-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .optimization-section h5 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-container {
+        background: #f9f9f9;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .recommendations-panel, .predictions-panel, .equipment-alerts, .or-optimization-panel {
+        background: #f9f9f9;
+        padding: 1rem;
+        border-radius: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .recommendations-panel h6, .predictions-panel h6, .equipment-alerts h6, .or-optimization-panel h6 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .recommendation-item, .prediction-item, .optimization-suggestion {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 4px solid #2196F3;
+    }
+
+    .rec-header, .prediction-header, .suggestion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .rec-description, .prediction-item p, .optimization-suggestion p {
+        color: #666;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+
+    .rec-impact, .prediction-action, .suggestion-benefit {
+        margin-top: 0.5rem;
+    }
+
+    .staff-grid, .bed-grid {
+        margin-top: 2rem;
+    }
+
+    .bed-overview {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .bed-stat {
+        flex: 1;
+        min-width: 150px;
+        text-align: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+    }
+
+    .bed-stat.occupied { border-color: #F44336; }
+    .bed-stat.available { border-color: #4CAF50; }
+    .bed-stat.turnover { border-color: #2196F3; }
+    .bed-stat.occupancy { border-color: #FF9800; }
+
+    .bed-stat .stat-value, .or-stat .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .bed-stat .stat-label, .or-stat .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+
+    .or-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .or-stat {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .or-stat .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #2196F3;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .optimization-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid #e0e0e0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #666;
+    }
+
+    .empty-state h4 {
+        margin: 1rem 0;
+    }
+</style>

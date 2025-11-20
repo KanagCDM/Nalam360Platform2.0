@@ -4,5 +4,432 @@
         <name>Nalam360.Platform.Documentation</name>
     </assembly>
     <members>
+        <member name="T:Nalam360.Platform.Documentation.DependencyInjection.DocumentationServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering documentation services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.DependencyInjection.DocumentationServiceCollectionExtensions.AddDocumentationGeneration(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds documentation generation services to the service collection.
+            </summary>
+            <param name="services">The service collection.</param>
+            <returns>The service collection for chaining.</returns>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.IDocumentationService">
+            <summary>
+            Facade service for generating documentation from assemblies.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.IDocumentationService.GenerateMarkdownAsync(System.Reflection.Assembly,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates Markdown documentation for an assembly.
+            </summary>
+            <param name="assembly">The assembly to document.</param>
+            <param name="xmlDocPath">Path to the XML documentation file.</param>
+            <param name="outputPath">Path to write the Markdown file.</param>
+            <param name="ct">Cancellation token.</param>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.IDocumentationService.GenerateYamlAsync(System.Reflection.Assembly,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates YAML documentation for an assembly.
+            </summary>
+            <param name="assembly">The assembly to document.</param>
+            <param name="xmlDocPath">Path to the XML documentation file.</param>
+            <param name="outputPath">Path to write the YAML file.</param>
+            <param name="ct">Cancellation token.</param>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.DocumentationService">
+            <summary>
+            Default implementation of documentation service.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Generators.IDocumentationGenerator">
+            <summary>
+            Generates documentation in various formats.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.IDocumentationGenerator.Generate(Nalam360.Platform.Documentation.Models.AssemblyDocumentation)">
+            <summary>
+            Generates documentation content from assembly documentation.
+            </summary>
+            <param name="assemblyDoc">The assembly documentation.</param>
+            <returns>The generated documentation content.</returns>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.IDocumentationGenerator.GenerateToFileAsync(Nalam360.Platform.Documentation.Models.AssemblyDocumentation,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates documentation content and writes to a file.
+            </summary>
+            <param name="assemblyDoc">The assembly documentation.</param>
+            <param name="outputPath">The output file path.</param>
+            <param name="ct">Cancellation token.</param>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Generators.MarkdownDocumentationGenerator">
+            <summary>
+            Generates documentation in Markdown format.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Generators.YamlDocumentationGenerator">
+            <summary>
+            Generates documentation in YAML format.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.AssemblyDocumentation">
+            <summary>
+            Represents documentation for a .NET assembly.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.AssemblyDocumentation.AssemblyName">
+            <summary>
+            Gets or sets the assembly name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.AssemblyDocumentation.Version">
+            <summary>
+            Gets or sets the assembly version.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.AssemblyDocumentation.Description">
+            <summary>
+            Gets or sets the assembly description.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.AssemblyDocumentation.Namespaces">
+            <summary>
+            Gets or sets the list of namespaces in the assembly.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.AssemblyDocumentation.GeneratedAt">
+            <summary>
+            Gets or sets the generation timestamp.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.NamespaceDocumentation">
+            <summary>
+            Represents documentation for a namespace.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.NamespaceDocumentation.Name">
+            <summary>
+            Gets or sets the namespace name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.NamespaceDocumentation.Types">
+            <summary>
+            Gets or sets the list of types in the namespace.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.TypeDocumentation">
+            <summary>
+            Represents documentation for a type (class, interface, struct, enum).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Name">
+            <summary>
+            Gets or sets the type name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.FullName">
+            <summary>
+            Gets or sets the full type name including namespace.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Kind">
+            <summary>
+            Gets or sets the type kind (class, interface, struct, enum).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Summary">
+            <summary>
+            Gets or sets the XML summary documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Remarks">
+            <summary>
+            Gets or sets the XML remarks documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Example">
+            <summary>
+            Gets or sets the XML example documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.IsPublic">
+            <summary>
+            Gets or sets whether the type is public.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.IsSealed">
+            <summary>
+            Gets or sets whether the type is sealed.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.IsAbstract">
+            <summary>
+            Gets or sets whether the type is abstract.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.BaseType">
+            <summary>
+            Gets or sets the base type name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Interfaces">
+            <summary>
+            Gets or sets the implemented interfaces.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.GenericParameters">
+            <summary>
+            Gets or sets the generic type parameters.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Constructors">
+            <summary>
+            Gets or sets the type's constructors.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Properties">
+            <summary>
+            Gets or sets the type's properties.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Methods">
+            <summary>
+            Gets or sets the type's methods.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.TypeDocumentation.Fields">
+            <summary>
+            Gets or sets the type's fields (for enums).
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.ConstructorDocumentation">
+            <summary>
+            Represents documentation for a constructor.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ConstructorDocumentation.Summary">
+            <summary>
+            Gets or sets the constructor summary.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ConstructorDocumentation.IsPublic">
+            <summary>
+            Gets or sets whether the constructor is public.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ConstructorDocumentation.Parameters">
+            <summary>
+            Gets or sets the constructor parameters.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.PropertyDocumentation">
+            <summary>
+            Represents documentation for a property.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.Name">
+            <summary>
+            Gets or sets the property name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.Type">
+            <summary>
+            Gets or sets the property type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.Summary">
+            <summary>
+            Gets or sets the XML summary documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.IsPublic">
+            <summary>
+            Gets or sets whether the property is public.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.HasGetter">
+            <summary>
+            Gets or sets whether the property has a getter.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.PropertyDocumentation.HasSetter">
+            <summary>
+            Gets or sets whether the property has a setter.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.MethodDocumentation">
+            <summary>
+            Represents documentation for a method.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.Name">
+            <summary>
+            Gets or sets the method name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.ReturnType">
+            <summary>
+            Gets or sets the return type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.Summary">
+            <summary>
+            Gets or sets the XML summary documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.Remarks">
+            <summary>
+            Gets or sets the XML remarks documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.Returns">
+            <summary>
+            Gets or sets the XML returns documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.IsPublic">
+            <summary>
+            Gets or sets whether the method is public.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.IsStatic">
+            <summary>
+            Gets or sets whether the method is static.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.IsAsync">
+            <summary>
+            Gets or sets whether the method is async.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.Parameters">
+            <summary>
+            Gets or sets the method parameters.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.MethodDocumentation.GenericParameters">
+            <summary>
+            Gets or sets the generic type parameters.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.ParameterDocumentation">
+            <summary>
+            Represents documentation for a parameter.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ParameterDocumentation.Name">
+            <summary>
+            Gets or sets the parameter name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ParameterDocumentation.Type">
+            <summary>
+            Gets or sets the parameter type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ParameterDocumentation.Description">
+            <summary>
+            Gets or sets the XML param documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ParameterDocumentation.HasDefaultValue">
+            <summary>
+            Gets or sets whether the parameter has a default value.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.ParameterDocumentation.DefaultValue">
+            <summary>
+            Gets or sets the default value if present.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.FieldDocumentation">
+            <summary>
+            Represents documentation for a field (typically enum members).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.FieldDocumentation.Name">
+            <summary>
+            Gets or sets the field name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.FieldDocumentation.Type">
+            <summary>
+            Gets or sets the field type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.FieldDocumentation.Summary">
+            <summary>
+            Gets or sets the XML summary documentation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Documentation.Models.FieldDocumentation.Value">
+            <summary>
+            Gets or sets the constant value (for enums).
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Models.TypeKind">
+            <summary>
+            Represents the kind of type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Class">
+            <summary>
+            A class type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Interface">
+            <summary>
+            An interface type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Struct">
+            <summary>
+            A struct type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Enum">
+            <summary>
+            An enum type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Delegate">
+            <summary>
+            A delegate type.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Documentation.Models.TypeKind.Record">
+            <summary>
+            A record type.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Parsers.IDocumentationParser">
+            <summary>
+            Parses XML documentation files and extracts documentation metadata.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Parsers.IDocumentationParser.ParseAssembly(System.Reflection.Assembly,System.String)">
+            <summary>
+            Parses an assembly and its XML documentation file.
+            </summary>
+            <param name="assembly">The assembly to parse.</param>
+            <param name="xmlDocPath">Path to the XML documentation file.</param>
+            <returns>The parsed assembly documentation.</returns>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Parsers.IDocumentationParser.ParseAssemblyAsync(System.Reflection.Assembly,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Parses an assembly and its XML documentation file asynchronously.
+            </summary>
+            <param name="assembly">The assembly to parse.</param>
+            <param name="xmlDocPath">Path to the XML documentation file.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The parsed assembly documentation.</returns>
+        </member>
+        <member name="T:Nalam360.Platform.Documentation.Parsers.XmlDocumentationParser">
+            <summary>
+            Default implementation of XML documentation parser.
+            </summary>
+        </member>
     </members>
 </doc>

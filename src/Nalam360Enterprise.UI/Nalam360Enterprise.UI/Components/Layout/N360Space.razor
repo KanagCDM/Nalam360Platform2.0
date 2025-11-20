@@ -1,0 +1,99 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetSpaceClass()" style="@GetSpaceStyle()" @attributes="@GetHtmlAttributes()">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public SpaceDirection Direction { get; set; } = SpaceDirection.Horizontal;
+    [Parameter] public SpaceSize Size { get; set; } = SpaceSize.Small;
+    [Parameter] public string? CustomSize { get; set; }
+    [Parameter] public SpaceAlign Align { get; set; } = SpaceAlign.Center;
+    [Parameter] public bool Wrap { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetSpaceClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-space",
+            $"n360-space--{Direction.ToString().ToLower()}",
+            $"n360-space--align-{Align.ToString().ToLower()}"
+        };
+        
+        if (!string.IsNullOrEmpty(CustomSize))
+        {
+            classes.Add("n360-space--custom");
+        }
+        else
+        {
+            classes.Add($"n360-space--{Size.ToString().ToLower()}");
+        }
+        
+        if (Wrap)
+        {
+            classes.Add("n360-space--wrap");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetSpaceStyle()
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrEmpty(CustomSize))
+        {
+            var gapValue = CustomSize;
+            styles.Add($"gap: {gapValue}");
+        }
+        
+        if (!string.IsNullOrEmpty(Style))
+        {
+            styles.Add(Style);
+        }
+        
+        return string.Join("; ", styles);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

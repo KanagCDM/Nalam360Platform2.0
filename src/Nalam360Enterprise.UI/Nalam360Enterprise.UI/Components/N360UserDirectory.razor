@@ -1,0 +1,1187 @@
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-user-directory @CssClass" @attributes="GetHtmlAttributes()">
+    @if (!_hasPermission)
+    {
+        <div class="directory-no-permission">
+            <span class="no-permission-icon">🔒</span>
+            <p>You don't have permission to view the user directory.</p>
+        </div>
+        return;
+    }
+
+    @if (_isLoading)
+    {
+        <div class="directory-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading directory...</p>
+        </div>
+        return;
+    }
+
+    <!-- Header Section -->
+    <div class="directory-header">
+        <div class="header-title">
+            <h2>@Title</h2>
+            @if (ShowStatistics && _statistics != null)
+            {
+                <div class="header-statistics">
+                    <span class="stat-item">
+                        <span class="stat-icon">👥</span>
+                        <span class="stat-value">@_statistics.TotalUsers</span>
+                        <span class="stat-label">Total</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">✅</span>
+                        <span class="stat-value">@_statistics.ActiveUsers</span>
+                        <span class="stat-label">Active</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">🟢</span>
+                        <span class="stat-value">@_statistics.OnlineUsers</span>
+                        <span class="stat-label">Online</span>
+                    </span>
+                </div>
+            }
+        </div>
+
+        <div class="header-actions">
+            @if (AllowExport)
+            {
+                <button class="btn-export" @onclick="OnExportAsync" title="Export directory">
+                    📤 Export
+                </button>
+            }
+            @if (AllowAdd)
+            {
+                <button class="btn-add" @onclick="OnAddUserAsync" title="Add new user">
+                    ➕ Add User
+                </button>
+            }
+            <button class="btn-filter" @onclick="OnToggleFilterPanel" title="Show filters">
+                🔍 Filter
+            </button>
+            <button class="btn-view-mode" @onclick="OnCycleViewMode" title="Change view mode">
+                @GetViewModeIcon(_viewMode)
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    @if (_showFilterPanel)
+    {
+        <div class="filter-panel">
+            <div class="filter-header">
+                <h3>Filter Users</h3>
+                <button class="btn-close" @onclick="OnToggleFilterPanel">✕</button>
+            </div>
+
+            <div class="filter-content">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" 
+                           class="filter-input" 
+                           placeholder="Search by name, email, job title..." 
+                           @bind="_filter.SearchQuery"
+                           @bind:event="oninput" />
+                </div>
+
+                <div class="filter-group">
+                    <label>Department</label>
+                    <select class="filter-select" @onchange="OnDepartmentFilterChanged" multiple>
+                        <option value="">All Departments</option>
+                        @foreach (var dept in _departments)
+                        {
+                            <option value="@dept.Id">@dept.Name (@dept.TotalEmployees)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Status</label>
+                    <div class="filter-checkboxes">
+                        @foreach (var status in Enum.GetValues<UserStatus>())
+                        {
+                            <label class="filter-checkbox">
+                                <input type="checkbox" 
+                                       checked="@_filter.Statuses.Contains(status)"
+                                       @onchange="@(e => OnStatusFilterChanged(status, (bool)(e.Value ?? false)))" />
+                                <span>@status</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Presence</label>
+                    <div class="filter-checkboxes">
+                        @foreach (var presence in Enum.GetValues<UserPresence>())
+                        {
+                            <label class="filter-checkbox">
+                                <input type="checkbox"
+                                       checked="@_filter.PresenceStatuses.Contains(presence)"
+                                       @onchange="@(e => OnPresenceFilterChanged(presence, (bool)(e.Value ?? false)))" />
+                                <span>@GetPresenceIcon(presence) @presence</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                @if (ShowTeamFilter)
+                {
+                    <div class="filter-group">
+                        <label>Team</label>
+                        <select class="filter-select" @onchange="OnTeamFilterChanged" multiple>
+                            <option value="">All Teams</option>
+                            @foreach (var team in _teams)
+                            {
+                                <option value="@team.Id">@team.Name (@team.MemberCount)</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if (ShowLocationFilter)
+                {
+                    <div class="filter-group">
+                        <label>Location</label>
+                        <input type="text" 
+                               class="filter-input" 
+                               placeholder="Office location..." 
+                               @bind="_filter.Location" />
+                    </div>
+                }
+
+                <div class="filter-actions">
+                    <button class="btn-clear" @onclick="OnClearFilterAsync">Clear All</button>
+                    <button class="btn-apply" @onclick="OnApplyFilterAsync">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Main Content Area -->
+    <div class="directory-content">
+        <!-- Grid View -->
+        @if (_viewMode == DirectoryViewMode.Grid)
+        {
+            <div class="directory-grid">
+                @if (_filteredUsers.Any())
+                {
+                    @foreach (var user in _filteredUsers)
+                    {
+                        <div class="user-card @(user.IsStarred ? "starred" : "")" @onclick="@(() => OnSelectUserAsync(user.Id))">
+                            <div class="card-header">
+                                <div class="user-avatar">
+                                    @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                    {
+                                        <img src="@user.ProfilePictureUrl" alt="@user.FullName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-initials">@GetInitials(user.FullName)</span>
+                                    }
+                                    <span class="presence-indicator @GetPresenceClass(user.Presence)" title="@user.Presence"></span>
+                                </div>
+                                <button class="btn-star" @onclick="@((e) => OnToggleStarAsync(user.Id, e))" @onclick:stopPropagation="true">
+                                    @(user.IsStarred ? "⭐" : "☆")
+                                </button>
+                            </div>
+
+                            <div class="card-body">
+                                <h3 class="user-name">@user.FullName</h3>
+                                @if (!string.IsNullOrEmpty(user.JobTitle))
+                                {
+                                    <p class="user-title">@user.JobTitle</p>
+                                }
+                                @if (!string.IsNullOrEmpty(user.DepartmentName))
+                                {
+                                    <p class="user-department">📁 @user.DepartmentName</p>
+                                }
+                                @if (!string.IsNullOrEmpty(user.OfficeLocation))
+                                {
+                                    <p class="user-location">📍 @user.OfficeLocation</p>
+                                }
+
+                                @if (user.Roles.Any())
+                                {
+                                    <div class="user-roles">
+                                        @foreach (var role in user.Roles.Take(2))
+                                        {
+                                            <span class="role-badge" style="background-color: @(role.BadgeColor ?? "#007bff")">
+                                                @role.Name
+                                            </span>
+                                        }
+                                        @if (user.Roles.Count > 2)
+                                        {
+                                            <span class="role-more">+@(user.Roles.Count - 2)</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="card-footer">
+                                <button class="btn-action" @onclick="@((e) => OnSendMessageAsync(user.Id, e))" @onclick:stopPropagation="true" title="Send message">
+                                    💬
+                                </button>
+                                <button class="btn-action" @onclick="@((e) => OnSendEmailAsync(user.Email, e))" @onclick:stopPropagation="true" title="Send email">
+                                    📧
+                                </button>
+                                @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                {
+                                    <button class="btn-action" @onclick="@((e) => OnCallUserAsync(user.PhoneNumber!, e))" @onclick:stopPropagation="true" title="Call">
+                                        📞
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="directory-empty">
+                        <span class="empty-icon">👤</span>
+                        <p>No users found matching your criteria.</p>
+                        <button class="btn-clear-filter" @onclick="OnClearFilterAsync">Clear Filters</button>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- List View -->
+        @if (_viewMode == DirectoryViewMode.List)
+        {
+            <div class="directory-list">
+                @if (_filteredUsers.Any())
+                {
+                    @foreach (var user in _filteredUsers)
+                    {
+                        <div class="user-list-item @(user.IsStarred ? "starred" : "")" @onclick="@(() => OnSelectUserAsync(user.Id))">
+                            <div class="list-item-main">
+                                <div class="user-avatar-small">
+                                    @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                    {
+                                        <img src="@user.ProfilePictureUrl" alt="@user.FullName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-initials">@GetInitials(user.FullName)</span>
+                                    }
+                                    <span class="presence-indicator @GetPresenceClass(user.Presence)"></span>
+                                </div>
+
+                                <div class="list-item-info">
+                                    <div class="info-primary">
+                                        <h4>@user.FullName</h4>
+                                        @if (user.IsStarred)
+                                        {
+                                            <span class="star-icon">⭐</span>
+                                        }
+                                    </div>
+                                    <div class="info-secondary">
+                                        @if (!string.IsNullOrEmpty(user.JobTitle))
+                                        {
+                                            <span>@user.JobTitle</span>
+                                            <span class="separator">•</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(user.DepartmentName))
+                                        {
+                                            <span>@user.DepartmentName</span>
+                                        }
+                                    </div>
+                                    <div class="info-tertiary">
+                                        @if (!string.IsNullOrEmpty(user.Email))
+                                        {
+                                            <span>📧 @user.Email</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                        {
+                                            <span>📞 @user.PhoneNumber</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="list-item-actions">
+                                <button class="btn-icon" @onclick="@((e) => OnSendMessageAsync(user.Id, e))" @onclick:stopPropagation="true" title="Message">💬</button>
+                                <button class="btn-icon" @onclick="@((e) => OnSendEmailAsync(user.Email, e))" @onclick:stopPropagation="true" title="Email">📧</button>
+                                <button class="btn-icon" @onclick="@((e) => OnToggleStarAsync(user.Id, e))" @onclick:stopPropagation="true" title="Star">@(user.IsStarred ? "⭐" : "☆")</button>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="directory-empty">
+                        <span class="empty-icon">👤</span>
+                        <p>No users found matching your criteria.</p>
+                        <button class="btn-clear-filter" @onclick="OnClearFilterAsync">Clear Filters</button>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Org Chart View -->
+        @if (_viewMode == DirectoryViewMode.OrgChart)
+        {
+            <div class="directory-orgchart">
+                @if (_orgChartRoot != null)
+                {
+                    <div class="orgchart-controls">
+                        <button class="btn-expand-all" @onclick="OnExpandAllAsync">Expand All</button>
+                        <button class="btn-collapse-all" @onclick="OnCollapseAllAsync">Collapse All</button>
+                        <button class="btn-zoom-in" @onclick="OnZoomIn">➕</button>
+                        <button class="btn-zoom-out" @onclick="OnZoomOut">➖</button>
+                        <button class="btn-zoom-reset" @onclick="OnZoomReset">Reset Zoom</button>
+                    </div>
+
+                    <div class="orgchart-container" style="transform: scale(@_zoomLevel)">
+                        @RenderOrgChartNode(_orgChartRoot)
+                    </div>
+                }
+                else
+                {
+                    <div class="directory-empty">
+                        <span class="empty-icon">🏢</span>
+                        <p>No organizational structure available.</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Table View -->
+        @if (_viewMode == DirectoryViewMode.Table)
+        {
+            <div class="directory-table-container">
+                <table class="directory-table">
+                    <thead>
+                        <tr>
+                            <th @onclick="@(() => OnSortAsync(DirectorySortBy.Name))">
+                                Name @GetSortIcon(DirectorySortBy.Name)
+                            </th>
+                            <th @onclick="@(() => OnSortAsync(DirectorySortBy.JobTitle))">
+                                Job Title @GetSortIcon(DirectorySortBy.JobTitle)
+                            </th>
+                            <th @onclick="@(() => OnSortAsync(DirectorySortBy.Department))">
+                                Department @GetSortIcon(DirectorySortBy.Department)
+                            </th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_filteredUsers.Any())
+                        {
+                            @foreach (var user in _filteredUsers)
+                            {
+                                <tr class="@(user.IsStarred ? "starred" : "")" @onclick="@(() => OnSelectUserAsync(user.Id))">
+                                    <td>
+                                        <div class="table-user-cell">
+                                            <div class="user-avatar-tiny">
+                                                @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                                {
+                                                    <img src="@user.ProfilePictureUrl" alt="@user.FullName" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="avatar-initials">@GetInitials(user.FullName)</span>
+                                                }
+                                                <span class="presence-indicator @GetPresenceClass(user.Presence)"></span>
+                                            </div>
+                                            <span>@user.FullName</span>
+                                            @if (user.IsStarred)
+                                            {
+                                                <span class="star-icon">⭐</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@user.JobTitle</td>
+                                    <td>@user.DepartmentName</td>
+                                    <td>
+                                        <div class="table-contact-cell">
+                                            @if (!string.IsNullOrEmpty(user.Email))
+                                            {
+                                                <span>@user.Email</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                            {
+                                                <span>@user.PhoneNumber</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-@user.Status.ToString().ToLower()">
+                                            @user.Status
+                                        </span>
+                                        <span class="presence-text @GetPresenceClass(user.Presence)">
+                                            @GetPresenceIcon(user.Presence)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon" @onclick="@((e) => OnSendMessageAsync(user.Id, e))" @onclick:stopPropagation="true">💬</button>
+                                            <button class="btn-icon" @onclick="@((e) => OnSendEmailAsync(user.Email, e))" @onclick:stopPropagation="true">📧</button>
+                                            <button class="btn-icon" @onclick="@((e) => OnToggleStarAsync(user.Id, e))" @onclick:stopPropagation="true">@(user.IsStarred ? "⭐" : "☆")</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="table-empty">
+                                    <div class="directory-empty">
+                                        <span class="empty-icon">👤</span>
+                                        <p>No users found matching your criteria.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- User Details Panel -->
+    @if (_showUserDetails && _selectedUser != null)
+    {
+        <div class="user-details-overlay" @onclick="OnCloseUserDetails">
+            <div class="user-details-panel" @onclick:stopPropagation="true">
+                <div class="details-header">
+                    <h3>User Profile</h3>
+                    <button class="btn-close" @onclick="OnCloseUserDetails">✕</button>
+                </div>
+
+                <div class="details-content">
+                    <div class="details-profile">
+                        <div class="profile-avatar-large">
+                            @if (!string.IsNullOrEmpty(_selectedUser.ProfilePictureUrl))
+                            {
+                                <img src="@_selectedUser.ProfilePictureUrl" alt="@_selectedUser.FullName" />
+                            }
+                            else
+                            {
+                                <span class="avatar-initials-large">@GetInitials(_selectedUser.FullName)</span>
+                            }
+                            <span class="presence-indicator-large @GetPresenceClass(_selectedUser.Presence)"></span>
+                        </div>
+
+                        <h2>@_selectedUser.FullName</h2>
+                        @if (!string.IsNullOrEmpty(_selectedUser.JobTitle))
+                        {
+                            <p class="profile-title">@_selectedUser.JobTitle</p>
+                        }
+                        @if (!string.IsNullOrEmpty(_selectedUser.DepartmentName))
+                        {
+                            <p class="profile-department">@_selectedUser.DepartmentName</p>
+                        }
+
+                        <div class="profile-actions">
+                            <button class="btn-primary" @onclick="@(() => OnSendMessageAsync(_selectedUser.Id, null))">💬 Message</button>
+                            <button class="btn-secondary" @onclick="@(() => OnSendEmailAsync(_selectedUser.Email, null))">📧 Email</button>
+                            @if (!string.IsNullOrEmpty(_selectedUser.PhoneNumber))
+                            {
+                                <button class="btn-secondary" @onclick="@(() => OnCallUserAsync(_selectedUser.PhoneNumber!, null))">📞 Call</button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="details-sections">
+                        @if (!string.IsNullOrEmpty(_selectedUser.StatusMessage))
+                        {
+                            <div class="details-section">
+                                <h4>Status Message</h4>
+                                <p>@_selectedUser.StatusMessage</p>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_selectedUser.Biography))
+                        {
+                            <div class="details-section">
+                                <h4>About</h4>
+                                <p>@_selectedUser.Biography</p>
+                            </div>
+                        }
+
+                        <div class="details-section">
+                            <h4>Contact Information</h4>
+                            <div class="contact-list">
+                                @if (!string.IsNullOrEmpty(_selectedUser.Email))
+                                {
+                                    <div class="contact-item">
+                                        <span class="contact-icon">📧</span>
+                                        <span class="contact-label">Email:</span>
+                                        <span class="contact-value">@_selectedUser.Email</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_selectedUser.PhoneNumber))
+                                {
+                                    <div class="contact-item">
+                                        <span class="contact-icon">📞</span>
+                                        <span class="contact-label">Phone:</span>
+                                        <span class="contact-value">@_selectedUser.PhoneNumber</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_selectedUser.MobileNumber))
+                                {
+                                    <div class="contact-item">
+                                        <span class="contact-icon">📱</span>
+                                        <span class="contact-label">Mobile:</span>
+                                        <span class="contact-value">@_selectedUser.MobileNumber</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_selectedUser.OfficeLocation))
+                                {
+                                    <div class="contact-item">
+                                        <span class="contact-icon">📍</span>
+                                        <span class="contact-label">Location:</span>
+                                        <span class="contact-value">@_selectedUser.OfficeLocation</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(_selectedUser.ManagerName))
+                        {
+                            <div class="details-section">
+                                <h4>Reports To</h4>
+                                <p>@_selectedUser.ManagerName</p>
+                            </div>
+                        }
+
+                        @if (_selectedUser.DirectReports.Any())
+                        {
+                            <div class="details-section">
+                                <h4>Direct Reports (@_selectedUser.DirectReports.Count)</h4>
+                                <div class="direct-reports-list">
+                                    @foreach (var report in _selectedUser.DirectReports.Take(5))
+                                    {
+                                        <div class="report-item" @onclick="@(() => OnSelectUserAsync(report.Id))">
+                                            <div class="report-avatar">
+                                                @if (!string.IsNullOrEmpty(report.ProfilePictureUrl))
+                                                {
+                                                    <img src="@report.ProfilePictureUrl" alt="@report.FullName" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="avatar-initials">@GetInitials(report.FullName)</span>
+                                                }
+                                            </div>
+                                            <span>@report.FullName</span>
+                                        </div>
+                                    }
+                                    @if (_selectedUser.DirectReports.Count > 5)
+                                    {
+                                        <p class="report-more">+@(_selectedUser.DirectReports.Count - 5) more</p>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedUser.Skills.Any())
+                        {
+                            <div class="details-section">
+                                <h4>Skills</h4>
+                                <div class="tags-list">
+                                    @foreach (var skill in _selectedUser.Skills)
+                                    {
+                                        <span class="tag">@skill</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedUser.Teams.Any())
+                        {
+                            <div class="details-section">
+                                <h4>Teams</h4>
+                                <div class="teams-list">
+                                    @foreach (var team in _selectedUser.Teams)
+                                    {
+                                        <div class="team-item">
+                                            <span class="team-name">@team.Name</span>
+                                            <span class="team-type">@team.Type</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedUser.Roles.Any())
+                        {
+                            <div class="details-section">
+                                <h4>Roles</h4>
+                                <div class="roles-list">
+                                    @foreach (var role in _selectedUser.Roles)
+                                    {
+                                        <span class="role-badge-large" style="background-color: @(role.BadgeColor ?? "#007bff")">
+                                            @role.Name
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_selectedUser.HireDate.HasValue)
+                        {
+                            <div class="details-section">
+                                <h4>Employment Information</h4>
+                                <p>Hire Date: @(_selectedUser.HireDate.Value.ToString("MMMM dd, yyyy"))</p>
+                                <p>Tenure: @_selectedUser.TotalExperienceYears years</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string Title { get; set; } = "User Directory";
+    [Parameter] public List<DirectoryUser> Users { get; set; } = new();
+    [Parameter] public List<Department> Departments { get; set; } = new();
+    [Parameter] public List<DirectoryTeam> Teams { get; set; } = new();
+    [Parameter] public DirectoryViewMode InitialViewMode { get; set; } = DirectoryViewMode.Grid;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public bool ShowTeamFilter { get; set; } = true;
+    [Parameter] public bool ShowLocationFilter { get; set; } = true;
+    [Parameter] public bool AllowExport { get; set; } = true;
+    [Parameter] public bool AllowAdd { get; set; } = true;
+    [Parameter] public ProfileCardSettings? CardSettings { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<Guid> OnUserSelected { get; set; }
+    [Parameter] public EventCallback<Guid> OnUserMessage { get; set; }
+    [Parameter] public EventCallback<string> OnUserEmail { get; set; }
+    [Parameter] public EventCallback<string> OnUserCall { get; set; }
+    [Parameter] public EventCallback<Guid> OnUserStarToggled { get; set; }
+    [Parameter] public EventCallback OnAddUser { get; set; }
+    [Parameter] public EventCallback<DirectoryExportFormat> OnExport { get; set; }
+    [Parameter] public EventCallback<DirectoryFilter> OnFilterChanged { get; set; }
+    
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isLoading = false;
+    private bool _showFilterPanel = false;
+    private bool _showUserDetails = false;
+    private DirectoryViewMode _viewMode = DirectoryViewMode.Grid;
+    private DirectoryFilter _filter = new();
+    private List<DirectoryUser> _filteredUsers = new();
+    private DirectoryUser? _selectedUser;
+    private DirectoryStatistics? _statistics;
+    private List<Department> _departments = new();
+    private List<DirectoryTeam> _teams = new();
+    private OrgChartNode? _orgChartRoot;
+    private DirectorySortBy _currentSortBy = DirectorySortBy.Name;
+    private bool _sortAscending = true;
+    private double _zoomLevel = 1.0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            if (!_hasPermission && HideIfNoPermission)
+            {
+                return;
+            }
+        }
+
+        _viewMode = InitialViewMode;
+        _departments = Departments ?? new();
+        _teams = Teams ?? new();
+        
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        await Task.Delay(100); // Simulate loading
+
+        _filteredUsers = Users ?? new();
+        ApplyFilters();
+        ApplySorting();
+        CalculateStatistics();
+        BuildOrgChart();
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredUsers = Users.Where(u =>
+        {
+            if (!string.IsNullOrEmpty(_filter.SearchQuery))
+            {
+                var query = _filter.SearchQuery.ToLower();
+                if (!u.FullName.ToLower().Contains(query) &&
+                    !u.Email.ToLower().Contains(query) &&
+                    !(u.JobTitle?.ToLower().Contains(query) ?? false))
+                {
+                    return false;
+                }
+            }
+
+            if (_filter.DepartmentIds.Any() && !_filter.DepartmentIds.Contains(u.DepartmentId ?? Guid.Empty))
+                return false;
+
+            if (_filter.Statuses.Any() && !_filter.Statuses.Contains(u.Status))
+                return false;
+
+            if (_filter.PresenceStatuses.Any() && !_filter.PresenceStatuses.Contains(u.Presence))
+                return false;
+
+            if (!string.IsNullOrEmpty(_filter.Location) && !(u.OfficeLocation?.Contains(_filter.Location, StringComparison.OrdinalIgnoreCase) ?? false))
+                return false;
+
+            if (_filter.ShowStarredOnly == true && !u.IsStarred)
+                return false;
+
+            return true;
+        }).ToList();
+    }
+
+    private void ApplySorting()
+    {
+        _filteredUsers = _currentSortBy switch
+        {
+            DirectorySortBy.Name => _sortAscending 
+                ? _filteredUsers.OrderBy(u => u.FullName).ToList()
+                : _filteredUsers.OrderByDescending(u => u.FullName).ToList(),
+            DirectorySortBy.JobTitle => _sortAscending
+                ? _filteredUsers.OrderBy(u => u.JobTitle).ToList()
+                : _filteredUsers.OrderByDescending(u => u.JobTitle).ToList(),
+            DirectorySortBy.Department => _sortAscending
+                ? _filteredUsers.OrderBy(u => u.DepartmentName).ToList()
+                : _filteredUsers.OrderByDescending(u => u.DepartmentName).ToList(),
+            DirectorySortBy.HireDate => _sortAscending
+                ? _filteredUsers.OrderBy(u => u.HireDate).ToList()
+                : _filteredUsers.OrderByDescending(u => u.HireDate).ToList(),
+            DirectorySortBy.Status => _sortAscending
+                ? _filteredUsers.OrderBy(u => u.Status).ToList()
+                : _filteredUsers.OrderByDescending(u => u.Status).ToList(),
+            _ => _filteredUsers
+        };
+    }
+
+    private void CalculateStatistics()
+    {
+        _statistics = new DirectoryStatistics
+        {
+            TotalUsers = Users.Count,
+            ActiveUsers = Users.Count(u => u.Status == UserStatus.Active),
+            InactiveUsers = Users.Count(u => u.Status == UserStatus.Inactive),
+            OnlineUsers = Users.Count(u => u.Presence == UserPresence.Online),
+            TotalDepartments = _departments.Count,
+            TotalTeams = _teams.Count
+        };
+    }
+
+    private void BuildOrgChart()
+    {
+        var topLevelUsers = Users.Where(u => u.ManagerId == null || u.ManagerId == Guid.Empty).ToList();
+        if (topLevelUsers.Any())
+        {
+            _orgChartRoot = CreateOrgChartNode(topLevelUsers.First(), 0);
+        }
+    }
+
+    private OrgChartNode CreateOrgChartNode(DirectoryUser user, int level)
+    {
+        var node = new OrgChartNode
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            UserName = user.UserName,
+            FullName = user.FullName,
+            ProfilePictureUrl = user.ProfilePictureUrl,
+            JobTitle = user.JobTitle,
+            DepartmentName = user.DepartmentName,
+            ManagerId = user.ManagerId,
+            DirectReportsCount = user.DirectReports.Count,
+            Level = level,
+            Status = user.Status,
+            Presence = user.Presence
+        };
+
+        foreach (var report in user.DirectReports)
+        {
+            node.Children.Add(CreateOrgChartNode(report, level + 1));
+        }
+
+        return node;
+    }
+
+    private RenderFragment RenderOrgChartNode(OrgChartNode node) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "orgchart-node");
+        
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "orgchart-card");
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => OnSelectUserAsync(node.UserId)));
+
+        // Avatar
+        builder.OpenElement(5, "div");
+        builder.AddAttribute(6, "class", "orgchart-avatar");
+        if (!string.IsNullOrEmpty(node.ProfilePictureUrl))
+        {
+            builder.OpenElement(7, "img");
+            builder.AddAttribute(8, "src", node.ProfilePictureUrl);
+            builder.AddAttribute(9, "alt", node.FullName);
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(10, "span");
+            builder.AddAttribute(11, "class", "avatar-initials");
+            builder.AddContent(12, GetInitials(node.FullName));
+            builder.CloseElement();
+        }
+        builder.OpenElement(13, "span");
+        builder.AddAttribute(14, "class", $"presence-indicator {GetPresenceClass(node.Presence)}");
+        builder.CloseElement();
+        builder.CloseElement(); // orgchart-avatar
+
+        // Info
+        builder.OpenElement(15, "div");
+        builder.AddAttribute(16, "class", "orgchart-info");
+        builder.OpenElement(17, "h4");
+        builder.AddContent(18, node.FullName);
+        builder.CloseElement();
+        if (!string.IsNullOrEmpty(node.JobTitle))
+        {
+            builder.OpenElement(19, "p");
+            builder.AddContent(20, node.JobTitle);
+            builder.CloseElement();
+        }
+        builder.CloseElement(); // orgchart-info
+
+        // Expand/Collapse
+        if (node.Children.Any())
+        {
+            builder.OpenElement(21, "button");
+            builder.AddAttribute(22, "class", "orgchart-toggle");
+            builder.AddAttribute(23, "onclick", EventCallback.Factory.Create(this, () => ToggleNodeExpansion(node)));
+            builder.AddContent(24, node.IsExpanded ? "▼" : "▶");
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // orgchart-card
+
+        // Children
+        if (node.IsExpanded && node.Children.Any())
+        {
+            builder.OpenElement(25, "div");
+            builder.AddAttribute(26, "class", "orgchart-children");
+            foreach (var child in node.Children)
+            {
+                builder.AddContent(27, RenderOrgChartNode(child));
+            }
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // orgchart-node
+    };
+
+    // Event Handlers
+    private async Task OnSelectUserAsync(Guid userId)
+    {
+        _selectedUser = Users.FirstOrDefault(u => u.Id == userId);
+        _showUserDetails = true;
+
+        if (OnUserSelected.HasDelegate)
+        {
+            await OnUserSelected.InvokeAsync(userId);
+        }
+    }
+
+    private void OnCloseUserDetails()
+    {
+        _showUserDetails = false;
+        _selectedUser = null;
+    }
+
+    private async Task OnSendMessageAsync(Guid userId, MouseEventArgs? e)
+    {
+        if (OnUserMessage.HasDelegate)
+        {
+            await OnUserMessage.InvokeAsync(userId);
+        }
+    }
+
+    private async Task OnSendEmailAsync(string email, MouseEventArgs? e)
+    {
+        if (OnUserEmail.HasDelegate)
+        {
+            await OnUserEmail.InvokeAsync(email);
+        }
+    }
+
+    private async Task OnCallUserAsync(string phoneNumber, MouseEventArgs? e)
+    {
+        if (OnUserCall.HasDelegate)
+        {
+            await OnUserCall.InvokeAsync(phoneNumber);
+        }
+    }
+
+    private async Task OnToggleStarAsync(Guid userId, MouseEventArgs? e)
+    {
+        var user = Users.FirstOrDefault(u => u.Id == userId);
+        if (user != null)
+        {
+            user.IsStarred = !user.IsStarred;
+            StateHasChanged();
+
+            if (OnUserStarToggled.HasDelegate)
+            {
+                await OnUserStarToggled.InvokeAsync(userId);
+            }
+        }
+    }
+
+    private void OnToggleFilterPanel()
+    {
+        _showFilterPanel = !_showFilterPanel;
+    }
+
+    private async Task OnApplyFilterAsync()
+    {
+        ApplyFilters();
+        ApplySorting();
+
+        if (OnFilterChanged.HasDelegate)
+        {
+            await OnFilterChanged.InvokeAsync(_filter);
+        }
+    }
+
+    private async Task OnClearFilterAsync()
+    {
+        _filter = new DirectoryFilter();
+        await OnApplyFilterAsync();
+    }
+
+    private void OnDepartmentFilterChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        // Multi-select handling would be implemented here
+    }
+
+    private void OnTeamFilterChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        // Multi-select handling would be implemented here
+    }
+
+    private void OnStatusFilterChanged(UserStatus status, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_filter.Statuses.Contains(status))
+                _filter.Statuses.Add(status);
+        }
+        else
+        {
+            _filter.Statuses.Remove(status);
+        }
+    }
+
+    private void OnPresenceFilterChanged(UserPresence presence, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_filter.PresenceStatuses.Contains(presence))
+                _filter.PresenceStatuses.Add(presence);
+        }
+        else
+        {
+            _filter.PresenceStatuses.Remove(presence);
+        }
+    }
+
+    private void OnCycleViewMode()
+    {
+        _viewMode = _viewMode switch
+        {
+            DirectoryViewMode.Grid => DirectoryViewMode.List,
+            DirectoryViewMode.List => DirectoryViewMode.OrgChart,
+            DirectoryViewMode.OrgChart => DirectoryViewMode.Table,
+            DirectoryViewMode.Table => DirectoryViewMode.Grid,
+            _ => DirectoryViewMode.Grid
+        };
+    }
+
+    private async Task OnSortAsync(DirectorySortBy sortBy)
+    {
+        if (_currentSortBy == sortBy)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _currentSortBy = sortBy;
+            _sortAscending = true;
+        }
+
+        ApplySorting();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnAddUserAsync()
+    {
+        if (OnAddUser.HasDelegate)
+        {
+            await OnAddUser.InvokeAsync();
+        }
+    }
+
+    private async Task OnExportAsync()
+    {
+        if (OnExport.HasDelegate)
+        {
+            await OnExport.InvokeAsync(DirectoryExportFormat.Excel);
+        }
+    }
+
+    private async Task OnExpandAllAsync()
+    {
+        ExpandAllNodes(_orgChartRoot);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnCollapseAllAsync()
+    {
+        CollapseAllNodes(_orgChartRoot);
+        await Task.CompletedTask;
+    }
+
+    private void ExpandAllNodes(OrgChartNode? node)
+    {
+        if (node == null) return;
+        node.IsExpanded = true;
+        foreach (var child in node.Children)
+        {
+            ExpandAllNodes(child);
+        }
+    }
+
+    private void CollapseAllNodes(OrgChartNode? node)
+    {
+        if (node == null) return;
+        node.IsExpanded = false;
+        foreach (var child in node.Children)
+        {
+            CollapseAllNodes(child);
+        }
+    }
+
+    private void ToggleNodeExpansion(OrgChartNode node)
+    {
+        node.IsExpanded = !node.IsExpanded;
+    }
+
+    private void OnZoomIn()
+    {
+        _zoomLevel = Math.Min(_zoomLevel + 0.1, 2.0);
+    }
+
+    private void OnZoomOut()
+    {
+        _zoomLevel = Math.Max(_zoomLevel - 0.1, 0.5);
+    }
+
+    private void OnZoomReset()
+    {
+        _zoomLevel = 1.0;
+    }
+
+    // Helper Methods
+    private string GetInitials(string fullName)
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+        }
+        return parts.Length > 0 ? parts[0][0].ToString().ToUpper() : "?";
+    }
+
+    private string GetPresenceClass(UserPresence presence) => presence switch
+    {
+        UserPresence.Online => "presence-online",
+        UserPresence.Away => "presence-away",
+        UserPresence.Busy => "presence-busy",
+        UserPresence.DoNotDisturb => "presence-dnd",
+        UserPresence.BeRightBack => "presence-brb",
+        UserPresence.Offline => "presence-offline",
+        UserPresence.InMeeting => "presence-meeting",
+        UserPresence.OnCall => "presence-call",
+        UserPresence.Presenting => "presence-presenting",
+        _ => "presence-offline"
+    };
+
+    private string GetPresenceIcon(UserPresence presence) => presence switch
+    {
+        UserPresence.Online => "🟢",
+        UserPresence.Away => "🟡",
+        UserPresence.Busy => "🔴",
+        UserPresence.DoNotDisturb => "⛔",
+        UserPresence.BeRightBack => "🕐",
+        UserPresence.Offline => "⚫",
+        UserPresence.InMeeting => "📅",
+        UserPresence.OnCall => "📞",
+        UserPresence.Presenting => "🎥",
+        _ => "⚫"
+    };
+
+    private string GetViewModeIcon(DirectoryViewMode mode) => mode switch
+    {
+        DirectoryViewMode.Grid => "⊞",
+        DirectoryViewMode.List => "☰",
+        DirectoryViewMode.OrgChart => "🏢",
+        DirectoryViewMode.Table => "▦",
+        _ => "⊞"
+    };
+
+    private string GetSortIcon(DirectorySortBy sortBy)
+    {
+        if (_currentSortBy != sortBy) return "";
+        return _sortAscending ? "▲" : "▼";
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>
+        {
+            ["role"] = "region",
+            ["aria-label"] = "User Directory"
+        };
+        return attrs;
+    }
+}

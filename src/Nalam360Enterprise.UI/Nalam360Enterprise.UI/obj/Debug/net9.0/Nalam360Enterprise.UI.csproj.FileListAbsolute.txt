@@ -1,36 +1,139 @@
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.csproj.AssemblyReference.cache
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/rpswa.dswa.cache.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.GeneratedMSBuildEditorConfig.editorconfig
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.AssemblyInfoInputs.cache
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.AssemblyInfo.cs
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.csproj.CoreCompileInputs.cache
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/bin/Debug/net9.0/Nalam360Enterprise.UI.staticwebassets.runtime.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/bin/Debug/net9.0/Nalam360Enterprise.UI.staticwebassets.endpoints.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/bin/Debug/net9.0/Nalam360Enterprise.UI.deps.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/bin/Debug/net9.0/Nalam360Enterprise.UI.dll
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/bin/Debug/net9.0/Nalam360Enterprise.UI.pdb
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/rjimswa.dswa.cache.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/rjsmrazor.dswa.cache.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/rjsmcshtml.dswa.cache.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/scopedcss/Component1.razor.rz.scp.css
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/scopedcss/bundle/Nalam360Enterprise.UI.styles.css
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/scopedcss/projectbundle/Nalam360Enterprise.UI.bundle.scp.css
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/compressed/tkoyc7xrgw-{0}-6pqz8bsss0-6pqz8bsss0.gz
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/compressed/pijrbg52b3-{0}-207mon72pc-207mon72pc.gz
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/compressed/jm5l6nzi73-{0}-agg6wgo1ac-agg6wgo1ac.gz
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/compressed/mhacl7l8lk-{0}-agg6wgo1ac-agg6wgo1ac.gz
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets.build.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets.build.json.cache
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets.development.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets.build.endpoints.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/swae.build.ex.cache
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets/msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssets.props
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets/msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets/msbuild.build.Nalam360Enterprise.UI.props
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets/msbuild.buildMultiTargeting.Nalam360Enterprise.UI.props
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets/msbuild.buildTransitive.Nalam360Enterprise.UI.props
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/staticwebassets.pack.json
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.dll
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/refint/Nalam360Enterprise.UI.dll
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/Nalam360Enterprise.UI.pdb
-/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/ref/Nalam360Enterprise.UI.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\bin\Debug\net9.0\Nalam360Enterprise.UI.staticwebassets.runtime.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\bin\Debug\net9.0\Nalam360Enterprise.UI.staticwebassets.endpoints.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\bin\Debug\net9.0\Nalam360Enterprise.UI.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\bin\Debug\net9.0\Nalam360Enterprise.UI.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\bin\Debug\net9.0\Nalam360Enterprise.UI.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.csproj.AssemblyReference.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360ApprovalCenter.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360AuditViewer.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360Chat.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360CommentThread.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360Dashboard.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360DataExporter.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360DataImporter.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360DataTable.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360FileExplorer.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360FilterBuilder.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360FormBuilder.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360GanttChart.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360Inbox.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360KanbanBoard.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360NotificationCenter.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360ReportBuilder.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360Scheduler.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Enterprise\N360WorkflowDesigner.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Healthcare\N360AppointmentScheduler.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Healthcare\N360PatientCard.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Healthcare\N360VitalSignsInput.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Layout\N360Footer.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Layout\N360Header.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Layout\N360MainLayout.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Layout\N360PageHeader.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360ActivityLog.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360Breadcrumbs.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360MultiStepForm.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360Pivot.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360ProfileEditor.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360ProjectPlanner.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360RoleManager.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360Settings.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360TaskManager.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360TeamCollaboration.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360TreeGrid.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\N360UserDirectory.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Navigation\N360CommandPalette.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Navigation\N360QuickActions.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Navigation\N360ShortcutViewer.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Search\N360Spotlight.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Social\N360ActivityFeed.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Social\N360UserProfile.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\Components\Utility\N360ThemeCustomizer.razor.rz.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\bundle\Nalam360Enterprise.UI.styles.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\scopedcss\projectbundle\Nalam360Enterprise.UI.bundle.scp.css
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\d77l2qy8cy-yiktawnjns.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\kg2ram854o-sysg4otwid.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\idlbwfjf3e-0b1xc29ndt.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\ckt86gem57-ebngw0l1mg.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\dnwq9wk44u-0bipzxmveo.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\5h81voagx1-81hw6ic1c2.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\2ndbdiwf0k-xfdgfgox7x.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\g591birpkc-kbr2airtzw.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\ha3ck1f4wq-7g5jyekzv6.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\onzwzcnqot-jl96am1vzl.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\k2lc9f2kwg-vdqba74xl7.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\3spo2eianh-m2ncsft6cr.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\bm0n96jk7v-907drq3dvo.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\p2zgtah1ds-m3t6udusc0.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\9zg8dqxfdk-wuh5ivtob9.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\lc6ok7c9tb-dnjmjdm2mo.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\4l15mon31j-1g9zmxeu7w.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\jsshet654m-91rh0octem.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\6wjchtuxco-d05cis01zf.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\sadf1bszs1-pvi2ke53a8.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\12khajnlde-v4tt9cwu68.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\vbtp9tnch6-hmnabp9axj.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\sb4o3odzm8-btiaett35b.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\jazegy34qu-30ggiilbxu.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\ffhxaeu1yb-zigqku1n8k.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\pq6ds00kew-zdbbwikjea.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\gk0sdbowrt-bb5ga3dleg.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\sekkta200r-pm4btfk0n3.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\0yyctx1peb-zpq8z5iibr.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\eiq2m65tqw-yamlqdjvh6.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\juc69m01qj-lqefd6vcas.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\anji1rpska-nk9syyt2r3.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\vihrpo2kci-izphcy3yvt.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\nr2uivr86d-f2zwt8egz8.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\0pcagc9na8-4n2vkupzaf.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\9ispkuv7ij-s1oiexp2oz.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\tqhdg3t9bq-36nq13g3ow.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\eejr38ihun-9agd7l5j1d.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\djau0kle4k-epdmpmvd7e.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\mfqtlt087y-4wbz6xb7d8.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\ukontf0to4-zv50h23j63.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\grozcvm4ej-fb76fzuoq5.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\jhhm3fquz3-b0icumuddu.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\2m61bm772c-yf265dj9n9.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\diku15o4fe-y4dxz03dbp.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\pl2kkyous1-cm32bk5i6e.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\u3460sy28a-njq1jcix0i.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\nq0zaazork-cts2wvpgdd.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\6efprx52i0-1ok5u1xk0k.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\1wpo26mjip-9ni5nvm3p7.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\x6wjrj69gv-qmvuduwh68.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\7fo5fkl0dh-0iohe96tdk.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\b3f7pv437p-9wtk1g816i.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\vi8ck7x5nl-i4ak9r652v.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\bl09p3w3m9-zkbw281d8w.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\fmh1x3w4tr-1xva563bxg.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\f1df7vucqv-sc120c52mm.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\fnyfq6bvm1-urynx5qaln.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\gp9hsc4w81-a15dcda0m4.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\klmnspddx3-sh3mkmmaaj.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\xi9vmwtwq4-aj7um3gyxc.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\b5cgi8pe23-928ofmfogj.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\l38986f9ca-gzhkbvypps.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\5wmhaphab1-snoly5ozph.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\skhxlfyjvs-6pqz8bsss0.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\qwqh6pmh9y-4qp8d7dmqg.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\91k70hmltq-awo5zrksui.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\compressed\0nuuc6eyeu-awo5zrksui.gz
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets.build.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets.build.json.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets.development.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssets.props
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets\msbuild.build.Nalam360Enterprise.UI.props
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets\msbuild.buildMultiTargeting.Nalam360Enterprise.UI.props
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets\msbuild.buildTransitive.Nalam360Enterprise.UI.props
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\staticwebassets.pack.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\refint\Nalam360Enterprise.UI.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\Nalam360Enterprise.UI.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360Enterprise.UI\Nalam360Enterprise.UI\obj\Debug\net9.0\ref\Nalam360Enterprise.UI.dll

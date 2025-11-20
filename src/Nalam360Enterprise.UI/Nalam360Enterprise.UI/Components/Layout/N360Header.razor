@@ -1,0 +1,425 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<header class="n360-header @ThemeClass @(IsFixed ? "fixed" : "") @(IsTransparent ? "transparent" : "") @CssClass" style="@Style">
+    <div class="header-container @(IsFluid ? "fluid" : "")">
+        <!-- Left Section: Logo & Brand -->
+        <div class="header-left">
+            @if (ShowLogo)
+            {
+                <div class="header-logo" @onclick="OnLogoClick">
+                    @if (!string.IsNullOrEmpty(LogoUrl))
+                    {
+                        <img src="@LogoUrl" alt="@BrandName" class="logo-image" />
+                    }
+                    else
+                    {
+                        <div class="logo-placeholder">
+                            <span class="logo-icon">@LogoIcon</span>
+                        </div>
+                    }
+                    @if (ShowBrandName)
+                    {
+                        <span class="brand-name">@BrandName</span>
+                    }
+                </div>
+            }
+
+            @if (ShowMenuToggle)
+            {
+                <button class="menu-toggle @(IsMobileMenuOpen ? "active" : "")" 
+                        @onclick="ToggleMobileMenu" 
+                        aria-label="Toggle menu">
+                    <span class="toggle-icon"></span>
+                    <span class="toggle-icon"></span>
+                    <span class="toggle-icon"></span>
+                </button>
+            }
+        </div>
+
+        <!-- Center Section: Navigation -->
+        @if (ShowNavigation)
+        {
+            <nav class="header-nav @(IsMobileMenuOpen ? "mobile-open" : "")">
+                @if (NavigationItems != null && NavigationItems.Any())
+                {
+                    <ul class="nav-list">
+                        @foreach (var item in NavigationItems)
+                        {
+                            @if (HasPermission(item.RequiredPermission))
+                            {
+                                <li class="nav-item @(item.IsActive ? "active" : "") @(item.Children?.Any() == true ? "has-children" : "")">
+                                    <a href="@item.Href" 
+                                       class="nav-link" 
+                                       @onclick="() => OnNavItemClick(item)"
+                                       @onclick:preventDefault="item.PreventDefault">
+                                        @if (!string.IsNullOrEmpty(item.Icon))
+                                        {
+                                            <span class="nav-icon">@item.Icon</span>
+                                        }
+                                        <span class="nav-text">@item.Label</span>
+                                        @if (item.Badge > 0)
+                                        {
+                                            <span class="nav-badge">@item.Badge</span>
+                                        }
+                                        @if (item.Children?.Any() == true)
+                                        {
+                                            <span class="nav-arrow">▼</span>
+                                        }
+                                    </a>
+                                    @if (item.Children?.Any() == true)
+                                    {
+                                        <ul class="nav-dropdown">
+                                            @foreach (var child in item.Children)
+                                            {
+                                                @if (HasPermission(child.RequiredPermission))
+                                                {
+                                                    <li class="dropdown-item">
+                                                        <a href="@child.Href" 
+                                                           class="dropdown-link"
+                                                           @onclick="() => OnNavItemClick(child)"
+                                                           @onclick:preventDefault="child.PreventDefault">
+                                                            @if (!string.IsNullOrEmpty(child.Icon))
+                                                            {
+                                                                <span class="dropdown-icon">@child.Icon</span>
+                                                            }
+                                                            <span class="dropdown-text">@child.Label</span>
+                                                        </a>
+                                                    </li>
+                                                }
+                                            }
+                                        </ul>
+                                    }
+                                </li>
+                            }
+                        }
+                    </ul>
+                }
+                else
+                {
+                    @LeftContent
+                }
+            </nav>
+        }
+
+        <!-- Right Section: Actions -->
+        <div class="header-right">
+            @if (CenterContent != null)
+            {
+                <div class="header-center-content">
+                    @CenterContent
+                </div>
+            }
+
+            @if (ShowSearch)
+            {
+                <div class="header-search @(_isSearchExpanded ? "expanded" : "")">
+                    <button class="search-toggle" @onclick="ToggleSearch" aria-label="Search">
+                        <span class="search-icon">🔍</span>
+                    </button>
+                    <input type="text" 
+                           class="search-input" 
+                           placeholder="@SearchPlaceholder"
+                           @bind="_searchQuery"
+                           @bind:event="oninput" />
+                </div>
+            }
+
+            @if (ShowNotifications)
+            {
+                <div class="header-action">
+                    <button class="action-button @(UnreadNotifications > 0 ? "has-badge" : "")" 
+                            @onclick="OnNotificationClick"
+                            aria-label="Notifications">
+                        <span class="action-icon">🔔</span>
+                        @if (UnreadNotifications > 0)
+                        {
+                            <span class="action-badge">@(UnreadNotifications > 99 ? "99+" : UnreadNotifications.ToString())</span>
+                        }
+                    </button>
+                </div>
+            }
+
+            @if (ShowMessages)
+            {
+                <div class="header-action">
+                    <button class="action-button @(UnreadMessages > 0 ? "has-badge" : "")" 
+                            @onclick="OnMessageClick"
+                            aria-label="Messages">
+                        <span class="action-icon">💬</span>
+                        @if (UnreadMessages > 0)
+                        {
+                            <span class="action-badge">@(UnreadMessages > 99 ? "99+" : UnreadMessages.ToString())</span>
+                        }
+                    </button>
+                </div>
+            }
+
+            @if (RightContent != null)
+            {
+                <div class="header-custom-content">
+                    @RightContent
+                </div>
+            }
+
+            @if (ShowUserMenu)
+            {
+                <div class="header-user @(_isUserMenuOpen ? "menu-open" : "")">
+                    <button class="user-button" @onclick="ToggleUserMenu" aria-label="User menu">
+                        @if (!string.IsNullOrEmpty(UserAvatar))
+                        {
+                            <img src="@UserAvatar" alt="@UserName" class="user-avatar" />
+                        }
+                        else
+                        {
+                            <div class="user-avatar-placeholder">
+                                <span>@GetUserInitials()</span>
+                            </div>
+                        }
+                        @if (ShowUserName)
+                        {
+                            <span class="user-name">@UserName</span>
+                        }
+                        <span class="user-arrow">▼</span>
+                    </button>
+
+                    @if (_isUserMenuOpen)
+                    {
+                        <div class="user-dropdown">
+                            @if (UserMenuItems != null && UserMenuItems.Any())
+                            {
+                                @foreach (var item in UserMenuItems)
+                                {
+                                    @if (HasPermission(item.RequiredPermission))
+                                    {
+                                        @if (item.IsDivider)
+                                        {
+                                            <div class="dropdown-divider"></div>
+                                        }
+                                        else
+                                        {
+                                            <a href="@item.Href" 
+                                               class="dropdown-item @(item.IsWarning ? "warning" : "") @(item.IsDanger ? "danger" : "")"
+                                               @onclick="() => OnUserMenuItemClick(item)"
+                                               @onclick:preventDefault="item.PreventDefault">
+                                                @if (!string.IsNullOrEmpty(item.Icon))
+                                                {
+                                                    <span class="item-icon">@item.Icon</span>
+                                                }
+                                                <span class="item-text">@item.Label</span>
+                                            </a>
+                                        }
+                                    }
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (ShowProgressBar && IsLoading)
+    {
+        <div class="header-progress-bar">
+            <div class="progress-line"></div>
+        </div>
+    }
+</header>
+
+@code {
+    // Configuration
+    [Parameter] public string? LogoUrl { get; set; }
+    [Parameter] public string LogoIcon { get; set; } = "🏥";
+    [Parameter] public string BrandName { get; set; } = "Enterprise";
+    [Parameter] public bool ShowLogo { get; set; } = true;
+    [Parameter] public bool ShowBrandName { get; set; } = true;
+    [Parameter] public bool ShowNavigation { get; set; } = true;
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowNotifications { get; set; } = true;
+    [Parameter] public bool ShowMessages { get; set; } = true;
+    [Parameter] public bool ShowUserMenu { get; set; } = true;
+    [Parameter] public bool ShowUserName { get; set; } = true;
+    [Parameter] public bool ShowMenuToggle { get; set; } = true;
+    [Parameter] public bool ShowProgressBar { get; set; } = true;
+
+    // Layout Options
+    [Parameter] public bool IsFixed { get; set; } = true;
+    [Parameter] public bool IsFluid { get; set; } = false;
+    [Parameter] public bool IsTransparent { get; set; } = false;
+    [Parameter] public bool IsLoading { get; set; } = false;
+
+    // Theme & Style
+    [Parameter] public string ThemeClass { get; set; } = "light";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+
+    // Navigation
+    [Parameter] public List<HeaderNavItem>? NavigationItems { get; set; }
+    [Parameter] public List<HeaderNavItem>? UserMenuItems { get; set; }
+
+    // User Info
+    [Parameter] public string UserName { get; set; } = "User";
+    [Parameter] public string? UserAvatar { get; set; }
+    [Parameter] public int UnreadNotifications { get; set; }
+    [Parameter] public int UnreadMessages { get; set; }
+
+    // Search
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+
+    // Custom Content
+    [Parameter] public RenderFragment? LeftContent { get; set; }
+    [Parameter] public RenderFragment? CenterContent { get; set; }
+    [Parameter] public RenderFragment? RightContent { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnLogoClicked { get; set; }
+    [Parameter] public EventCallback<HeaderNavItem> OnNavItemClicked { get; set; }
+    [Parameter] public EventCallback<HeaderNavItem> OnUserMenuItemClicked { get; set; }
+    [Parameter] public EventCallback OnNotificationClicked { get; set; }
+    [Parameter] public EventCallback OnMessageClicked { get; set; }
+    [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+
+    // State
+    private bool _isUserMenuOpen = false;
+    private bool _isSearchExpanded = false;
+    private bool _isMobileMenuOpen = false;
+    private string _searchQuery = string.Empty;
+    
+    // Public properties for razor binding
+    private bool IsMobileMenuOpen => _isMobileMenuOpen;
+
+    private Dictionary<string, bool> _permissionCache = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _permissionCache.Clear();
+        
+        if (NavigationItems != null)
+        {
+            foreach (var item in NavigationItems.Where(i => !string.IsNullOrEmpty(i.RequiredPermission)))
+            {
+                _permissionCache[item.RequiredPermission!] = await PermissionService.HasPermissionAsync(item.RequiredPermission!);
+                
+                if (item.Children != null)
+                {
+                    foreach (var child in item.Children.Where(c => !string.IsNullOrEmpty(c.RequiredPermission)))
+                    {
+                        _permissionCache[child.RequiredPermission!] = await PermissionService.HasPermissionAsync(child.RequiredPermission!);
+                    }
+                }
+            }
+        }
+        
+        if (UserMenuItems != null)
+        {
+            foreach (var item in UserMenuItems.Where(i => !string.IsNullOrEmpty(i.RequiredPermission)))
+            {
+                _permissionCache[item.RequiredPermission!] = await PermissionService.HasPermissionAsync(item.RequiredPermission!);
+            }
+        }
+    }
+
+    private bool HasPermission(string? permission)
+    {
+        if (string.IsNullOrEmpty(permission)) return true;
+        return _permissionCache.TryGetValue(permission, out var hasPermission) && hasPermission;
+    }
+
+    private async Task OnLogoClick()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "LogoClicked",
+                Resource = "Header",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        await OnLogoClicked.InvokeAsync();
+    }
+
+    private async Task OnNavItemClick(HeaderNavItem item)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "NavigationItemClicked",
+                Resource = "Header",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = item.Label,
+                    ["Href"] = item.Href ?? ""
+                }
+            });
+        }
+        await OnNavItemClicked.InvokeAsync(item);
+    }
+
+    private async Task OnUserMenuItemClick(HeaderNavItem item)
+    {
+        _isUserMenuOpen = false;
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "UserMenuItemClicked",
+                Resource = "Header",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = item.Label
+                }
+            });
+        }
+        await OnUserMenuItemClicked.InvokeAsync(item);
+    }
+
+    private void ToggleUserMenu()
+    {
+        _isUserMenuOpen = !_isUserMenuOpen;
+    }
+
+    private void ToggleSearch()
+    {
+        _isSearchExpanded = !_isSearchExpanded;
+    }
+
+    private void ToggleMobileMenu()
+    {
+        _isMobileMenuOpen = !_isMobileMenuOpen;
+    }
+
+    private async Task OnNotificationClick()
+    {
+        await OnNotificationClicked.InvokeAsync();
+    }
+
+    private async Task OnMessageClick()
+    {
+        await OnMessageClicked.InvokeAsync();
+    }
+
+    private async Task OnSearchInput(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? string.Empty;
+        await OnSearchChanged.InvokeAsync(_searchQuery);
+    }
+
+    private string GetUserInitials()
+    {
+        if (string.IsNullOrWhiteSpace(UserName)) return "U";
+        var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return UserName.Substring(0, Math.Min(2, UserName.Length)).ToUpper();
+    }
+}

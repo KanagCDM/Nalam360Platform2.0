@@ -1,0 +1,484 @@
+/* N360ProfileEditor Styles */
+
+.n360-profile-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Avatar Section */
+.n360-profile-editor__avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.n360-profile-editor__avatar-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.n360-profile-editor__avatar-image,
+.n360-profile-editor__avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.n360-profile-editor__avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.n360-profile-editor__avatar-upload-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: background 0.2s;
+}
+
+.n360-profile-editor__avatar-upload-btn:hover {
+    background: #2563eb;
+}
+
+.n360-profile-editor__avatar-info {
+    flex: 1;
+}
+
+.n360-profile-editor__display-name {
+    margin: 0 0 8px 0;
+    font-size: 28px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.n360-profile-editor__email {
+    margin: 0 0 8px 0;
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.n360-profile-editor__badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.n360-profile-editor__badge--verified {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Tabs */
+.n360-profile-editor__tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid #e5e7eb;
+    overflow-x: auto;
+}
+
+.n360-profile-editor__tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.n360-profile-editor__tab:hover {
+    color: #3b82f6;
+}
+
+.n360-profile-editor__tab--active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+/* Content */
+.n360-profile-editor__content {
+    flex: 1;
+}
+
+.n360-profile-editor__section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.n360-profile-editor__section-title {
+    grid-column: 1 / -1;
+    margin: 0 0 12px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Fields */
+.n360-profile-editor__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.n360-profile-editor__field--full {
+    grid-column: 1 / -1;
+}
+
+.n360-profile-editor__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.n360-profile-editor__input,
+.n360-profile-editor__textarea {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.n360-profile-editor__input:focus,
+.n360-profile-editor__textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.n360-profile-editor__input:disabled,
+.n360-profile-editor__textarea:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+}
+
+.n360-profile-editor__textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.n360-profile-editor__field-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.n360-profile-editor__verified {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* Checkbox */
+.n360-profile-editor__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    grid-column: 1 / -1;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+.n360-profile-editor__checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.n360-profile-editor__checkbox span {
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Password Section */
+.n360-profile-editor__password-section,
+.n360-profile-editor__2fa-section {
+    grid-column: 1 / -1;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.n360-profile-editor__password-section h4,
+.n360-profile-editor__2fa-section h4 {
+    grid-column: 1 / -1;
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.n360-profile-editor__password-strength {
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.n360-profile-editor__password-strength-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+    transition: width 0.3s;
+}
+
+.n360-profile-editor__password-strength-text {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.n360-profile-editor__info {
+    grid-column: 1 / -1;
+    padding: 12px;
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #1e40af;
+}
+
+/* Actions */
+.n360-profile-editor__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.n360-profile-editor__btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.n360-profile-editor__btn--primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.n360-profile-editor__btn--primary:hover {
+    background: #2563eb;
+}
+
+.n360-profile-editor__btn--secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.n360-profile-editor__btn--secondary:hover {
+    background: #d1d5db;
+}
+
+.n360-profile-editor__btn--danger {
+    background: #ef4444;
+    color: white;
+}
+
+.n360-profile-editor__btn--danger:hover {
+    background: #dc2626;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .n360-profile-editor {
+        padding: 16px;
+    }
+
+    .n360-profile-editor__avatar-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .n360-profile-editor__avatar-image,
+    .n360-profile-editor__avatar-placeholder {
+        width: 100px;
+        height: 100px;
+    }
+
+    .n360-profile-editor__section,
+    .n360-profile-editor__password-section,
+    .n360-profile-editor__2fa-section {
+        grid-template-columns: 1fr;
+    }
+
+    .n360-profile-editor__tabs {
+        gap: 4px;
+    }
+
+    .n360-profile-editor__tab {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .n360-profile-editor__actions {
+        flex-direction: column;
+    }
+
+    .n360-profile-editor__btn {
+        width: 100%;
+    }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+    .n360-profile-editor {
+        background: #1f2937;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .n360-profile-editor__avatar-section {
+        border-bottom-color: #374151;
+    }
+
+    .n360-profile-editor__display-name {
+        color: #f9fafb;
+    }
+
+    .n360-profile-editor__email {
+        color: #9ca3af;
+    }
+
+    .n360-profile-editor__tabs {
+        border-bottom-color: #374151;
+    }
+
+    .n360-profile-editor__tab {
+        color: #9ca3af;
+    }
+
+    .n360-profile-editor__tab:hover {
+        color: #60a5fa;
+    }
+
+    .n360-profile-editor__tab--active {
+        color: #60a5fa;
+        border-bottom-color: #60a5fa;
+    }
+
+    .n360-profile-editor__section-title {
+        color: #f9fafb;
+    }
+
+    .n360-profile-editor__label {
+        color: #d1d5db;
+    }
+
+    .n360-profile-editor__input,
+    .n360-profile-editor__textarea {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+
+    .n360-profile-editor__input:disabled,
+    .n360-profile-editor__textarea:disabled {
+        background: #1f2937;
+    }
+
+    .n360-profile-editor__checkbox span {
+        color: #d1d5db;
+    }
+
+    .n360-profile-editor__password-section,
+    .n360-profile-editor__2fa-section {
+        background: #111827;
+    }
+
+    .n360-profile-editor__password-section h4,
+    .n360-profile-editor__2fa-section h4 {
+        color: #f9fafb;
+    }
+
+    .n360-profile-editor__info {
+        background: #1e3a5f;
+        border-left-color: #60a5fa;
+        color: #93c5fd;
+    }
+
+    .n360-profile-editor__actions {
+        border-top-color: #374151;
+    }
+
+    .n360-profile-editor__btn--secondary {
+        background: #374151;
+        color: #d1d5db;
+    }
+
+    .n360-profile-editor__btn--secondary:hover {
+        background: #4b5563;
+    }
+}
+
+/* RTL Support */
+[dir="rtl"] .n360-profile-editor {
+    direction: rtl;
+}
+
+[dir="rtl"] .n360-profile-editor__avatar-section {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .n360-profile-editor__avatar-upload-btn {
+    right: auto;
+    left: 0;
+}
+
+[dir="rtl"] .n360-profile-editor__info {
+    border-left: none;
+    border-right: 3px solid #3b82f6;
+}
+
+[dir="rtl"] .n360-profile-editor__actions {
+    justify-content: flex-start;
+}
+
+[dir="rtl"] .n360-profile-editor__checkbox {
+    flex-direction: row-reverse;
+}

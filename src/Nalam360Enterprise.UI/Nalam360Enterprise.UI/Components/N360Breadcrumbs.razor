@@ -1,0 +1,150 @@
+@using Nalam360Enterprise.UI.Models
+@using Microsoft.JSInterop
+@using BreadcrumbItem = Nalam360Enterprise.UI.Models.BreadcrumbItem
+@inject IJSRuntime JSRuntime
+
+<nav class="n360-breadcrumbs @CssClass @(IsResponsive ? "responsive" : "")" aria-label="Breadcrumb">
+    <ol class="breadcrumb-list">
+        @if (Options?.ShowHome == true)
+        {
+            <li class="breadcrumb-item home">
+                <a href="@(Options.HomeUrl ?? "/")" class="breadcrumb-link" @onclick="() => OnItemClick(null)">
+                    @if (!string.IsNullOrEmpty(Options.HomeIcon))
+                    {
+                        <span class="breadcrumb-icon">@Options.HomeIcon</span>
+                    }
+                </a>
+                @if (Items?.Any() == true)
+                {
+                    <span class="breadcrumb-separator">@(Options?.Separator ?? "/")</span>
+                }
+            </li>
+        }
+
+        @if (Items != null)
+        {
+            var visibleItems = GetVisibleItems();
+            var showCollapse = Items.Count > (Options?.MaxVisibleItems ?? 5) && Options?.AutoCollapse == true;
+
+            @if (showCollapse && Items.Count > 2)
+            {
+                <li class="breadcrumb-item">
+                    <a href="@Items.First().Url" class="breadcrumb-link" @onclick="() => OnItemClick(Items.First())">
+                        @if (Options?.ShowIcons == true && !string.IsNullOrEmpty(Items.First().Icon))
+                        {
+                            <span class="breadcrumb-icon">@Items.First().Icon</span>
+                        }
+                        <span class="breadcrumb-text">@Items.First().Name</span>
+                    </a>
+                    <span class="breadcrumb-separator">@(Options?.Separator ?? "/")</span>
+                </li>
+
+                <li class="breadcrumb-item collapsed" @onclick="ToggleCollapsed">
+                    <span class="breadcrumb-ellipsis">...</span>
+                    <span class="breadcrumb-separator">@(Options?.Separator ?? "/")</span>
+                </li>
+
+                @foreach (var item in Items.Skip(Items.Count - 1))
+                {
+                    <li class="breadcrumb-item @(item.IsActive ? "active" : "") @(item.IsDisabled ? "disabled" : "")"
+                        title="@(Options?.ShowTooltips == true ? item.Tooltip ?? item.Name : null)">
+                        @if (item.IsActive || item.IsDisabled || string.IsNullOrEmpty(item.Url))
+                        {
+                            @if (Options?.ShowIcons == true && !string.IsNullOrEmpty(item.Icon))
+                            {
+                                <span class="breadcrumb-icon">@item.Icon</span>
+                            }
+                            <span class="breadcrumb-text">@item.Name</span>
+                        }
+                        else
+                        {
+                            <a href="@item.Url" class="breadcrumb-link" @onclick="() => OnItemClick(item)">
+                                @if (Options?.ShowIcons == true && !string.IsNullOrEmpty(item.Icon))
+                                {
+                                    <span class="breadcrumb-icon">@item.Icon</span>
+                                }
+                                <span class="breadcrumb-text">@item.Name</span>
+                            </a>
+                        }
+                    </li>
+                }
+            }
+            else
+            {
+                @for (int i = 0; i < Items.Count; i++)
+                {
+                    var item = Items[i];
+                    var isLast = i == Items.Count - 1;
+
+                    <li class="breadcrumb-item @(item.IsActive ? "active" : "") @(item.IsDisabled ? "disabled" : "")"
+                        title="@(Options?.ShowTooltips == true ? item.Tooltip ?? item.Name : null)">
+                        @if (item.IsActive || item.IsDisabled || string.IsNullOrEmpty(item.Url))
+                        {
+                            @if (Options?.ShowIcons == true && !string.IsNullOrEmpty(item.Icon))
+                            {
+                                <span class="breadcrumb-icon">@item.Icon</span>
+                            }
+                            <span class="breadcrumb-text">@item.Name</span>
+                        }
+                        else
+                        {
+                            <a href="@item.Url" class="breadcrumb-link" @onclick="() => OnItemClick(item)">
+                                @if (Options?.ShowIcons == true && !string.IsNullOrEmpty(item.Icon))
+                                {
+                                    <span class="breadcrumb-icon">@item.Icon</span>
+                                }
+                                <span class="breadcrumb-text">@item.Name</span>
+                            </a>
+                        }
+
+                        @if (!isLast)
+                        {
+                            <span class="breadcrumb-separator">@(Options?.Separator ?? "/")</span>
+                        }
+                    </li>
+                }
+            }
+        }
+    </ol>
+</nav>
+
+@code {
+    [Parameter] public List<BreadcrumbItem>? Items { get; set; }
+    [Parameter] public BreadcrumbOptions? Options { get; set; }
+    [Parameter] public bool IsResponsive { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public EventCallback<BreadcrumbItem?> OnItemClicked { get; set; }
+
+    private bool _isCollapsed = true;
+
+    protected override void OnInitialized()
+    {
+        Options ??= new BreadcrumbOptions();
+    }
+
+    private List<BreadcrumbItem> GetVisibleItems()
+    {
+        if (Items == null || Items.Count <= (Options?.MaxVisibleItems ?? 5) || Options?.AutoCollapse != true)
+        {
+            return Items ?? new List<BreadcrumbItem>();
+        }
+
+        if (_isCollapsed)
+        {
+            return new List<BreadcrumbItem> { Items.First(), Items.Last() };
+        }
+
+        return Items;
+    }
+
+    private void ToggleCollapsed()
+    {
+        _isCollapsed = !_isCollapsed;
+        StateHasChanged();
+    }
+
+    private async Task OnItemClick(BreadcrumbItem? item)
+    {
+        await OnItemClicked.InvokeAsync(item);
+    }
+}

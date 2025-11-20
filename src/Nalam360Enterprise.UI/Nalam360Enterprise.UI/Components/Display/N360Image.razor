@@ -1,0 +1,186 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-image @GetImageClass()" @attributes="GetHtmlAttributes()">
+        @if (_isLoading)
+        {
+            <div class="n360-image__placeholder">
+                @if (PlaceholderContent != null)
+                {
+                    @PlaceholderContent
+                }
+                else
+                {
+                    <i class="fas fa-image n360-image__placeholder-icon"></i>
+                }
+            </div>
+        }
+
+        @if (_hasError && !string.IsNullOrEmpty(FallbackSrc))
+        {
+            <img src="@FallbackSrc" 
+                 alt="@Alt" 
+                 class="n360-image__img"
+                 style="@GetImageStyle()" />
+        }
+        else if (!_hasError)
+        {
+            <img src="@Src" 
+                 alt="@Alt" 
+                 class="n360-image__img"
+                 style="@GetImageStyle()"
+                 loading="@(LazyLoad ? "lazy" : "eager")"
+                 @onload="OnImageLoad"
+                 @onerror="OnImageError"
+                 @onclick="HandleClick" />
+        }
+        else if (_hasError)
+        {
+            <div class="n360-image__error">
+                @if (ErrorContent != null)
+                {
+                    @ErrorContent
+                }
+                else
+                {
+                    <i class="fas fa-exclamation-triangle n360-image__error-icon"></i>
+                    <span class="n360-image__error-text">Failed to load</span>
+                }
+            </div>
+        }
+
+        @if (ShowPreview && _showPreviewModal)
+        {
+            <div class="n360-image__preview-modal" @onclick="ClosePreview">
+                <div class="n360-image__preview-content" @onclick:stopPropagation="true">
+                    <button class="n360-image__preview-close" @onclick="ClosePreview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <img src="@Src" alt="@Alt" class="n360-image__preview-img" />
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Src { get; set; } = string.Empty;
+    [Parameter] public string? FallbackSrc { get; set; }
+    [Parameter] public string? Alt { get; set; }
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public ImageFit Fit { get; set; } = ImageFit.Cover;
+    [Parameter] public bool LazyLoad { get; set; } = true;
+    [Parameter] public bool ShowPreview { get; set; }
+    [Parameter] public RenderFragment? PlaceholderContent { get; set; }
+    [Parameter] public RenderFragment? ErrorContent { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnLoad { get; set; }
+    [Parameter] public EventCallback OnError { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private bool _hasPermission = true;
+    private bool _isLoading = true;
+    private bool _hasError = false;
+    private bool _showPreviewModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task OnImageLoad()
+    {
+        _isLoading = false;
+        _hasError = false;
+        await OnLoad.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnImageError()
+    {
+        _isLoading = false;
+        _hasError = true;
+        await OnError.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task HandleClick()
+    {
+        if (ShowPreview && !_hasError)
+        {
+            _showPreviewModal = true;
+            StateHasChanged();
+        }
+        await OnClick.InvokeAsync();
+    }
+
+    private void ClosePreview()
+    {
+        _showPreviewModal = false;
+        StateHasChanged();
+    }
+
+    private string GetImageClass()
+    {
+        var classes = new List<string> { "n360-image" };
+
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        if (ShowPreview && !_hasError)
+        {
+            classes.Add("n360-image--preview");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetImageStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(Width))
+        {
+            styles.Add($"width: {Width}");
+        }
+
+        if (!string.IsNullOrEmpty(Height))
+        {
+            styles.Add($"height: {Height}");
+        }
+
+        styles.Add($"object-fit: {Fit.ToString().ToLower()}");
+
+        return string.Join("; ", styles);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

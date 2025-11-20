@@ -1,0 +1,195 @@
+@using Syncfusion.Blazor.Buttons
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-radiobutton @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-radiobutton__label">
+                @Label
+                @if (IsRequired)
+                {
+                    <span class="n360-radiobutton__required" aria-label="required">*</span>
+                }
+            </label>
+        }
+
+        <div class="n360-radiobutton__group">
+            @if (Items != null)
+            {
+                @foreach (var item in Items)
+                {
+                    <label class="n360-radiobutton__item @GetRadioButtonCssClass()" @key="item.Value?.ToString()">
+                        <input type="radio"
+                               name="@Name"
+                               value="@item.Value?.ToString()"
+                               checked="@(EqualityComparer<TValue>.Default.Equals(Value, item.Value))"
+                               disabled="@(Disabled || item.Disabled || !_hasPermission)"
+                               @onchange="@(() => OnRadioChange(item.Value))" />
+                        <span class="n360-radiobutton__text">@item.Text</span>
+                    </label>
+                }
+            }
+            else
+            {
+                @ChildContent
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <small class="n360-radiobutton__help-text">@HelpText</small>
+        }
+
+        @if (ValidationErrors?.Any() == true)
+        {
+            <div class="n360-radiobutton__validation">
+                @foreach (var error in ValidationErrors)
+                {
+                    <span class="n360-radiobutton__error">@error</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
+    [Parameter] public string Name { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool IsRequired { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public IEnumerable<RadioButtonItem<TValue>>? Items { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    [Parameter] public string? AuditAction { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<TValue>>? ValidationRules { get; set; }
+    [Parameter] public List<string>? ValidationErrors { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<TValue?> OnChange { get; set; }
+
+    private bool _hasPermission = true;
+    private TValue? _previousValue;
+
+    private TValue? CurrentValue
+    {
+        get => Value;
+        set
+        {
+            if (!EqualityComparer<TValue?>.Default.Equals(Value, value))
+            {
+                Value = value;
+                _ = ValueChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        _previousValue = Value;
+    }
+
+    private async Task OnRadioChange(TValue? newValue)
+    {
+        var oldValue = _previousValue;
+
+        // Validation
+        if (ValidationRules?.Any() == true)
+        {
+            ValidationErrors = new List<string>();
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid)
+                {
+                    ValidationErrors.AddRange(result.Errors.Select(e => e.Message));
+                    return;
+                }
+            }
+        }
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource ?? "RadioButton",
+                Action = AuditAction ?? "Changed",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = oldValue?.ToString() ?? string.Empty,
+                    ["NewValue"] = newValue?.ToString() ?? string.Empty
+                }
+            });
+        }
+
+        _previousValue = newValue;
+
+        // Trigger change event
+        await OnChange.InvokeAsync(newValue);
+    }
+
+    private string GetRadioButtonCssClass()
+    {
+        var classes = new List<string> { "n360-radiobutton__item" };
+        
+        if (!string.IsNullOrEmpty(InternalCssClass))
+        {
+            classes.Add(InternalCssClass);
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRequired)
+        {
+            attributes["aria-required"] = "true";
+        }
+
+        if (Disabled || !_hasPermission)
+        {
+            attributes["aria-disabled"] = "true";
+        }
+
+        if (ValidationErrors?.Any() == true)
+        {
+            attributes["aria-invalid"] = "true";
+        }
+
+        return attributes;
+    }
+}
+
+@typeparam TValue

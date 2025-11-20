@@ -1,0 +1,869 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-data-importer @CssClass @(_isRtl ? "rtl" : "")" role="region" aria-label="Data import wizard">
+    @if (!_hasPermission && HideIfNoPermission)
+    {
+        return;
+    }
+
+    @if (!_hasPermission && !HideIfNoPermission)
+    {
+        <div class="no-permission">
+            <div class="no-permission-icon">🔒</div>
+            <h3>Access Denied</h3>
+            <p>You don't have permission to access the data importer.</p>
+        </div>
+        return;
+    }
+
+    <!-- Wizard Steps -->
+    <div class="importer-steps">
+        @foreach (var step in Enum.GetValues<ImportStep>())
+        {
+            var isActive = _session.CurrentStep == step;
+            var isCompleted = (int)_session.CurrentStep > (int)step;
+            var stepNumber = (int)step;
+
+            <div class="step-item @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                <div class="step-number">
+                    @if (isCompleted)
+                    {
+                        <span class="step-icon">✓</span>
+                    }
+                    else
+                    {
+                        <span>@stepNumber</span>
+                    }
+                </div>
+                <div class="step-label">@GetStepLabel(step)</div>
+            </div>
+            
+            @if (step != ImportStep.Complete)
+            {
+                <div class="step-connector @(isCompleted ? "completed" : "")"></div>
+            }
+        }
+    </div>
+
+    <!-- Wizard Content -->
+    <div class="importer-content">
+        @if (_session.CurrentStep == ImportStep.Upload)
+        {
+            <div class="step-container">
+                <h2>Upload File</h2>
+                <p>Select a file to import data. Supported formats: CSV, Excel, JSON</p>
+
+                <div class="upload-area @(_isDragging ? "dragging" : "")"
+                     @ondrop="OnDropAsync"
+                     @ondrop:preventDefault="true"
+                     @ondragover="OnDragOver"
+                     @ondragover:preventDefault="true"
+                     @ondragleave="OnDragLeave">
+                    @if (_session.FileName == null)
+                    {
+                        <div class="upload-placeholder">
+                            <div class="upload-icon">📁</div>
+                            <h3>Drag & Drop File Here</h3>
+                            <p>or</p>
+                            <label class="btn-upload">
+                                <input type="file" @onchange="OnFileSelectedAsync" accept=".csv,.xlsx,.xls,.json" hidden />
+                                Choose File
+                            </label>
+                            <p class="upload-hint">Maximum file size: @MaxFileSizeMB MB</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="file-info">
+                            <div class="file-icon">📄</div>
+                            <div class="file-details">
+                                <div class="file-name">@_session.FileName</div>
+                                <div class="file-meta">
+                                    <span>@FormatFileSize(_session.FileSize)</span>
+                                    <span>•</span>
+                                    <span>@_session.TotalRows rows</span>
+                                </div>
+                            </div>
+                            <button class="btn-remove" @onclick="OnRemoveFileAsync" title="Remove file">✕</button>
+                        </div>
+                    }
+                </div>
+
+                @if (ShowTemplates && Templates.Any())
+                {
+                    <div class="templates-section">
+                        <h3>Or Use a Template</h3>
+                        <div class="templates-list">
+                            @foreach (var template in Templates)
+                            {
+                                <div class="template-item" @onclick="() => OnSelectTemplateAsync(template)">
+                                    <div class="template-icon">📋</div>
+                                    <div class="template-info">
+                                        <div class="template-name">@template.Name</div>
+                                        <div class="template-description">@template.Description</div>
+                                    </div>
+                                    @if (template.IsDefault)
+                                    {
+                                        <span class="badge-default">Default</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_session.CurrentStep == ImportStep.Mapping)
+        {
+            <div class="step-container">
+                <h2>Map Columns</h2>
+                <p>Map source columns to target fields</p>
+
+                <div class="mapping-container">
+                    <div class="mapping-header">
+                        <div class="mapping-col">Source Column</div>
+                        <div class="mapping-col">Target Field</div>
+                        <div class="mapping-col">Data Type</div>
+                        <div class="mapping-col">Options</div>
+                    </div>
+
+                    @foreach (var mapping in _session.ColumnMappings)
+                    {
+                        <div class="mapping-row">
+                            <div class="mapping-col">
+                                <strong>@mapping.SourceColumn</strong>
+                            </div>
+                            <div class="mapping-col">
+                                <select class="mapping-select" @bind="mapping.TargetField">
+                                    <option value="">-- Select Field --</option>
+                                    @foreach (var field in TargetFields)
+                                    {
+                                        <option value="@field.Name">@field.DisplayName</option>
+                                    }
+                                </select>
+                                @if (!string.IsNullOrEmpty(mapping.TargetField))
+                                {
+                                    var targetField = TargetFields.FirstOrDefault(f => f.Name == mapping.TargetField);
+                                    if (targetField?.IsRequired == true)
+                                    {
+                                        <span class="badge-required">Required</span>
+                                    }
+                                }
+                            </div>
+                            <div class="mapping-col">
+                                <select class="mapping-select" @bind="mapping.DataType">
+                                    <option value="String">Text</option>
+                                    <option value="Integer">Integer</option>
+                                    <option value="Decimal">Decimal</option>
+                                    <option value="DateTime">Date/Time</option>
+                                    <option value="Boolean">Boolean</option>
+                                </select>
+                            </div>
+                            <div class="mapping-col">
+                                <label class="mapping-checkbox">
+                                    <input type="checkbox" @bind="mapping.IsRequired" />
+                                    <span>Required</span>
+                                </label>
+                                <label class="mapping-checkbox">
+                                    <input type="checkbox" @bind="mapping.IsUnique" />
+                                    <span>Unique</span>
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (AllowAutoMapping)
+                {
+                    <button class="btn-auto-map" @onclick="OnAutoMapAsync">
+                        <span class="btn-icon">🎯</span>
+                        Auto-Map Columns
+                    </button>
+                }
+            </div>
+        }
+        else if (_session.CurrentStep == ImportStep.Validation)
+        {
+            <div class="step-container">
+                <h2>Validation Rules</h2>
+                <p>Configure validation rules for imported data</p>
+
+                <div class="validation-container">
+                    @foreach (var rule in _session.ValidationRules)
+                    {
+                        <div class="validation-rule">
+                            <div class="rule-header">
+                                <label class="rule-toggle">
+                                    <input type="checkbox" @bind="rule.IsEnabled" />
+                                    <span class="rule-field">@rule.Field</span>
+                                </label>
+                                <button class="btn-remove-rule" @onclick="() => OnRemoveRuleAsync(rule)" title="Remove rule">✕</button>
+                            </div>
+                            <div class="rule-details">
+                                <div class="rule-field-group">
+                                    <label>Rule Type</label>
+                                    <select @bind="rule.Type" disabled="@(!rule.IsEnabled)">
+                                        @foreach (var ruleType in Enum.GetValues<ValidationRuleType>())
+                                        {
+                                            <option value="@ruleType">@ruleType</option>
+                                        }
+                                    </select>
+                                </div>
+                                @if (rule.Type != ValidationRuleType.Required && rule.Type != ValidationRuleType.Email && 
+                                     rule.Type != ValidationRuleType.Phone && rule.Type != ValidationRuleType.Url)
+                                {
+                                    <div class="rule-field-group">
+                                        <label>Value</label>
+                                        <input type="text" @bind="rule.Value" disabled="@(!rule.IsEnabled)" placeholder="Enter value" />
+                                    </div>
+                                }
+                                <div class="rule-field-group">
+                                    <label>Error Message</label>
+                                    <input type="text" @bind="rule.ErrorMessage" disabled="@(!rule.IsEnabled)" placeholder="Custom error message" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (AllowAddRules)
+                    {
+                        <button class="btn-add-rule" @onclick="OnAddRuleAsync">
+                            <span class="btn-icon">➕</span>
+                            Add Validation Rule
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        else if (_session.CurrentStep == ImportStep.Preview)
+        {
+            <div class="step-container">
+                <h2>Preview Data</h2>
+                <p>Review the first @(_previewData?.PreviewRows ?? 0) rows before importing</p>
+
+                @if (_previewData != null && _previewData.Rows.Any())
+                {
+                    <div class="preview-container">
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in _previewData.Headers)
+                                    {
+                                        <th>@header</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _previewData.Rows)
+                                {
+                                    <tr>
+                                        @foreach (var cell in row)
+                                        {
+                                            <td>@cell</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="preview-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Rows:</span>
+                            <span class="summary-value">@_previewData.TotalRows</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Columns:</span>
+                            <span class="summary-value">@_previewData.Headers.Count</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Showing:</span>
+                            <span class="summary-value">@_previewData.PreviewRows rows</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>No Preview Available</h3>
+                        <p>Unable to generate preview data</p>
+                    </div>
+                }
+            </div>
+        }
+        else if (_session.CurrentStep == ImportStep.Import)
+        {
+            <div class="step-container">
+                <h2>Importing Data</h2>
+                <p>Please wait while we import your data...</p>
+
+                <div class="import-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: @(_importProgress)%"></div>
+                    </div>
+                    <div class="progress-text">@_importProgress% Complete</div>
+                </div>
+
+                <div class="import-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">@_session.ProcessedRows</div>
+                        <div class="stat-label">Processed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">@_session.SuccessfulRows</div>
+                        <div class="stat-label">Successful</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">@_session.FailedRows</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">@_session.TotalRows</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+
+                @if (_session.Errors.Any())
+                {
+                    <div class="import-errors">
+                        <h3>Errors (@_session.Errors.Count)</h3>
+                        <div class="errors-list">
+                            @foreach (var error in _session.Errors.Take(10))
+                            {
+                                <div class="error-item @error.Severity.ToString().ToLower()">
+                                    <span class="error-icon">@GetErrorIcon(error.Severity)</span>
+                                    <span class="error-message">
+                                        <strong>Row @error.RowNumber:</strong> @error.ErrorMessage
+                                        @if (!string.IsNullOrEmpty(error.Value))
+                                        {
+                                            <span class="error-value">(@error.Value)</span>
+                                        }
+                                    </span>
+                                </div>
+                            }
+                            @if (_session.Errors.Count > 10)
+                            {
+                                <div class="error-more">
+                                    And @(_session.Errors.Count - 10) more errors...
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_session.CurrentStep == ImportStep.Complete)
+        {
+            <div class="step-container">
+                @if (_session.Status == ImportStatus.Completed)
+                {
+                    <div class="result-success">
+                        <div class="result-icon">✅</div>
+                        <h2>Import Completed Successfully!</h2>
+                        <p>Your data has been imported.</p>
+
+                        <div class="result-summary">
+                            <div class="summary-stat">
+                                <div class="summary-stat-value">@_session.SuccessfulRows</div>
+                                <div class="summary-stat-label">Rows Imported</div>
+                            </div>
+                            @if (_session.FailedRows > 0)
+                            {
+                                <div class="summary-stat error">
+                                    <div class="summary-stat-value">@_session.FailedRows</div>
+                                    <div class="summary-stat-label">Rows Failed</div>
+                                </div>
+                            }
+                            <div class="summary-stat">
+                                <div class="summary-stat-value">@FormatDuration(_importDuration)</div>
+                                <div class="summary-stat-label">Duration</div>
+                            </div>
+                        </div>
+
+                        @if (AllowDownloadErrors && _session.Errors.Any())
+                        {
+                            <button class="btn-download-errors" @onclick="OnDownloadErrorsAsync">
+                                <span class="btn-icon">⬇️</span>
+                                Download Error Report
+                            </button>
+                        }
+                    </div>
+                }
+                else if (_session.Status == ImportStatus.Failed)
+                {
+                    <div class="result-error">
+                        <div class="result-icon">❌</div>
+                        <h2>Import Failed</h2>
+                        <p>An error occurred during the import process.</p>
+                        
+                        @if (_session.Errors.Any())
+                        {
+                            <div class="error-details">
+                                <h3>Error Details:</h3>
+                                <ul>
+                                    @foreach (var error in _session.Errors.Take(5))
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Wizard Actions -->
+    <div class="importer-actions">
+        @if (_session.CurrentStep > ImportStep.Upload && _session.CurrentStep < ImportStep.Import)
+        {
+            <button class="btn btn-secondary" @onclick="OnPreviousStepAsync">
+                ← Previous
+            </button>
+        }
+
+        @if (_session.CurrentStep == ImportStep.Upload)
+        {
+            <button class="btn btn-primary" @onclick="OnNextStepAsync" disabled="@(string.IsNullOrEmpty(_session.FileName))">
+                Next: Map Columns →
+            </button>
+        }
+        else if (_session.CurrentStep == ImportStep.Mapping)
+        {
+            <button class="btn btn-primary" @onclick="OnNextStepAsync" disabled="@(!IsMappingValid())">
+                Next: Validation →
+            </button>
+        }
+        else if (_session.CurrentStep == ImportStep.Validation)
+        {
+            <button class="btn btn-primary" @onclick="OnNextStepAsync">
+                Next: Preview →
+            </button>
+        }
+        else if (_session.CurrentStep == ImportStep.Preview)
+        {
+            <button class="btn btn-primary" @onclick="OnStartImportAsync">
+                Start Import
+            </button>
+        }
+        else if (_session.CurrentStep == ImportStep.Complete)
+        {
+            <button class="btn btn-primary" @onclick="OnNewImportAsync">
+                New Import
+            </button>
+            <button class="btn btn-secondary" @onclick="OnCloseAsync">
+                Close
+            </button>
+        }
+
+        @if (_session.CurrentStep != ImportStep.Complete && AllowCancel)
+        {
+            <button class="btn btn-text" @onclick="OnCancelAsync">
+                Cancel
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public List<TargetField> TargetFields { get; set; } = new();
+    [Parameter] public List<ImportTemplate> Templates { get; set; } = new();
+    [Parameter] public ImportOptions Options { get; set; } = new();
+    [Parameter] public int MaxFileSizeMB { get; set; } = 10;
+    [Parameter] public bool ShowTemplates { get; set; } = true;
+    [Parameter] public bool AllowAutoMapping { get; set; } = true;
+    [Parameter] public bool AllowAddRules { get; set; } = true;
+    [Parameter] public bool AllowCancel { get; set; } = true;
+    [Parameter] public bool AllowDownloadErrors { get; set; } = true;
+    [Parameter] public int PreviewRowCount { get; set; } = 10;
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "DataImporter";
+
+    // EventCallbacks
+    [Parameter] public EventCallback<DataImportSession> OnSessionCreated { get; set; }
+    [Parameter] public EventCallback<ImportStep> OnStepChanged { get; set; }
+    [Parameter] public EventCallback<(string FileName, long FileSize)> OnFileUploaded { get; set; }
+    [Parameter] public EventCallback<ImportTemplate> OnTemplateSelected { get; set; }
+    [Parameter] public EventCallback<List<ColumnMapping>> OnMappingCompleted { get; set; }
+    [Parameter] public EventCallback<DataImportSession> OnImportStarted { get; set; }
+    [Parameter] public EventCallback<ImportResult> OnImportCompleted { get; set; }
+    [Parameter] public EventCallback<string> OnImportCancelled { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isRtl;
+    private DataImportSession _session = new();
+    private ImportPreviewData? _previewData;
+    private bool _isDragging;
+    private int _importProgress;
+    private TimeSpan _importDuration;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasPermission = string.IsNullOrEmpty(RequiredPermission) || 
+                        await PermissionService.HasPermissionAsync(RequiredPermission);
+        
+        _isRtl = System.Globalization.CultureInfo.CurrentCulture.TextInfo.IsRightToLeft;
+
+        if (_hasPermission)
+        {
+            await OnSessionCreated.InvokeAsync(_session);
+            if (EnableAudit)
+            {
+                await LogAuditAsync("OpenImporter");
+            }
+        }
+    }
+
+    private string GetStepLabel(ImportStep step) => step switch
+    {
+        ImportStep.Upload => "Upload",
+        ImportStep.Mapping => "Mapping",
+        ImportStep.Validation => "Validation",
+        ImportStep.Preview => "Preview",
+        ImportStep.Import => "Import",
+        ImportStep.Complete => "Complete",
+        _ => step.ToString()
+    };
+
+    private async Task OnFileSelectedAsync(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        // Simulate file processing
+        _session.FileName = "sample-data.csv";
+        _session.FileSize = 1024 * 512; // 512 KB
+        _session.FileType = "text/csv";
+        _session.TotalRows = 150;
+
+        // Generate sample column mappings
+        var sourceColumns = new[] { "First Name", "Last Name", "Email", "Phone", "Department" };
+        _session.ColumnMappings = sourceColumns.Select((col, idx) => new ColumnMapping
+        {
+            SourceColumn = col,
+            SourceIndex = idx,
+            TargetField = string.Empty
+        }).ToList();
+
+        await OnFileUploaded.InvokeAsync((_session.FileName, _session.FileSize));
+        if (EnableAudit)
+        {
+            await LogAuditAsync("UploadFile");
+        }
+    }
+
+    private async Task OnDropAsync(Microsoft.AspNetCore.Components.Web.DragEventArgs args)
+    {
+        _isDragging = false;
+        await OnFileSelectedAsync(new Microsoft.AspNetCore.Components.ChangeEventArgs());
+    }
+
+    private void OnDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs args)
+    {
+        _isDragging = true;
+    }
+
+    private void OnDragLeave(Microsoft.AspNetCore.Components.Web.DragEventArgs args)
+    {
+        _isDragging = false;
+    }
+
+    private async Task OnRemoveFileAsync()
+    {
+        _session.FileName = null;
+        _session.FileSize = 0;
+        _session.TotalRows = 0;
+        _session.ColumnMappings.Clear();
+        if (EnableAudit)
+        {
+            await LogAuditAsync("RemoveFile");
+        }
+    }
+
+    private async Task OnSelectTemplateAsync(ImportTemplate template)
+    {
+        _session.ColumnMappings = template.ColumnMappings.Select(m => new ColumnMapping
+        {
+            SourceColumn = m.SourceColumn,
+            TargetField = m.TargetField,
+            DataType = m.DataType,
+            IsRequired = m.IsRequired,
+            IsUnique = m.IsUnique,
+            SourceIndex = m.SourceIndex
+        }).ToList();
+
+        _session.ValidationRules = template.ValidationRules.Select(r => new ValidationRule
+        {
+            Field = r.Field,
+            Type = r.Type,
+            Value = r.Value,
+            ErrorMessage = r.ErrorMessage,
+            IsEnabled = r.IsEnabled
+        }).ToList();
+
+        await OnTemplateSelected.InvokeAsync(template);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectTemplate");
+        }
+    }
+
+    private async Task OnAutoMapAsync()
+    {
+        // Auto-map by matching field names
+        foreach (var mapping in _session.ColumnMappings)
+        {
+            var matchingField = TargetFields.FirstOrDefault(f => 
+                f.DisplayName.Equals(mapping.SourceColumn, StringComparison.OrdinalIgnoreCase) ||
+                f.Name.Equals(mapping.SourceColumn, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingField != null)
+            {
+                mapping.TargetField = matchingField.Name;
+                mapping.DataType = matchingField.DataType;
+                mapping.IsRequired = matchingField.IsRequired;
+                mapping.IsUnique = matchingField.IsUnique;
+            }
+        }
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("AutoMap");
+        }
+    }
+
+    private async Task OnAddRuleAsync()
+    {
+        var rule = new ValidationRule
+        {
+            Field = _session.ColumnMappings.FirstOrDefault()?.TargetField ?? string.Empty,
+            Type = ValidationRuleType.Required
+        };
+        _session.ValidationRules.Add(rule);
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("AddRule");
+        }
+    }
+
+    private async Task OnRemoveRuleAsync(ValidationRule rule)
+    {
+        _session.ValidationRules.Remove(rule);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("RemoveRule");
+        }
+    }
+
+    private async Task OnPreviousStepAsync()
+    {
+        if (_session.CurrentStep > ImportStep.Upload)
+        {
+            _session.CurrentStep = (ImportStep)((int)_session.CurrentStep - 1);
+            await OnStepChanged.InvokeAsync(_session.CurrentStep);
+            if (EnableAudit)
+            {
+                await LogAuditAsync("PreviousStep");
+            }
+        }
+    }
+
+    private async Task OnNextStepAsync()
+    {
+        if (_session.CurrentStep == ImportStep.Mapping)
+        {
+            await OnMappingCompleted.InvokeAsync(_session.ColumnMappings);
+        }
+
+        if (_session.CurrentStep == ImportStep.Validation)
+        {
+            // Generate preview data
+            _previewData = new ImportPreviewData
+            {
+                Headers = _session.ColumnMappings.Select(m => m.TargetField).ToList(),
+                Rows = GenerateSamplePreviewData(),
+                TotalRows = _session.TotalRows,
+                PreviewRows = PreviewRowCount
+            };
+        }
+
+        if (_session.CurrentStep < ImportStep.Complete)
+        {
+            _session.CurrentStep = (ImportStep)((int)_session.CurrentStep + 1);
+            await OnStepChanged.InvokeAsync(_session.CurrentStep);
+            if (EnableAudit)
+            {
+                await LogAuditAsync("NextStep");
+            }
+        }
+    }
+
+    private async Task OnStartImportAsync()
+    {
+        _session.CurrentStep = ImportStep.Import;
+        _session.ProcessedRows = 0;
+        _session.SuccessfulRows = 0;
+        _session.FailedRows = 0;
+        _importProgress = 0;
+
+        await OnImportStarted.InvokeAsync(_session);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("StartImport");
+        }
+
+        // Simulate import process
+        var startTime = DateTime.Now;
+        for (int i = 0; i < _session.TotalRows; i++)
+        {
+            await Task.Delay(20); // Simulate processing
+            _session.ProcessedRows = i + 1;
+            _session.SuccessfulRows = i + 1;
+            _importProgress = (int)((double)_session.ProcessedRows / _session.TotalRows * 100);
+            StateHasChanged();
+        }
+
+        _importDuration = DateTime.Now - startTime;
+        _session.Status = ImportStatus.Completed;
+        _session.CurrentStep = ImportStep.Complete;
+
+        var result = new ImportResult
+        {
+            Success = true,
+            SessionId = _session.Id,
+            Statistics = new ImportStatistics
+            {
+                TotalRows = _session.TotalRows,
+                ProcessedRows = _session.ProcessedRows,
+                SuccessfulRows = _session.SuccessfulRows,
+                FailedRows = _session.FailedRows,
+                Duration = _importDuration,
+                StartTime = startTime,
+                EndTime = DateTime.Now
+            }
+        };
+
+        await OnImportCompleted.InvokeAsync(result);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("CompleteImport");
+        }
+    }
+
+    private async Task OnNewImportAsync()
+    {
+        _session = new DataImportSession();
+        _previewData = null;
+        _importProgress = 0;
+        _importDuration = TimeSpan.Zero;
+
+        await OnSessionCreated.InvokeAsync(_session);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("NewImport");
+        }
+    }
+
+    private async Task OnCancelAsync()
+    {
+        _session.Status = ImportStatus.Cancelled;
+        await OnImportCancelled.InvokeAsync(_session.Id);
+        if (EnableAudit)
+        {
+            await LogAuditAsync("CancelImport");
+        }
+    }
+
+    private async Task OnCloseAsync()
+    {
+        await OnClosed.InvokeAsync();
+        if (EnableAudit)
+        {
+            await LogAuditAsync("CloseImporter");
+        }
+    }
+
+    private async Task OnDownloadErrorsAsync()
+    {
+        // Trigger error report download
+        if (EnableAudit)
+        {
+            await LogAuditAsync("DownloadErrors");
+        }
+    }
+
+    private bool IsMappingValid()
+    {
+        var requiredFields = TargetFields.Where(f => f.IsRequired).ToList();
+        var mappedTargets = _session.ColumnMappings.Where(m => !string.IsNullOrEmpty(m.TargetField)).Select(m => m.TargetField).ToList();
+        return requiredFields.All(rf => mappedTargets.Contains(rf.Name));
+    }
+
+    private List<List<string>> GenerateSamplePreviewData()
+    {
+        var rows = new List<List<string>>();
+        for (int i = 0; i < Math.Min(PreviewRowCount, _session.TotalRows); i++)
+        {
+            var row = new List<string>();
+            foreach (var mapping in _session.ColumnMappings)
+            {
+                row.Add($"Sample {mapping.SourceColumn} {i + 1}");
+            }
+            rows.Add(row);
+        }
+        return rows;
+    }
+
+    private string GetErrorIcon(ErrorSeverity severity) => severity switch
+    {
+        ErrorSeverity.Warning => "⚠️",
+        ErrorSeverity.Error => "❌",
+        ErrorSeverity.Critical => "🔴",
+        _ => "ℹ️"
+    };
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalSeconds < 60)
+            return $"{duration.TotalSeconds:0.#}s";
+        if (duration.TotalMinutes < 60)
+            return $"{duration.TotalMinutes:0.#}m";
+        return $"{duration.TotalHours:0.#}h";
+    }
+
+    private async Task LogAuditAsync(string action)
+    {
+        var metadata = new AuditMetadata
+        {
+            Resource = AuditResource,
+            Action = action
+        };
+
+        await AuditService.LogAsync(metadata);
+    }
+}

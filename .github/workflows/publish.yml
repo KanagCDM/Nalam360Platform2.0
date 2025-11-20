@@ -1,0 +1,109 @@
+name: Publish NuGet Packages
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  publish:
+    name: Publish to NuGet
+    runs-on: windows-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Extract version from tag
+      id: version
+      shell: pwsh
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ github.event.inputs.version }}"
+        } else {
+          $version = "${{ github.ref }}" -replace 'refs/tags/v', ''
+        }
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "Publishing version: $version"
+    
+    - name: Restore dependencies
+      run: dotnet restore Nalam360EnterprisePlatform.sln
+    
+    - name: Build solution
+      run: dotnet build Nalam360EnterprisePlatform.sln --configuration Release --no-restore /p:Version=${{ steps.version.outputs.VERSION }}
+    
+    - name: Run tests
+      run: |
+        dotnet test tests/Nalam360.Platform.Tests/Nalam360.Platform.Tests.csproj --configuration Release --no-build --verbosity normal
+        dotnet test tests/Nalam360Enterprise.UI.Tests/Nalam360Enterprise.UI.Tests.csproj --configuration Release --no-build --verbosity normal
+    
+    - name: Pack Platform Packages
+      run: |
+        dotnet pack src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Domain/Nalam360.Platform.Domain.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Application/Nalam360.Platform.Application.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Caching/Nalam360.Platform.Caching.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Documentation/Nalam360.Platform.Documentation.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.FeatureFlags/Nalam360.Platform.FeatureFlags.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Integration/Nalam360.Platform.Integration.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Observability/Nalam360.Platform.Observability.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Resilience/Nalam360.Platform.Resilience.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Security/Nalam360.Platform.Security.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Serialization/Nalam360.Platform.Serialization.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Tenancy/Nalam360.Platform.Tenancy.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+        dotnet pack src/Nalam360.Platform.Validation/Nalam360.Platform.Validation.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+    
+    - name: Pack UI Library Package
+      run: dotnet pack src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/Nalam360Enterprise.UI.csproj --configuration Release --no-build --output ./publish /p:PackageVersion=${{ steps.version.outputs.VERSION }}
+    
+    - name: Publish to NuGet.org
+      run: dotnet nuget push "./publish/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      continue-on-error: true
+    
+    - name: Publish to GitHub Packages
+      run: dotnet nuget push "./publish/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
+      continue-on-error: true
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./publish/*.nupkg
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Publish Summary
+      run: |
+        echo "### NuGet Publish Summary :package:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Published packages:" >> $GITHUB_STEP_SUMMARY
+        echo "- 14 Platform modules" >> $GITHUB_STEP_SUMMARY
+        echo "- 1 UI library" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Destinations:" >> $GITHUB_STEP_SUMMARY
+        echo "- NuGet.org" >> $GITHUB_STEP_SUMMARY
+        echo "- GitHub Packages" >> $GITHUB_STEP_SUMMARY

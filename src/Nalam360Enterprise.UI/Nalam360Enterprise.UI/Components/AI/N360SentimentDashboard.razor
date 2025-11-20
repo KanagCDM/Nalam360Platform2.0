@@ -1,0 +1,363 @@
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Grids
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-sentiment-dashboard" @attributes="GetHtmlAttributes()">
+    @if (!string.IsNullOrEmpty(RequiredPermission))
+    {
+        if (!HasPermission && HideIfNoPermission)
+        {
+            return;
+        }
+        if (!HasPermission)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> You don't have permission to view this sentiment dashboard.
+            </div>
+            return;
+        }
+    }
+
+    <div class="sentiment-header">
+        <div class="header-left">
+            <h3>
+                <i class="fas fa-heart-pulse"></i> Patient Sentiment Dashboard
+                @if (UseRealAI)
+                {
+                    <span class="badge bg-success ms-2">🤖 Real AI</span>
+                }
+            </h3>
+            <p class="text-muted">Real-time sentiment analysis across all patient touchpoints</p>
+        </div>
+        <div class="header-right">
+            <label>
+                Time Range:
+                <select @bind="SelectedTimeRange" @bind:after="OnTimeRangeChanged" class="form-select form-select-sm d-inline-block w-auto ms-2">
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                    <option value="year">This Year</option>
+                </select>
+            </label>
+            <button @onclick="RefreshData" class="btn btn-sm btn-primary ms-3" disabled="@IsLoading">
+                <i class="fas fa-sync-alt @(IsLoading ? "fa-spin" : "")"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading sentiment data...</span>
+            </div>
+            <p class="mt-3">Analyzing patient sentiment...</p>
+        </div>
+    }
+    else if (SummaryData != null)
+    {
+        <div class="sentiment-summary">
+            <div class="summary-card positive">
+                <div class="summary-icon">😊</div>
+                <div class="summary-content">
+                    <div class="summary-label">Positive</div>
+                    <div class="summary-value">@SummaryData.PositiveCount</div>
+                    <div class="summary-percentage">@SummaryData.PositivePercentage.ToString("F1")%</div>
+                </div>
+            </div>
+            <div class="summary-card neutral">
+                <div class="summary-icon">😐</div>
+                <div class="summary-content">
+                    <div class="summary-label">Neutral</div>
+                    <div class="summary-value">@SummaryData.NeutralCount</div>
+                    <div class="summary-percentage">@SummaryData.NeutralPercentage.ToString("F1")%</div>
+                </div>
+            </div>
+            <div class="summary-card negative">
+                <div class="summary-icon">😟</div>
+                <div class="summary-content">
+                    <div class="summary-label">Negative</div>
+                    <div class="summary-value">@SummaryData.NegativeCount</div>
+                    <div class="summary-percentage">@SummaryData.NegativePercentage.ToString("F1")%</div>
+                </div>
+            </div>
+            <div class="summary-card overall">
+                <div class="summary-icon">📊</div>
+                <div class="summary-content">
+                    <div class="summary-label">Overall Score</div>
+                    <div class="summary-value">@SummaryData.OverallScore.ToString("F2")</div>
+                    <div class="summary-percentage">out of 5.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-section">
+                <h5>Sentiment Trend</h5>
+                <SfChart Title="Sentiment Over Time" Height="300px">
+                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" LabelFormat="MMM dd"></ChartPrimaryXAxis>
+                    <ChartPrimaryYAxis Title="Sentiment Score" Minimum="0" Maximum="5"></ChartPrimaryYAxis>
+                    <ChartSeriesCollection>
+                        <ChartSeries DataSource="@TrendData" XName="Date" YName="Score" Type="ChartSeriesType.Line" Fill="#4CAF50" Width="2">
+                            <ChartMarker Visible="true" Height="8" Width="8">
+                                <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top"></ChartDataLabel>
+                            </ChartMarker>
+                        </ChartSeries>
+                    </ChartSeriesCollection>
+                    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                </SfChart>
+            </div>
+
+            <div class="dashboard-section">
+                <h5>Sentiment by Channel</h5>
+                <SfChart Title="Channel Distribution" Height="300px">
+                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                    <ChartPrimaryYAxis Title="Percentage"></ChartPrimaryYAxis>
+                    <ChartSeriesCollection>
+                        <ChartSeries DataSource="@ChannelData" XName="Channel" YName="PositivePercentage" Name="Positive" Type="ChartSeriesType.Column" Fill="#4CAF50"></ChartSeries>
+                        <ChartSeries DataSource="@ChannelData" XName="Channel" YName="NeutralPercentage" Name="Neutral" Type="ChartSeriesType.Column" Fill="#FFC107"></ChartSeries>
+                        <ChartSeries DataSource="@ChannelData" XName="Channel" YName="NegativePercentage" Name="Negative" Type="ChartSeriesType.Column" Fill="#F44336"></ChartSeries>
+                    </ChartSeriesCollection>
+                    <ChartLegendSettings Visible="true"></ChartLegendSettings>
+                    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                </SfChart>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h5>Top Keywords by Sentiment</h5>
+            <div class="keyword-grid">
+                <div class="keyword-column positive-keywords">
+                    <h6>😊 Positive Keywords</h6>
+                    @foreach (var keyword in TopKeywords.Where(k => k.Sentiment == "Positive").OrderByDescending(k => k.Frequency).Take(10))
+                    {
+                        <div class="keyword-item">
+                            <span class="keyword-text">@keyword.Word</span>
+                            <span class="keyword-count">@keyword.Frequency</span>
+                        </div>
+                    }
+                </div>
+                <div class="keyword-column neutral-keywords">
+                    <h6>😐 Neutral Keywords</h6>
+                    @foreach (var keyword in TopKeywords.Where(k => k.Sentiment == "Neutral").OrderByDescending(k => k.Frequency).Take(10))
+                    {
+                        <div class="keyword-item">
+                            <span class="keyword-text">@keyword.Word</span>
+                            <span class="keyword-count">@keyword.Frequency</span>
+                        </div>
+                    }
+                </div>
+                <div class="keyword-column negative-keywords">
+                    <h6>😟 Negative Keywords</h6>
+                    @foreach (var keyword in TopKeywords.Where(k => k.Sentiment == "Negative").OrderByDescending(k => k.Frequency).Take(10))
+                    {
+                        <div class="keyword-item">
+                            <span class="keyword-text">@keyword.Word</span>
+                            <span class="keyword-count">@keyword.Frequency</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h5>Recent Feedback</h5>
+            <SfGrid DataSource="@RecentFeedback" AllowPaging="true" PageSize="10" AllowSorting="true">
+                <GridPageSettings PageSize="10"></GridPageSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(FeedbackItem.Timestamp)" HeaderText="Time" Format="g" Width="150"></GridColumn>
+                    <GridColumn Field="@nameof(FeedbackItem.Channel)" HeaderText="Channel" Width="120"></GridColumn>
+                    <GridColumn Field="@nameof(FeedbackItem.PatientName)" HeaderText="Patient" Width="150"></GridColumn>
+                    <GridColumn HeaderText="Sentiment" Width="120">
+                        <Template>
+                            @{
+                                var feedback = context as FeedbackItem;
+                                var sentimentClass = feedback!.Sentiment.ToLower();
+                                var sentimentIcon = feedback.Sentiment == "Positive" ? "😊" : feedback.Sentiment == "Negative" ? "😟" : "😐";
+                                <span class="sentiment-badge @sentimentClass">
+                                    @sentimentIcon @feedback.Sentiment
+                                </span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(FeedbackItem.Text)" HeaderText="Feedback" Width="300"></GridColumn>
+                    <GridColumn HeaderText="Score" Width="100">
+                        <Template>
+                            @{
+                                var feedback = context as FeedbackItem;
+                                <span class="score-badge">@feedback!.Score.ToString("F2")</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="100">
+                        <Template>
+                            @{
+                                var feedback = context as FeedbackItem;
+                                <button @onclick="() => ViewDetails(feedback!)" class="btn btn-sm btn-link">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+
+        @if (AlertsData.Any())
+        {
+            <div class="dashboard-section">
+                <h5>🚨 Sentiment Alerts</h5>
+                <div class="alerts-list">
+                    @foreach (var alert in AlertsData.OrderByDescending(a => a.Severity))
+                    {
+                        var alertClass = alert.Severity == "High" ? "danger" : alert.Severity == "Medium" ? "warning" : "info";
+                        <div class="alert alert-@alertClass">
+                            <div class="alert-header">
+                                <strong>@alert.Title</strong>
+                                <span class="badge bg-@alertClass">@alert.Severity</span>
+                            </div>
+                            <div class="alert-body">@alert.Description</div>
+                            <div class="alert-footer">
+                                <small class="text-muted">@alert.Timestamp.ToString("g")</small>
+                                <button @onclick="() => DismissAlert(alert)" class="btn btn-sm btn-outline-secondary ms-2">Dismiss</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .n360-sentiment-dashboard {
+        padding: 1rem;
+    }
+
+    .sentiment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .sentiment-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .summary-card.positive { background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%); color: white; }
+    .summary-card.neutral { background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%); color: #333; }
+    .summary-card.negative { background: linear-gradient(135deg, #F44336 0%, #E57373 100%); color: white; }
+    .summary-card.overall { background: linear-gradient(135deg, #2196F3 0%, #64B5F6 100%); color: white; }
+
+    .summary-icon {
+        font-size: 3rem;
+        margin-right: 1rem;
+    }
+
+    .summary-value {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .summary-percentage {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-section h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .keyword-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .keyword-column h6 {
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .keyword-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .keyword-count {
+        font-weight: bold;
+        color: #666;
+    }
+
+    .sentiment-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .sentiment-badge.positive { background: #E8F5E9; color: #2E7D32; }
+    .sentiment-badge.neutral { background: #FFF3E0; color: #F57C00; }
+    .sentiment-badge.negative { background: #FFEBEE; color: #C62828; }
+
+    .score-badge {
+        font-weight: bold;
+        color: #2196F3;
+    }
+
+    .alerts-list .alert {
+        margin-bottom: 1rem;
+    }
+
+    .alert-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .alert-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.5rem;
+    }
+</style>

@@ -1,0 +1,140 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TValue
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetBottomNavigationClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @foreach (var item in Items)
+        {
+            var isActive = EqualityComparer<TValue>.Default.Equals(ValueSelector(item), Value);
+            
+            <div class="n360-bottomnav__item @(isActive ? "n360-bottomnav__item--active" : "")"
+                 @onclick="() => HandleItemClickAsync(item)">
+                @if (IconSelector != null)
+                {
+                    <span class="n360-bottomnav__icon">
+                        @IconSelector(item)
+                    </span>
+                }
+                
+                @if (ShowLabel)
+                {
+                    <span class="n360-bottomnav__label">@LabelSelector(item)</span>
+                }
+                
+                @if (BadgeSelector != null)
+                {
+                    var badgeCount = BadgeSelector(item);
+                    @if (badgeCount > 0)
+                    {
+                        <span class="n360-bottomnav__badge">@(badgeCount > 99 ? "99+" : badgeCount.ToString())</span>
+                    }
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public Func<TItem, string> LabelSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<TItem, TValue> ValueSelector { get; set; } = item => (TValue)(object)item!;
+    [Parameter] public Func<TItem, RenderFragment?>? IconSelector { get; set; }
+    [Parameter] public Func<TItem, int>? BadgeSelector { get; set; }
+    [Parameter] public bool ShowLabel { get; set; } = true;
+    [Parameter] public bool Fixed { get; set; } = true;
+    
+    // Events
+    [Parameter] public EventCallback<TValue> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task HandleItemClickAsync(TItem item)
+    {
+        var newValue = ValueSelector(item);
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+        await OnChange.InvokeAsync(newValue);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "BottomNavigationChange",
+                Resource = AuditResource ?? "BottomNavigation",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Value", newValue?.ToString() ?? string.Empty },
+                    { "Label", LabelSelector(item) }
+                }
+            });
+        }
+    }
+
+    private string GetBottomNavigationClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-bottomnav"
+        };
+        
+        if (Fixed)
+        {
+            classes.Add("n360-bottomnav--fixed");
+        }
+        
+        if (!ShowLabel)
+        {
+            classes.Add("n360-bottomnav--icon-only");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        attributes["role"] = "navigation";
+        attributes["aria-label"] = "Bottom navigation";
+
+        return attributes;
+    }
+}

@@ -1,0 +1,14 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\bin\Debug\net8.0\Nalam360.Platform.Documentation.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\bin\Debug\net8.0\Nalam360.Platform.Documentation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\bin\Debug\net8.0\Nalam360.Platform.Documentation.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\bin\Debug\net8.0\Nalam360.Platform.Documentation.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\refint\Nalam360.Platform.Documentation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\Nalam360.Platform.Documentation.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Debug\net8.0\ref\Nalam360.Platform.Documentation.dll

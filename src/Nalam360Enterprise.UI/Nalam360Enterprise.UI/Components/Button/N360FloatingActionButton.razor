@@ -1,0 +1,156 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <button type="button" 
+            class="@GetFABClass()" 
+            style="@GetFABStyle()"
+            @onclick="HandleClickAsync"
+            disabled="@Disabled"
+            @attributes="@GetHtmlAttributes()">
+        @if (Icon != null)
+        {
+            <span class="n360-fab__icon">@Icon</span>
+        }
+        else if (!string.IsNullOrEmpty(IconClass))
+        {
+            <span class="n360-fab__icon @IconClass"></span>
+        }
+        else
+        {
+            <span class="n360-fab__icon">+</span>
+        }
+        
+        @if (!string.IsNullOrEmpty(Text) && ShowText)
+        {
+            <span class="n360-fab__text">@Text</span>
+        }
+        
+        @if (Badge > 0 && ShowBadge)
+        {
+            <span class="n360-fab__badge">@Badge</span>
+        }
+    </button>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public string? IconClass { get; set; }
+    [Parameter] public bool ShowText { get; set; }
+    [Parameter] public FABPosition Position { get; set; } = FABPosition.BottomRight;
+    [Parameter] public FABSize Size { get; set; } = FABSize.Default;
+    [Parameter] public FABShape Shape { get; set; } = FABShape.Circle;
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int Badge { get; set; }
+    [Parameter] public bool ShowBadge { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnClick { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task HandleClickAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FABClick",
+                Resource = AuditResource ?? "FloatingActionButton",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Text", Text ?? string.Empty }
+                }
+            });
+        }
+        
+        await OnClick.InvokeAsync();
+    }
+
+    private string GetFABClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-fab",
+            $"n360-fab--{Position.ToString().ToLower().Replace("_", "-")}",
+            $"n360-fab--{Size.ToString().ToLower()}",
+            $"n360-fab--{Shape.ToString().ToLower()}"
+        };
+        
+        if (ShowText && !string.IsNullOrEmpty(Text))
+        {
+            classes.Add("n360-fab--extended");
+        }
+        
+        if (Disabled)
+        {
+            classes.Add("n360-fab--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetFABStyle()
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrEmpty(Color))
+        {
+            styles.Add($"background-color: {Color}");
+        }
+        
+        if (!string.IsNullOrEmpty(Style))
+        {
+            styles.Add(Style);
+        }
+        
+        return styles.Any() ? string.Join("; ", styles) : string.Empty;
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "aria-label", Text ?? "Floating action button" }
+        };
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

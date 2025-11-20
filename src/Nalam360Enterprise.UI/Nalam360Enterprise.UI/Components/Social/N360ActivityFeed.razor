@@ -1,0 +1,365 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-activity-feed @(IsDark ? "dark" : "") @Layout.ToString().ToLower() @CssClass" @attributes="GetHtmlAttributes()">
+    <!-- Header -->
+    @if (ShowHeader)
+    {
+        <div class="feed-header">
+            <div class="header-left">
+                @if (!string.IsNullOrEmpty(Icon))
+                {
+                    <i class="@Icon header-icon"></i>
+                }
+                <h3 class="header-title">@Title</h3>
+                @if (ShowCount)
+                {
+                    <span class="activity-count">@Activities.Count</span>
+                }
+            </div>
+            <div class="header-actions">
+                @if (ShowFilter)
+                {
+                    <select class="filter-select" @onchange="HandleFilterChanged">
+                        <option value="all">All Activities</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                }
+                @if (ShowRefresh)
+                {
+                    <button class="refresh-button" @onclick="RefreshActivities" disabled="@IsLoading">
+                        <i class="fas @(IsLoading ? "fa-spinner fa-spin" : "fa-sync-alt")"></i>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Activity List -->
+    <div class="feed-content @(IsLoading ? "loading" : "")">
+        @if (IsLoading && !Activities.Any())
+        {
+            <div class="feed-loading">
+                <i class="fas fa-spinner fa-spin loading-icon"></i>
+                <p class="loading-text">Loading activities...</p>
+            </div>
+        }
+        else if (GetFilteredActivities().Any())
+        {
+            <div class="activity-list">
+                @foreach (var activity in GetFilteredActivities().Take(MaxVisible))
+                {
+                    <div class="activity-item @activity.Type.ToString().ToLower() @(activity.IsRead ? "read" : "unread")"
+                         @onclick="() => HandleActivityClick(activity)">
+                        <!-- Avatar/Icon -->
+                        <div class="activity-avatar">
+                            @if (!string.IsNullOrEmpty(activity.AvatarUrl))
+                            {
+                                <img src="@activity.AvatarUrl" alt="@activity.User" class="avatar-image" />
+                            }
+                            else
+                            {
+                                <div class="avatar-placeholder">
+                                    <i class="@GetActivityIcon(activity.Type)"></i>
+                                </div>
+                            }
+                            @if (ShowBadges)
+                            {
+                                <span class="activity-badge @activity.Type.ToString().ToLower()">
+                                    <i class="@GetActivityIcon(activity.Type)"></i>
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Content -->
+                        <div class="activity-content">
+                            <div class="activity-header">
+                                <span class="activity-user">@activity.User</span>
+                                <span class="activity-action">@activity.Action</span>
+                                @if (!string.IsNullOrEmpty(activity.Target))
+                                {
+                                    <span class="activity-target">@activity.Target</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(activity.Description))
+                            {
+                                <div class="activity-description">@activity.Description</div>
+                            }
+                            @if (activity.Metadata?.Any() == true)
+                            {
+                                <div class="activity-metadata">
+                                    @foreach (var meta in activity.Metadata)
+                                    {
+                                        <span class="metadata-item">
+                                            <i class="@meta.Icon"></i>
+                                            @meta.Value
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            <div class="activity-footer">
+                                <span class="activity-time" title="@activity.Timestamp.ToString("f")">
+                                    @GetRelativeTime(activity.Timestamp)
+                                </span>
+                                @if (activity.IsImportant)
+                                {
+                                    <span class="important-badge">
+                                        <i class="fas fa-star"></i>
+                                        Important
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        @if (ShowActions && activity.Actions?.Any() == true)
+                        {
+                            <div class="activity-actions">
+                                @foreach (var action in activity.Actions)
+                                {
+                                    <button class="action-button @action.Variant.ToString().ToLower()"
+                                            @onclick="() => ExecuteAction(activity, action)"
+                                            @onclick:stopPropagation="true">
+                                        <i class="@action.Icon"></i>
+                                        @action.Label
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (GetFilteredActivities().Count > MaxVisible)
+                {
+                    <button class="load-more-button" @onclick="LoadMore">
+                        <i class="fas fa-chevron-down"></i>
+                        Load More (@(GetFilteredActivities().Count - MaxVisible) remaining)
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="feed-empty">
+                <i class="@EmptyIcon empty-icon"></i>
+                <p class="empty-text">@EmptyMessage</p>
+                @if (ShowRefresh)
+                {
+                    <button class="empty-action" @onclick="RefreshActivities">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<Activity> Activities { get; set; } = new();
+    [Parameter] public string Title { get; set; } = "Activity Feed";
+    [Parameter] public string Icon { get; set; } = "fas fa-stream";
+    [Parameter] public FeedLayout Layout { get; set; } = FeedLayout.Default;
+    [Parameter] public int MaxVisible { get; set; } = 20;
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool ShowCount { get; set; } = true;
+    [Parameter] public bool ShowFilter { get; set; } = true;
+    [Parameter] public bool ShowRefresh { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowBadges { get; set; } = true;
+    [Parameter] public string EmptyIcon { get; set; } = "fas fa-inbox";
+    [Parameter] public string EmptyMessage { get; set; } = "No activities to display";
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public bool IsLoading { get; set; } = false;
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+    [Parameter] public string? UserId { get; set; }
+
+    // Styling
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool IsRTL { get; set; } = false;
+
+    // Events
+    [Parameter] public EventCallback<Activity> OnActivityClicked { get; set; }
+    [Parameter] public EventCallback<(Activity, ActivityAction)> OnActionExecuted { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public EventCallback<string> OnFilterChanged { get; set; }
+
+    // State
+    private string _currentFilter = "all";
+
+    // Enums
+    public enum FeedLayout { Default, Compact, Cards }
+    public enum ActivityType { Create, Update, Delete, Comment, Like, Share, Upload, Download, Login, Logout, System, Other }
+    public enum ActionVariant { Primary, Secondary, Success, Warning, Danger }
+
+    // Models
+    public class Activity
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string User { get; set; } = string.Empty;
+        public string? AvatarUrl { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string? Target { get; set; }
+        public string? Description { get; set; }
+        public ActivityType Type { get; set; } = ActivityType.Other;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public bool IsRead { get; set; } = false;
+        public bool IsImportant { get; set; } = false;
+        public List<MetadataItem> Metadata { get; set; } = new();
+        public List<ActivityAction> Actions { get; set; } = new();
+    }
+
+    public class MetadataItem
+    {
+        public string Icon { get; set; } = "fas fa-info-circle";
+        public string Value { get; set; } = string.Empty;
+    }
+
+    public class ActivityAction
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Icon { get; set; } = "fas fa-check";
+        public ActionVariant Variant { get; set; } = ActionVariant.Secondary;
+        public Func<Task>? OnExecute { get; set; }
+    }
+
+    // Methods
+    private List<Activity> GetFilteredActivities()
+    {
+        var filtered = Activities.AsEnumerable();
+
+        switch (_currentFilter)
+        {
+            case "today":
+                filtered = filtered.Where(a => a.Timestamp.Date == DateTime.UtcNow.Date);
+                break;
+            case "week":
+                var weekAgo = DateTime.UtcNow.AddDays(-7);
+                filtered = filtered.Where(a => a.Timestamp >= weekAgo);
+                break;
+            case "month":
+                var monthAgo = DateTime.UtcNow.AddMonths(-1);
+                filtered = filtered.Where(a => a.Timestamp >= monthAgo);
+                break;
+        }
+
+        return filtered.OrderByDescending(a => a.Timestamp).ToList();
+    }
+
+    private string GetActivityIcon(ActivityType type) => type switch
+    {
+        ActivityType.Create => "fas fa-plus-circle",
+        ActivityType.Update => "fas fa-edit",
+        ActivityType.Delete => "fas fa-trash",
+        ActivityType.Comment => "fas fa-comment",
+        ActivityType.Like => "fas fa-heart",
+        ActivityType.Share => "fas fa-share",
+        ActivityType.Upload => "fas fa-upload",
+        ActivityType.Download => "fas fa-download",
+        ActivityType.Login => "fas fa-sign-in-alt",
+        ActivityType.Logout => "fas fa-sign-out-alt",
+        ActivityType.System => "fas fa-cog",
+        _ => "fas fa-circle"
+    };
+
+    private string GetRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)}w ago";
+        
+        return timestamp.ToString("MMM dd");
+    }
+
+    private async Task HandleActivityClick(Activity activity)
+    {
+        activity.IsRead = true;
+        await OnActivityClicked.InvokeAsync(activity);
+        LogAudit("ActivityClicked", $"Clicked activity: {activity.Id}");
+    }
+
+    private async Task ExecuteAction(Activity activity, ActivityAction action)
+    {
+        if (action.OnExecute != null)
+        {
+            await action.OnExecute.Invoke();
+        }
+        
+        await OnActionExecuted.InvokeAsync((activity, action));
+        LogAudit("ActivityActionExecuted", $"Executed {action.Label} on activity {activity.Id}");
+    }
+
+    private async Task RefreshActivities()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        
+        await OnRefresh.InvokeAsync();
+        
+        IsLoading = false;
+        StateHasChanged();
+        LogAudit("ActivitiesRefreshed", "Refreshed activity feed");
+    }
+
+    private async Task HandleFilterChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _currentFilter = e.Value?.ToString() ?? "all";
+        await OnFilterChanged.InvokeAsync(_currentFilter);
+        StateHasChanged();
+    }
+
+    private void LoadMore()
+    {
+        MaxVisible += 20;
+        StateHasChanged();
+    }
+
+    private void LogAudit(string action, string details)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTime.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "ActivityFeed",
+                Action = action,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Details"] = details
+                }
+            });
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "role", "feed" },
+            { "aria-label", Title }
+        };
+
+        if (IsRTL)
+        {
+            attributes.Add("dir", "rtl");
+        }
+
+        return attributes;
+    }
+}

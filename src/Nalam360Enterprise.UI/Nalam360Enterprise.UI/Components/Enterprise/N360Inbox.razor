@@ -1,0 +1,990 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Models
+
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission)
+{
+    <div class="n360-inbox @CssClass @(_isRtl ? "rtl" : "")" role="region" aria-label="Email inbox">
+        
+        @* Folder Navigation Sidebar *@
+        @if (ShowFolderList)
+        {
+            <div class="inbox-sidebar @(_sidebarCollapsed ? "collapsed" : "")">
+                <div class="sidebar-header">
+                    <h3>@Title</h3>
+                    @if (AllowCompose)
+                    {
+                        <button class="btn btn-primary btn-compose" @onclick="OnComposeNewAsync">
+                            ✉️ Compose
+                        </button>
+                    }
+                </div>
+
+                @if (ShowSearch)
+                {
+                    <div class="inbox-search">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search messages..." 
+                               @bind="_searchText"
+                               @onkeydown="OnSearchKeyDown" />
+                    </div>
+                }
+
+                <div class="folder-list">
+                    @foreach (var folder in Folders)
+                    {
+                        <div class="folder-item @(folder.Id == _selectedFolderId ? "active" : "")" 
+                             @onclick="() => OnSelectFolderAsync(folder.Id)">
+                            <span class="folder-icon">@folder.Icon</span>
+                            <span class="folder-name">@folder.Name</span>
+                            @if (folder.UnreadCount > 0)
+                            {
+                                <span class="folder-unread-badge">@folder.UnreadCount</span>
+                            }
+                        </div>
+
+                        @if (folder.SubFolders.Any())
+                        {
+                            foreach (var subFolder in folder.SubFolders)
+                            {
+                                <div class="folder-item subfolder @(subFolder.Id == _selectedFolderId ? "active" : "")" 
+                                     @onclick="() => OnSelectFolderAsync(subFolder.Id)">
+                                    <span class="folder-icon">@subFolder.Icon</span>
+                                    <span class="folder-name">@subFolder.Name</span>
+                                    @if (subFolder.UnreadCount > 0)
+                                    {
+                                        <span class="folder-unread-badge">@subFolder.UnreadCount</span>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+
+                @if (Labels.Any() && ShowLabels)
+                {
+                    <div class="labels-section">
+                        <h4>Labels</h4>
+                        @foreach (var label in Labels)
+                        {
+                            <div class="label-item" @onclick="() => OnSelectLabelAsync(label.Id)">
+                                <span class="label-color" style="background-color: @label.Color"></span>
+                                <span class="label-name">@label.Name</span>
+                                <span class="label-count">@label.MessageCount</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (AllowToggleSidebar)
+                {
+                    <button class="btn-collapse-sidebar" @onclick="() => _sidebarCollapsed = !_sidebarCollapsed">
+                        @(_sidebarCollapsed ? "▶" : "◀")
+                    </button>
+                }
+            </div>
+        }
+
+        @* Message List Area *@
+        <div class="inbox-main">
+            @* Message List Header *@
+            <div class="inbox-header">
+                <div class="inbox-header-left">
+                    @if (_selectedMessages.Any())
+                    {
+                        <input type="checkbox" 
+                               class="checkbox-select-all" 
+                               checked="@_allSelected"
+                               @onchange="OnToggleSelectAllAsync" />
+                        <span class="selected-count">@_selectedMessages.Count selected</span>
+                        
+                        @if (AllowBulkActions)
+                        {
+                            <div class="bulk-actions">
+                                <button class="btn btn-sm" @onclick="() => OnBulkActionAsync(InboxBulkAction.MarkAsRead)">
+                                    Mark Read
+                                </button>
+                                <button class="btn btn-sm" @onclick="() => OnBulkActionAsync(InboxBulkAction.MarkAsUnread)">
+                                    Mark Unread
+                                </button>
+                                <button class="btn btn-sm" @onclick="() => OnBulkActionAsync(InboxBulkAction.Delete)">
+                                    Delete
+                                </button>
+                                @if (AllowArchive)
+                                {
+                                    <button class="btn btn-sm" @onclick="() => OnBulkActionAsync(InboxBulkAction.Archive)">
+                                        Archive
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <input type="checkbox" 
+                               class="checkbox-select-all" 
+                               @onchange="OnToggleSelectAllAsync" />
+                        <span class="inbox-title">@GetSelectedFolderName()</span>
+                    }
+                </div>
+                
+                <div class="inbox-header-right">
+                    @if (AllowRefresh)
+                    {
+                        <button class="btn btn-icon" @onclick="OnRefreshAsync" title="Refresh">
+                            🔄
+                        </button>
+                    }
+                    @if (ShowSettings && Settings != null)
+                    {
+                        <button class="btn btn-icon" @onclick="() => _showSettingsPanel = !_showSettingsPanel" title="Settings">
+                            ⚙️
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @* Message List *@
+            <div class="message-list">
+                @if (GetFilteredMessages().Any())
+                {
+                    @if (Settings?.GroupByDate == true)
+                    {
+                        var groupedMessages = GetFilteredMessages()
+                            .GroupBy(m => m.ReceivedDate?.Date ?? m.SentDate.Date)
+                            .OrderByDescending(g => g.Key);
+
+                        foreach (var group in groupedMessages)
+                        {
+                            <div class="message-group">
+                                <div class="message-group-header">
+                                    @FormatDateHeader(group.Key)
+                                </div>
+                                @foreach (var message in group)
+                                {
+                                    @RenderMessageItem(message)
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var message in GetFilteredMessages())
+                        {
+                            @RenderMessageItem(message)
+                        }
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No Messages</h3>
+                        <p>@GetEmptyStateMessage()</p>
+                    </div>
+                }
+            </div>
+
+            @* Pagination *@
+            @if (GetFilteredMessages().Count() > (Settings?.MessagesPerPage ?? 50))
+            {
+                <div class="inbox-pagination">
+                    <button class="btn btn-sm" @onclick="OnPreviousPageAsync" disabled="@(_currentPage == 1)">
+                        Previous
+                    </button>
+                    <span class="pagination-info">Page @_currentPage of @_totalPages</span>
+                    <button class="btn btn-sm" @onclick="OnNextPageAsync" disabled="@(_currentPage >= _totalPages)">
+                        Next
+                    </button>
+                </div>
+            }
+        </div>
+
+        @* Message Details Panel *@
+        @if (_selectedMessage != null && ShowMessageDetails)
+        {
+            <div class="message-details-panel">
+                <div class="details-header">
+                    <button class="btn btn-icon" @onclick="OnCloseMessageDetailsAsync" title="Close">
+                        ✕
+                    </button>
+                    <div class="details-actions">
+                        <button class="btn btn-sm" @onclick="OnReplyAsync" title="Reply">↩️ Reply</button>
+                        @if (AllowForward)
+                        {
+                            <button class="btn btn-sm" @onclick="OnForwardAsync" title="Forward">↪️ Forward</button>
+                        }
+                        @if (AllowDelete)
+                        {
+                            <button class="btn btn-sm" @onclick="() => OnDeleteMessageAsync(_selectedMessage.Id)" title="Delete">🗑️</button>
+                        }
+                    </div>
+                </div>
+
+                <div class="details-content">
+                    <div class="message-subject">
+                        <h2>@_selectedMessage.Subject</h2>
+                        @if (_selectedMessage.IsImportant)
+                        {
+                            <span class="badge-important">Important</span>
+                        }
+                        @if (_selectedMessage.IsFlagged)
+                        {
+                            <span class="flag-icon">🚩</span>
+                        }
+                    </div>
+
+                    <div class="message-meta">
+                        <div class="message-sender">
+                            @if (Settings?.ShowAvatars == true && !string.IsNullOrEmpty(_selectedMessage.From.AvatarUrl))
+                            {
+                                <img src="@_selectedMessage.From.AvatarUrl" alt="@_selectedMessage.From.Name" class="sender-avatar" />
+                            }
+                            else
+                            {
+                                <div class="sender-avatar-placeholder">
+                                    @GetInitials(_selectedMessage.From.Name)
+                                </div>
+                            }
+                            <div class="sender-info">
+                                <div class="sender-name">@_selectedMessage.From.Name</div>
+                                <div class="sender-email">@_selectedMessage.From.Email</div>
+                            </div>
+                        </div>
+                        <div class="message-date">
+                            @FormatDateTime(_selectedMessage.ReceivedDate ?? _selectedMessage.SentDate)
+                        </div>
+                    </div>
+
+                    @if (_selectedMessage.To.Any())
+                    {
+                        <div class="message-recipients">
+                            <strong>To:</strong> @string.Join(", ", _selectedMessage.To.Select(r => $"{r.Name} <{r.Email}>"))
+                        </div>
+                    }
+
+                    @if (_selectedMessage.Cc.Any())
+                    {
+                        <div class="message-recipients">
+                            <strong>Cc:</strong> @string.Join(", ", _selectedMessage.Cc.Select(r => $"{r.Name} <{r.Email}>"))
+                        </div>
+                    }
+
+                    @if (_selectedMessage.HasAttachments && _selectedMessage.Attachments.Any())
+                    {
+                        <div class="message-attachments">
+                            <h4>Attachments (@_selectedMessage.Attachments.Count)</h4>
+                            <div class="attachments-list">
+                                @foreach (var attachment in _selectedMessage.Attachments)
+                                {
+                                    <div class="attachment-item" @onclick="() => OnDownloadAttachmentAsync(attachment)">
+                                        <span class="attachment-icon">📎</span>
+                                        <span class="attachment-name">@attachment.FileName</span>
+                                        <span class="attachment-size">@FormatFileSize(attachment.FileSize)</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="message-body">
+                        @((MarkupString)_selectedMessage.Body)
+                    </div>
+
+                    @if (Settings?.EnableThreading == true && _selectedMessage.Replies.Any())
+                    {
+                        <div class="message-thread">
+                            <h4>Replies (@_selectedMessage.ReplyCount)</h4>
+                            @foreach (var reply in _selectedMessage.Replies)
+                            {
+                                <div class="thread-reply">
+                                    <div class="reply-header">
+                                        <strong>@reply.From.Name</strong>
+                                        <span class="reply-date">@FormatDateTime(reply.SentDate)</span>
+                                    </div>
+                                    <div class="reply-body">@((MarkupString)reply.Preview)</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* Compose/Reply Modal *@
+        @if (_showComposeModal)
+        {
+            <div class="compose-modal-overlay" @onclick="OnCloseComposeModalAsync">
+                <div class="compose-modal" @onclick:stopPropagation="true">
+                    <div class="compose-header">
+                        <h3>@(_composeMessage.ReplyToMessageId != null ? "Reply" : "New Message")</h3>
+                        <button class="btn-close" @onclick="OnCloseComposeModalAsync">✕</button>
+                    </div>
+                    <div class="compose-body">
+                        <div class="compose-field">
+                            <label>To:</label>
+                            <input type="text" class="form-control" @bind="_composeToText" placeholder="recipient@example.com" />
+                        </div>
+                        @if (_showCcBcc)
+                        {
+                            <div class="compose-field">
+                                <label>Cc:</label>
+                                <input type="text" class="form-control" @bind="_composeCcText" />
+                            </div>
+                            <div class="compose-field">
+                                <label>Bcc:</label>
+                                <input type="text" class="form-control" @bind="_composeBccText" />
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn-link" @onclick="() => _showCcBcc = true">Cc/Bcc</button>
+                        }
+                        <div class="compose-field">
+                            <label>Subject:</label>
+                            <input type="text" class="form-control" @bind="_composeMessage.Subject" />
+                        </div>
+                        <div class="compose-field">
+                            <label>Message:</label>
+                            <textarea class="form-control compose-textarea" 
+                                      rows="10" 
+                                      @bind="_composeMessage.Body"></textarea>
+                        </div>
+                    </div>
+                    <div class="compose-footer">
+                        <button class="btn btn-primary" @onclick="OnSendMessageAsync">Send</button>
+                        <button class="btn btn-secondary" @onclick="OnSaveDraftAsync">Save Draft</button>
+                        <button class="btn btn-secondary" @onclick="OnCloseComposeModalAsync">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Settings Panel *@
+        @if (_showSettingsPanel && Settings != null)
+        {
+            <div class="settings-panel">
+                <div class="settings-header">
+                    <h3>Inbox Settings</h3>
+                    <button class="btn-close" @onclick="() => _showSettingsPanel = false">✕</button>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.ShowMessagePreview" />
+                            Show message preview
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.GroupByDate" />
+                            Group by date
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.ShowAvatars" />
+                            Show avatars
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.AutoMarkAsRead" />
+                            Auto mark as read
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.EnableThreading" />
+                            Enable threading
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            Messages per page:
+                            <input type="number" class="form-control" @bind="Settings.MessagesPerPage" min="10" max="200" />
+                        </label>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else if (HideIfNoPermission)
+{
+    <!-- Component hidden due to insufficient permissions -->
+}
+else
+{
+    <div class="n360-inbox-no-permission">
+        <p>You do not have permission to view this inbox.</p>
+    </div>
+}
+
+@code {
+    // Parameters
+    [Parameter] public List<InboxMessage> Messages { get; set; } = new();
+    [Parameter] public List<InboxFolder> Folders { get; set; } = new();
+    [Parameter] public List<InboxLabel> Labels { get; set; } = new();
+    [Parameter] public InboxSettings? Settings { get; set; }
+    [Parameter] public string Title { get; set; } = "Inbox";
+    
+    // Display Options
+    [Parameter] public bool ShowFolderList { get; set; } = true;
+    [Parameter] public bool ShowLabels { get; set; } = true;
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowSettings { get; set; } = true;
+    [Parameter] public bool ShowMessageDetails { get; set; } = true;
+    [Parameter] public bool AllowCompose { get; set; } = true;
+    [Parameter] public bool AllowReply { get; set; } = true;
+    [Parameter] public bool AllowForward { get; set; } = true;
+    [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public bool AllowArchive { get; set; } = true;
+    [Parameter] public bool AllowBulkActions { get; set; } = true;
+    [Parameter] public bool AllowRefresh { get; set; } = true;
+    [Parameter] public bool AllowToggleSidebar { get; set; } = true;
+    
+    // Event Callbacks
+    [Parameter] public EventCallback<InboxMessage> OnMessageSelected { get; set; }
+    [Parameter] public EventCallback<InboxComposeMessage> OnMessageSent { get; set; }
+    [Parameter] public EventCallback<InboxComposeMessage> OnDraftSaved { get; set; }
+    [Parameter] public EventCallback<string> OnMessageDeleted { get; set; }
+    [Parameter] public EventCallback<string> OnFolderSelected { get; set; }
+    [Parameter] public EventCallback<(InboxBulkAction Action, List<string> MessageIds)> OnBulkAction { get; set; }
+    [Parameter] public EventCallback<InboxAttachment> OnAttachmentDownload { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "Inbox";
+    
+    // Styling
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool IsRtl { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isRtl;
+    private string _selectedFolderId = string.Empty;
+    private string? _selectedLabelId;
+    private InboxMessage? _selectedMessage;
+    private List<string> _selectedMessages = new();
+    private bool _allSelected;
+    private string _searchText = string.Empty;
+    private bool _sidebarCollapsed;
+    private bool _showSettingsPanel;
+    private bool _showComposeModal;
+    private InboxComposeMessage _composeMessage = new();
+    private string _composeToText = string.Empty;
+    private string _composeCcText = string.Empty;
+    private string _composeBccText = string.Empty;
+    private bool _showCcBcc;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isRtl = IsRtl;
+
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (_hasPermission && Folders.Any())
+        {
+            _selectedFolderId = Folders.First().Id;
+        }
+
+        CalculatePagination();
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("OpenInbox", null);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private RenderFragment RenderMessageItem(InboxMessage message) => __builder =>
+    {
+        <div class="message-item @(message.IsRead ? "" : "unread") @(_selectedMessages.Contains(message.Id) ? "selected" : "")"
+             @onclick="() => OnSelectMessageAsync(message.Id)">
+            <input type="checkbox" 
+                   class="checkbox-select-message" 
+                   checked="@_selectedMessages.Contains(message.Id)"
+                   @onclick:stopPropagation="true"
+                   @onchange="() => OnToggleSelectMessageAsync(message.Id)" />
+            
+            @if (Settings?.ShowAvatars == true)
+            {
+                if (!string.IsNullOrEmpty(message.From.AvatarUrl))
+                {
+                    <img src="@message.From.AvatarUrl" alt="@message.From.Name" class="message-avatar" />
+                }
+                else
+                {
+                    <div class="message-avatar-placeholder">
+                        @GetInitials(message.From.Name)
+                    </div>
+                }
+            }
+            
+            <div class="message-info">
+                <div class="message-header">
+                    <span class="message-sender">@message.From.Name</span>
+                    <span class="message-date">@FormatMessageDate(message.ReceivedDate ?? message.SentDate)</span>
+                </div>
+                <div class="message-subject">
+                    @if (message.IsFlagged)
+                    {
+                        <span class="flag-icon">🚩</span>
+                    }
+                    @if (message.IsImportant)
+                    {
+                        <span class="important-icon">⚠️</span>
+                    }
+                    @message.Subject
+                    @if (Settings?.EnableThreading == true && message.ReplyCount > 0)
+                    {
+                        <span class="reply-count">(@message.ReplyCount)</span>
+                    }
+                </div>
+                @if (Settings?.ShowMessagePreview == true)
+                {
+                    <div class="message-preview">@message.Preview</div>
+                }
+            </div>
+            
+            @if (message.HasAttachments)
+            {
+                <span class="attachment-indicator">📎</span>
+            }
+        </div>
+    };
+
+    private async Task OnSelectFolderAsync(string folderId)
+    {
+        _selectedFolderId = folderId;
+        _selectedLabelId = null;
+        _selectedMessage = null;
+        _selectedMessages.Clear();
+        _currentPage = 1;
+        CalculatePagination();
+        
+        await OnFolderSelected.InvokeAsync(folderId);
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectFolder", new { FolderId = folderId });
+        }
+    }
+
+    private async Task OnSelectLabelAsync(string labelId)
+    {
+        _selectedLabelId = labelId;
+        _selectedMessage = null;
+        _selectedMessages.Clear();
+        _currentPage = 1;
+        CalculatePagination();
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectLabel", new { LabelId = labelId });
+        }
+    }
+
+    private async Task OnSelectMessageAsync(string messageId)
+    {
+        var message = Messages.FirstOrDefault(m => m.Id == messageId);
+        if (message == null) return;
+
+        _selectedMessage = message;
+        
+        if (!message.IsRead && Settings?.AutoMarkAsRead == true)
+        {
+            message.IsRead = true;
+            StateHasChanged();
+        }
+
+        await OnMessageSelected.InvokeAsync(message);
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectMessage", new { MessageId = messageId });
+        }
+    }
+
+    private async Task OnToggleSelectMessageAsync(string messageId)
+    {
+        if (_selectedMessages.Contains(messageId))
+        {
+            _selectedMessages.Remove(messageId);
+        }
+        else
+        {
+            _selectedMessages.Add(messageId);
+        }
+        
+        _allSelected = _selectedMessages.Count == GetFilteredMessages().Count();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnToggleSelectAllAsync(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        var isChecked = (bool)(args.Value ?? false);
+        
+        if (isChecked)
+        {
+            _selectedMessages = GetFilteredMessages().Select(m => m.Id).ToList();
+        }
+        else
+        {
+            _selectedMessages.Clear();
+        }
+        
+        _allSelected = isChecked;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnBulkActionAsync(InboxBulkAction action)
+    {
+        if (!_selectedMessages.Any()) return;
+
+        await OnBulkAction.InvokeAsync((action, _selectedMessages));
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("BulkAction", new { Action = action.ToString(), Count = _selectedMessages.Count });
+        }
+        
+        _selectedMessages.Clear();
+        _allSelected = false;
+    }
+
+    private async Task OnDeleteMessageAsync(string messageId)
+    {
+        await OnMessageDeleted.InvokeAsync(messageId);
+        
+        _selectedMessage = null;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("DeleteMessage", new { MessageId = messageId });
+        }
+    }
+
+    private async Task OnComposeNewAsync()
+    {
+        _composeMessage = new InboxComposeMessage();
+        _composeToText = string.Empty;
+        _composeCcText = string.Empty;
+        _composeBccText = string.Empty;
+        _showCcBcc = false;
+        _showComposeModal = true;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("ComposeNew", null);
+        }
+    }
+
+    private async Task OnReplyAsync()
+    {
+        if (_selectedMessage == null) return;
+
+        _composeMessage = new InboxComposeMessage
+        {
+            ReplyToMessageId = _selectedMessage.Id,
+            To = new List<string> { _selectedMessage.From.Email },
+            Subject = _selectedMessage.Subject.StartsWith("Re:") ? _selectedMessage.Subject : $"Re: {_selectedMessage.Subject}"
+        };
+        _composeToText = _selectedMessage.From.Email;
+        _showCcBcc = false;
+        _showComposeModal = true;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("Reply", new { MessageId = _selectedMessage.Id });
+        }
+    }
+
+    private async Task OnForwardAsync()
+    {
+        if (_selectedMessage == null) return;
+
+        _composeMessage = new InboxComposeMessage
+        {
+            Subject = _selectedMessage.Subject.StartsWith("Fwd:") ? _selectedMessage.Subject : $"Fwd: {_selectedMessage.Subject}",
+            Body = $"\n\n--- Forwarded message ---\nFrom: {_selectedMessage.From.Name}\nDate: {_selectedMessage.SentDate}\nSubject: {_selectedMessage.Subject}\n\n{_selectedMessage.Body}"
+        };
+        _composeToText = string.Empty;
+        _showCcBcc = false;
+        _showComposeModal = true;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("Forward", new { MessageId = _selectedMessage.Id });
+        }
+    }
+
+    private async Task OnSendMessageAsync()
+    {
+        ParseRecipients();
+        await OnMessageSent.InvokeAsync(_composeMessage);
+        
+        _showComposeModal = false;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SendMessage", new { Subject = _composeMessage.Subject });
+        }
+    }
+
+    private async Task OnSaveDraftAsync()
+    {
+        ParseRecipients();
+        _composeMessage.IsDraft = true;
+        await OnDraftSaved.InvokeAsync(_composeMessage);
+        
+        _showComposeModal = false;
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SaveDraft", new { Subject = _composeMessage.Subject });
+        }
+    }
+
+    private async Task OnCloseComposeModalAsync()
+    {
+        _showComposeModal = false;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnCloseMessageDetailsAsync()
+    {
+        _selectedMessage = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDownloadAttachmentAsync(InboxAttachment attachment)
+    {
+        await OnAttachmentDownload.InvokeAsync(attachment);
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("DownloadAttachment", new { FileName = attachment.FileName });
+        }
+    }
+
+    private async Task OnRefreshAsync()
+    {
+        await OnRefresh.InvokeAsync();
+        
+        if (EnableAudit)
+        {
+            await LogAuditAsync("Refresh", null);
+        }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            _currentPage = 1;
+            CalculatePagination();
+            
+            if (EnableAudit)
+            {
+                await LogAuditAsync("Search", new { SearchText = _searchText });
+            }
+        }
+    }
+
+    private async Task OnPreviousPageAsync()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task OnNextPageAsync()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+        }
+        await Task.CompletedTask;
+    }
+
+    private void ParseRecipients()
+    {
+        if (!string.IsNullOrEmpty(_composeToText))
+        {
+            _composeMessage.To = _composeToText.Split(',', ';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToList();
+        }
+        if (!string.IsNullOrEmpty(_composeCcText))
+        {
+            _composeMessage.Cc = _composeCcText.Split(',', ';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToList();
+        }
+        if (!string.IsNullOrEmpty(_composeBccText))
+        {
+            _composeMessage.Bcc = _composeBccText.Split(',', ';').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToList();
+        }
+    }
+
+    private IEnumerable<InboxMessage> GetFilteredMessages()
+    {
+        var messages = Messages.Where(m => !m.IsDeleted);
+
+        if (!string.IsNullOrEmpty(_selectedFolderId))
+        {
+            messages = messages.Where(m => m.FolderId == _selectedFolderId);
+        }
+
+        if (!string.IsNullOrEmpty(_selectedLabelId))
+        {
+            messages = messages.Where(m => m.Labels.Contains(_selectedLabelId));
+        }
+
+        if (!string.IsNullOrEmpty(_searchText))
+        {
+            var searchLower = _searchText.ToLower();
+            messages = messages.Where(m => 
+                m.Subject.ToLower().Contains(searchLower) ||
+                m.Body.ToLower().Contains(searchLower) ||
+                m.From.Name.ToLower().Contains(searchLower) ||
+                m.From.Email.ToLower().Contains(searchLower));
+        }
+
+        if (Settings?.ShowUnreadOnly == true)
+        {
+            messages = messages.Where(m => !m.IsRead);
+        }
+
+        // Apply sorting
+        messages = (Settings?.SortOrder ?? InboxSortOrder.DateDescending) switch
+        {
+            InboxSortOrder.DateDescending => messages.OrderByDescending(m => m.ReceivedDate ?? m.SentDate),
+            InboxSortOrder.DateAscending => messages.OrderBy(m => m.ReceivedDate ?? m.SentDate),
+            InboxSortOrder.SubjectAscending => messages.OrderBy(m => m.Subject),
+            InboxSortOrder.SubjectDescending => messages.OrderByDescending(m => m.Subject),
+            InboxSortOrder.SenderAscending => messages.OrderBy(m => m.From.Name),
+            InboxSortOrder.SenderDescending => messages.OrderByDescending(m => m.From.Name),
+            _ => messages.OrderByDescending(m => m.ReceivedDate ?? m.SentDate)
+        };
+
+        // Apply pagination
+        var skip = (_currentPage - 1) * (Settings?.MessagesPerPage ?? 50);
+        return messages.Skip(skip).Take(Settings?.MessagesPerPage ?? 50);
+    }
+
+    private void CalculatePagination()
+    {
+        var totalMessages = Messages.Count(m => !m.IsDeleted);
+        _totalPages = (int)Math.Ceiling((double)totalMessages / (Settings?.MessagesPerPage ?? 50));
+    }
+
+    private string GetSelectedFolderName()
+    {
+        var folder = Folders.FirstOrDefault(f => f.Id == _selectedFolderId);
+        return folder?.Name ?? "Inbox";
+    }
+
+    private string GetEmptyStateMessage()
+    {
+        if (!string.IsNullOrEmpty(_searchText))
+        {
+            return "No messages found matching your search.";
+        }
+        return "Your inbox is empty.";
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "?";
+        
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+
+    private string FormatMessageDate(DateTime date)
+    {
+        var now = DateTime.Now;
+        var diff = now - date;
+
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalHours < 1) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalDays < 1) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return date.ToString("ddd h:mm tt");
+        if (date.Year == now.Year) return date.ToString("MMM d");
+        return date.ToString("MMM d, yyyy");
+    }
+
+    private string FormatDateTime(DateTime date)
+    {
+        return date.ToString("MMMM d, yyyy h:mm tt");
+    }
+
+    private string FormatDateHeader(DateTime date)
+    {
+        var now = DateTime.Now.Date;
+        if (date == now) return "Today";
+        if (date == now.AddDays(-1)) return "Yesterday";
+        if (date > now.AddDays(-7)) return date.ToString("dddd");
+        return date.ToString("MMMM d, yyyy");
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private async Task LogAuditAsync(string action, object? additionalData)
+    {
+        if (!EnableAudit) return;
+
+        var metadata = new AuditMetadata
+        {
+            Resource = AuditResource,
+            Action = action
+        };
+
+        await AuditService.LogAsync(metadata);
+    }
+
+    private IReadOnlyDictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "role", "region" },
+            { "aria-label", "Email inbox" }
+        };
+
+        if (_isRtl)
+        {
+            attributes.Add("dir", "rtl");
+        }
+
+        return attributes;
+    }
+}

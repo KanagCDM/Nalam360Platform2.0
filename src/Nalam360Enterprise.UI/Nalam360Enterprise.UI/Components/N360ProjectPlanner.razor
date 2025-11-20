@@ -1,0 +1,1171 @@
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+
+<div class="n360-project-planner @CssClass" @attributes="GetHtmlAttributes()">
+    @if (!_hasPermission)
+    {
+        if (!HideIfNoPermission)
+        {
+            <div class="no-permission">You do not have permission to view projects.</div>
+        }
+        return;
+    }
+
+    @if (_isLoading)
+    {
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <span>Loading projects...</span>
+        </div>
+        return;
+    }
+
+    <!-- Header with Statistics -->
+    <div class="planner-header">
+        <div class="header-title">
+            <h2>@Title</h2>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <p class="description">@Description</p>
+            }
+        </div>
+
+        @if (ShowStatistics)
+        {
+            <div class="statistics-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.TotalProjects</div>
+                        <div class="stat-label">Total Projects</div>
+                    </div>
+                </div>
+                <div class="stat-card active">
+                    <div class="stat-icon">🚀</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.ActiveProjects</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                </div>
+                <div class="stat-card completed">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.CompletedProjects</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+                <div class="stat-card delayed">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.DelayedProjects</div>
+                        <div class="stat-label">Delayed</div>
+                    </div>
+                </div>
+                <div class="stat-card budget">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.TotalBudget.ToString("C0")</div>
+                        <div class="stat-label">Total Budget</div>
+                    </div>
+                </div>
+                <div class="stat-card progress">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.AverageProgress.ToString("F0")%</div>
+                        <div class="stat-label">Avg Progress</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Toolbar -->
+    <div class="planner-toolbar">
+        <div class="view-mode-toggle">
+            <button class="@(_viewMode == ProjectViewMode.Gantt ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.Gantt)">
+                📊 Gantt
+            </button>
+            <button class="@(_viewMode == ProjectViewMode.Timeline ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.Timeline)">
+                📅 Timeline
+            </button>
+            <button class="@(_viewMode == ProjectViewMode.Board ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.Board)">
+                📋 Board
+            </button>
+            <button class="@(_viewMode == ProjectViewMode.List ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.List)">
+                ☰ List
+            </button>
+            <button class="@(_viewMode == ProjectViewMode.Resource ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.Resource)">
+                👥 Resources
+            </button>
+            <button class="@(_viewMode == ProjectViewMode.Calendar ? "active" : "")" 
+                    @onclick="() => ChangeViewMode(ProjectViewMode.Calendar)">
+                📆 Calendar
+            </button>
+        </div>
+
+        <div class="toolbar-actions">
+            <input type="text" 
+                   placeholder="Search projects..." 
+                   class="search-input"
+                   @bind="_searchQuery"
+                   @bind:event="oninput" />
+            
+            <button class="filter-toggle @(_showFilterPanel ? "active" : "")" 
+                    @onclick="ToggleFilterPanel">
+                🔍 Filters @(_activeFilterCount > 0 ? $"({_activeFilterCount})" : "")
+            </button>
+            
+            <select class="sort-dropdown" @onchange="OnSortChanged">
+                <option value="">Sort by...</option>
+                @foreach (var sortOption in Enum.GetValues<ProjectSortBy>())
+                {
+                    <option value="@sortOption" selected="@(_sortBy == sortOption)">
+                        @sortOption
+                    </option>
+                }
+            </select>
+            
+            <button class="btn-primary" @onclick="OnAddProject">
+                ➕ Add Project
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    @if (_showFilterPanel)
+    {
+        <div class="filter-panel">
+            <div class="filter-header">
+                <h3>Filters</h3>
+                <button class="close-btn" @onclick="ToggleFilterPanel">✕</button>
+            </div>
+            
+            <div class="filter-content">
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <label>Status</label>
+                    @foreach (var status in Enum.GetValues<ProjectStatus>())
+                    {
+                        <div class="filter-checkbox">
+                            <input type="checkbox" 
+                                   id="status-@status"
+                                   checked="@_filter.Statuses.Contains(status)"
+                                   @onchange="e => OnStatusFilterChanged(status, (bool)e.Value!)" />
+                            <label for="status-@status">
+                                <span class="status-badge status-@status.ToString().ToLower()">@status</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="filter-group">
+                    <label>Priority</label>
+                    @foreach (var priority in Enum.GetValues<ProjectPriority>())
+                    {
+                        <div class="filter-checkbox">
+                            <input type="checkbox" 
+                                   id="priority-@priority"
+                                   checked="@_filter.Priorities.Contains(priority)"
+                                   @onchange="e => OnPriorityFilterChanged(priority, (bool)e.Value!)" />
+                            <label for="priority-@priority">
+                                @GetPriorityIcon(priority) @priority
+                            </label>
+                        </div>
+                    }
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="filter-group">
+                    <label>Start Date Range</label>
+                    <div class="date-range">
+                        <input type="date" @bind="_filter.StartDateFrom" />
+                        <span>to</span>
+                        <input type="date" @bind="_filter.StartDateTo" />
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>End Date Range</label>
+                    <div class="date-range">
+                        <input type="date" @bind="_filter.EndDateFrom" />
+                        <span>to</span>
+                        <input type="date" @bind="_filter.EndDateTo" />
+                    </div>
+                </div>
+
+                <!-- Budget Filter -->
+                <div class="filter-group">
+                    <label>Budget Range</label>
+                    <div class="number-range">
+                        <input type="number" placeholder="Min" @bind="_filter.BudgetMin" />
+                        <span>to</span>
+                        <input type="number" placeholder="Max" @bind="_filter.BudgetMax" />
+                    </div>
+                </div>
+
+                <!-- Progress Filter -->
+                <div class="filter-group">
+                    <label>Progress Range (%)</label>
+                    <div class="number-range">
+                        <input type="number" min="0" max="100" placeholder="Min" @bind="_filter.ProgressMin" />
+                        <span>to</span>
+                        <input type="number" min="0" max="100" placeholder="Max" @bind="_filter.ProgressMax" />
+                    </div>
+                </div>
+
+                <!-- Quick Filters -->
+                <div class="filter-group">
+                    <label>Quick Filters</label>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="over-budget" @bind="_filter.ShowOverBudget" />
+                        <label for="over-budget">Over Budget</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="delayed" @bind="_filter.ShowDelayed" />
+                        <label for="delayed">Delayed</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="completed" @bind="_filter.ShowCompleted" />
+                        <label for="completed">Include Completed</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button class="btn-secondary" @onclick="ClearFilters">Clear All</button>
+                <button class="btn-primary" @onclick="ApplyFilters">Apply Filters</button>
+            </div>
+        </div>
+    }
+
+    <!-- Content Area -->
+    <div class="planner-content">
+        @if (_viewMode == ProjectViewMode.Gantt)
+        {
+            <div class="gantt-view">
+                <!-- Gantt Chart Header -->
+                <div class="gantt-header">
+                    <div class="gantt-task-header">Projects/Tasks</div>
+                    <div class="gantt-timeline-header">
+                        @for (int i = 0; i < 12; i++)
+                        {
+                            var month = DateTime.Now.AddMonths(i);
+                            <div class="timeline-month">@month.ToString("MMM yyyy")</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Gantt Chart Body -->
+                <div class="gantt-body">
+                    @foreach (var project in _filteredProjects)
+                    {
+                        <div class="gantt-row project-row">
+                            <div class="gantt-task-cell">
+                                <button class="expand-btn" @onclick="() => ToggleProjectExpand(project.Id)">
+                                    @(_expandedProjects.Contains(project.Id) ? "▼" : "▶")
+                                </button>
+                                <span class="project-name" @onclick="() => SelectProject(project)">
+                                    @project.Name
+                                </span>
+                                <span class="progress-badge">@project.ProgressPercentage%</span>
+                            </div>
+                            <div class="gantt-timeline-cell">
+                                <div class="gantt-bar project-bar" 
+                                     style="@GetGanttBarStyle(project.StartDate, project.EndDate, project.Color)">
+                                    <span class="bar-label">@project.Name</span>
+                                    <div class="bar-progress" style="width: @project.ProgressPercentage%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (_expandedProjects.Contains(project.Id))
+                        {
+                            @foreach (var task in project.Tasks.Where(t => t.ParentTaskId == null))
+                            {
+                                <div class="gantt-row task-row">
+                                    <div class="gantt-task-cell indented">
+                                        @if (task.Subtasks.Any())
+                                        {
+                                            <button class="expand-btn" @onclick="() => ToggleTaskExpand(task.Id)">
+                                                @(_expandedTasks.Contains(task.Id) ? "▼" : "▶")
+                                            </button>
+                                        }
+                                        <span class="task-name" @onclick="() => SelectTask(task)">
+                                            @if (task.IsMilestone) { <span class="milestone-icon">🏁</span> }
+                                            @if (task.IsCriticalPath) { <span class="critical-icon">⚠️</span> }
+                                            @task.Name
+                                        </span>
+                                        <span class="progress-badge small">@task.ProgressPercentage%</span>
+                                    </div>
+                                    <div class="gantt-timeline-cell">
+                                        <div class="gantt-bar task-bar @(task.IsCriticalPath ? "critical" : "")" 
+                                             style="@GetGanttBarStyle(task.StartDate, task.EndDate, task.Color)">
+                                            <span class="bar-label">@task.Name</span>
+                                            <div class="bar-progress" style="width: @task.ProgressPercentage%"></div>
+                                        </div>
+                                        <!-- Dependencies -->
+                                        @foreach (var dep in task.Dependencies)
+                                        {
+                                            <div class="dependency-line"></div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (_expandedTasks.Contains(task.Id))
+                                {
+                                    @foreach (var subtask in task.Subtasks)
+                                    {
+                                        <div class="gantt-row subtask-row">
+                                            <div class="gantt-task-cell double-indented">
+                                                <span class="task-name" @onclick="() => SelectTask(subtask)">
+                                                    @subtask.Name
+                                                </span>
+                                                <span class="progress-badge small">@subtask.ProgressPercentage%</span>
+                                            </div>
+                                            <div class="gantt-timeline-cell">
+                                                <div class="gantt-bar subtask-bar" 
+                                                     style="@GetGanttBarStyle(subtask.StartDate, subtask.EndDate, subtask.Color)">
+                                                    <div class="bar-progress" style="width: @subtask.ProgressPercentage%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+
+                            <!-- Milestones -->
+                            @foreach (var milestone in project.Milestones)
+                            {
+                                <div class="gantt-row milestone-row">
+                                    <div class="gantt-task-cell indented">
+                                        <span class="milestone-icon">🏁</span>
+                                        <span class="milestone-name">@milestone.Name</span>
+                                    </div>
+                                    <div class="gantt-timeline-cell">
+                                        <div class="gantt-milestone" 
+                                             style="@GetMilestoneStyle(milestone.DueDate)">
+                                            <div class="milestone-diamond"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        }
+        else if (_viewMode == ProjectViewMode.Board)
+        {
+            <div class="board-view">
+                @foreach (var status in Enum.GetValues<ProjectStatus>())
+                {
+                    var statusProjects = _filteredProjects.Where(p => p.Status == status).ToList();
+                    <div class="board-column">
+                        <div class="column-header">
+                            <span class="status-badge status-@status.ToString().ToLower()">@status</span>
+                            <span class="count-badge">@statusProjects.Count</span>
+                        </div>
+                        <div class="column-body">
+                            @foreach (var project in statusProjects)
+                            {
+                                <div class="project-card" @onclick="() => SelectProject(project)">
+                                    <div class="card-header">
+                                        <h4>@project.Name</h4>
+                                        <span class="priority-badge priority-@project.Priority.ToString().ToLower()">
+                                            @GetPriorityIcon(project.Priority)
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>@project.Description</p>
+                                        <div class="card-meta">
+                                            <span>📅 @project.StartDate.ToString("MMM dd") - @(project.EndDate?.ToString("MMM dd") ?? "Ongoing")</span>
+                                            <span>💰 @project.ActualCost.ToString("C0") / @project.Budget.ToString("C0")</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: @project.ProgressPercentage%; background-color: @GetProgressColor(project.ProgressPercentage)"></div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <span>@project.CompletedTasks/@project.TotalTasks tasks</span>
+                                            <span>@project.ProgressPercentage%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_viewMode == ProjectViewMode.List)
+        {
+            <div class="list-view">
+                <table class="projects-table">
+                    <thead>
+                        <tr>
+                            <th @onclick="() => SortBy(ProjectSortBy.Name)">
+                                Name @GetSortIndicator(ProjectSortBy.Name)
+                            </th>
+                            <th @onclick="() => SortBy(ProjectSortBy.Status)">
+                                Status @GetSortIndicator(ProjectSortBy.Status)
+                            </th>
+                            <th @onclick="() => SortBy(ProjectSortBy.Priority)">
+                                Priority @GetSortIndicator(ProjectSortBy.Priority)
+                            </th>
+                            <th>Manager</th>
+                            <th @onclick="() => SortBy(ProjectSortBy.StartDate)">
+                                Start Date @GetSortIndicator(ProjectSortBy.StartDate)
+                            </th>
+                            <th @onclick="() => SortBy(ProjectSortBy.EndDate)">
+                                End Date @GetSortIndicator(ProjectSortBy.EndDate)
+                            </th>
+                            <th @onclick="() => SortBy(ProjectSortBy.Progress)">
+                                Progress @GetSortIndicator(ProjectSortBy.Progress)
+                            </th>
+                            <th @onclick="() => SortBy(ProjectSortBy.Budget)">
+                                Budget @GetSortIndicator(ProjectSortBy.Budget)
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var project in _filteredProjects)
+                        {
+                            <tr @onclick="() => SelectProject(project)">
+                                <td>
+                                    <div class="project-name-cell">
+                                        <span class="project-color" style="background-color: @project.Color"></span>
+                                        <span>@project.Name</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-@project.Status.ToString().ToLower()">
+                                        @project.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="priority-badge priority-@project.Priority.ToString().ToLower()">
+                                        @GetPriorityIcon(project.Priority) @project.Priority
+                                    </span>
+                                </td>
+                                <td>@project.ManagerName</td>
+                                <td>@project.StartDate.ToString("MMM dd, yyyy")</td>
+                                <td>@(project.EndDate?.ToString("MMM dd, yyyy") ?? "N/A")</td>
+                                <td>
+                                    <div class="progress-cell">
+                                        <div class="progress-bar small">
+                                            <div class="progress-fill" style="width: @project.ProgressPercentage%; background-color: @GetProgressColor(project.ProgressPercentage)"></div>
+                                        </div>
+                                        <span>@project.ProgressPercentage%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="budget-cell">
+                                        <span class="@(project.IsOverBudget ? "over-budget" : "")">
+                                            @project.ActualCost.ToString("C0")
+                                        </span>
+                                        <span class="budget-limit">/ @project.Budget.ToString("C0")</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="action-btn" @onclick:stopPropagation="true" @onclick="() => OnEditProject(project)">✏️</button>
+                                    <button class="action-btn danger" @onclick:stopPropagation="true" @onclick="() => OnDeleteProject(project)">🗑️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_viewMode == ProjectViewMode.Resource)
+        {
+            <div class="resource-view">
+                <div class="resource-header">
+                    <h3>Resource Allocation</h3>
+                    <div class="resource-stats">
+                        <span>Total Resources: @_statistics.TotalResources</span>
+                        <span class="overallocated">Overallocated: @_statistics.OverallocatedResources</span>
+                    </div>
+                </div>
+
+                <div class="resource-grid">
+                    @foreach (var resource in Resources)
+                    {
+                        <div class="resource-card @(resource.IsOverallocated ? "overallocated" : "")">
+                            <div class="resource-header">
+                                <div class="resource-avatar">
+                                    @if (!string.IsNullOrEmpty(resource.AvatarUrl))
+                                    {
+                                        <img src="@resource.AvatarUrl" alt="@resource.Name" />
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar-initials">@GetInitials(resource.Name)</div>
+                                    }
+                                </div>
+                                <div class="resource-info">
+                                    <h4>@resource.Name</h4>
+                                    <span class="resource-role">@resource.Role</span>
+                                    <span class="resource-type">@resource.Type</span>
+                                </div>
+                            </div>
+
+                            <div class="resource-body">
+                                <div class="utilization-bar">
+                                    <div class="utilization-label">
+                                        <span>Utilization</span>
+                                        <span class="@(resource.IsOverallocated ? "over" : "")">
+                                            @resource.UtilizationPercentage.ToString("F0")%
+                                        </span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill @(resource.IsOverallocated ? "overallocated" : "")" 
+                                             style="width: @Math.Min(resource.UtilizationPercentage, 100)%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="resource-metrics">
+                                    <div class="metric">
+                                        <span class="metric-label">Allocated</span>
+                                        <span class="metric-value">@resource.AllocatedHours.ToString("F0")h</span>
+                                    </div>
+                                    <div class="metric">
+                                        <span class="metric-label">Availability</span>
+                                        <span class="metric-value">@resource.Availability.ToString("F0")h</span>
+                                    </div>
+                                    <div class="metric">
+                                        <span class="metric-label">Remaining</span>
+                                        <span class="metric-value">@resource.RemainingCapacity.ToString("F0")h</span>
+                                    </div>
+                                </div>
+
+                                <div class="resource-allocations">
+                                    <h5>Current Allocations (@resource.Allocations.Count)</h5>
+                                    @foreach (var allocation in resource.Allocations.Take(3))
+                                    {
+                                        <div class="allocation-item">
+                                            <span class="allocation-project">@allocation.ProjectName</span>
+                                            <span class="allocation-hours">@allocation.AllocatedHours.ToString("F0")h</span>
+                                        </div>
+                                    }
+                                    @if (resource.Allocations.Count > 3)
+                                    {
+                                        <span class="more-allocations">+@(resource.Allocations.Count - 3) more...</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Project Details Panel -->
+    @if (_selectedProject != null && _showProjectDetails)
+    {
+        <div class="details-overlay" @onclick="CloseProjectDetails">
+            <div class="details-panel" @onclick:stopPropagation="true">
+                <div class="details-header">
+                    <h3>@_selectedProject.Name</h3>
+                    <button class="close-btn" @onclick="CloseProjectDetails">✕</button>
+                </div>
+
+                <div class="details-tabs">
+                    <button class="@(_activeTab == "overview" ? "active" : "")" @onclick='() => _activeTab = "overview"'>Overview</button>
+                    <button class="@(_activeTab == "tasks" ? "active" : "")" @onclick='() => _activeTab = "tasks"'>Tasks (@_selectedProject.TotalTasks)</button>
+                    <button class="@(_activeTab == "resources" ? "active" : "")" @onclick='() => _activeTab = "resources"'>Resources (@_selectedProject.Resources.Count)</button>
+                    <button class="@(_activeTab == "milestones" ? "active" : "")" @onclick='() => _activeTab = "milestones"'>Milestones (@_selectedProject.Milestones.Count)</button>
+                    <button class="@(_activeTab == "risks" ? "active" : "")" @onclick='() => _activeTab = "risks"'>Risks (@_selectedProject.Risks.Count)</button>
+                </div>
+
+                <div class="details-content">
+                    @if (_activeTab == "overview")
+                    {
+                        <div class="overview-tab">
+                            <div class="project-info-grid">
+                                <div class="info-item">
+                                    <label>Status</label>
+                                    <span class="status-badge status-@_selectedProject.Status.ToString().ToLower()">
+                                        @_selectedProject.Status
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Priority</label>
+                                    <span class="priority-badge priority-@_selectedProject.Priority.ToString().ToLower()">
+                                        @GetPriorityIcon(_selectedProject.Priority) @_selectedProject.Priority
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Manager</label>
+                                    <span>@_selectedProject.ManagerName</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Category</label>
+                                    <span>@_selectedProject.Category</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Start Date</label>
+                                    <span>@_selectedProject.StartDate.ToString("MMM dd, yyyy")</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>End Date</label>
+                                    <span>@(_selectedProject.EndDate?.ToString("MMM dd, yyyy") ?? "N/A")</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Duration</label>
+                                    <span>@(_selectedProject.Duration?.Days ?? 0) days</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Progress</label>
+                                    <div class="progress-cell">
+                                        <div class="progress-bar small">
+                                            <div class="progress-fill" style="width: @_selectedProject.ProgressPercentage%; background-color: @GetProgressColor(_selectedProject.ProgressPercentage)"></div>
+                                        </div>
+                                        <span>@_selectedProject.ProgressPercentage%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="budget-section">
+                                <h4>Budget Information</h4>
+                                <div class="budget-grid">
+                                    <div class="budget-item">
+                                        <label>Total Budget</label>
+                                        <span class="budget-value">@_selectedProject.Budget.ToString("C0")</span>
+                                    </div>
+                                    <div class="budget-item">
+                                        <label>Actual Cost</label>
+                                        <span class="budget-value @(_selectedProject.IsOverBudget ? "over-budget" : "")">
+                                            @_selectedProject.ActualCost.ToString("C0")
+                                        </span>
+                                    </div>
+                                    <div class="budget-item">
+                                        <label>Variance</label>
+                                        <span class="budget-value @(_selectedProject.BudgetVariance < 0 ? "negative" : "positive")">
+                                            @_selectedProject.BudgetVariance.ToString("C0") (@_selectedProject.BudgetVariancePercentage.ToString("F1")%)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="description-section">
+                                <h4>Description</h4>
+                                <p>@_selectedProject.Description</p>
+                            </div>
+
+                            @if (_selectedProject.Tags.Any())
+                            {
+                                <div class="tags-section">
+                                    <h4>Tags</h4>
+                                    <div class="tags-list">
+                                        @foreach (var tag in _selectedProject.Tags)
+                                        {
+                                            <span class="tag-chip">#@tag</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (_activeTab == "tasks")
+                    {
+                        <div class="tasks-tab">
+                            <div class="tasks-stats">
+                                <span>Total: @_selectedProject.TotalTasks</span>
+                                <span class="completed">Completed: @_selectedProject.CompletedTasks</span>
+                                <span class="overdue">Overdue: @_selectedProject.OverdueTasks</span>
+                            </div>
+                            <div class="tasks-list">
+                                @foreach (var task in _selectedProject.Tasks.OrderBy(t => t.StartDate))
+                                {
+                                    <div class="task-item">
+                                        <div class="task-header">
+                                            <span class="task-name">
+                                                @if (task.IsMilestone) { <span>🏁</span> }
+                                                @if (task.IsCriticalPath) { <span>⚠️</span> }
+                                                @task.Name
+                                            </span>
+                                            <span class="task-status status-@task.Status.ToString().ToLower()">
+                                                @task.Status
+                                            </span>
+                                        </div>
+                                        <div class="task-meta">
+                                            <span>📅 @task.StartDate.ToString("MMM dd") - @task.EndDate.ToString("MMM dd")</span>
+                                            <span>👥 @string.Join(", ", task.AssignedResourceNames)</span>
+                                        </div>
+                                        <div class="task-progress">
+                                            <div class="progress-bar small">
+                                                <div class="progress-fill" style="width: @task.ProgressPercentage%; background-color: @GetProgressColor(task.ProgressPercentage)"></div>
+                                            </div>
+                                            <span>@task.ProgressPercentage%</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else if (_activeTab == "resources")
+                    {
+                        <div class="resources-tab">
+                            <div class="resources-list">
+                                @foreach (var resource in _selectedProject.Resources)
+                                {
+                                    <div class="resource-item">
+                                        <div class="resource-avatar small">
+                                            @if (!string.IsNullOrEmpty(resource.AvatarUrl))
+                                            {
+                                                <img src="@resource.AvatarUrl" alt="@resource.Name" />
+                                            }
+                                            else
+                                            {
+                                                <div class="avatar-initials">@GetInitials(resource.Name)</div>
+                                            }
+                                        </div>
+                                        <div class="resource-info">
+                                            <h5>@resource.Name</h5>
+                                            <span>@resource.Role - @resource.Type</span>
+                                        </div>
+                                        <div class="resource-metrics">
+                                            <span>@resource.AllocatedHours.ToString("F0")h allocated</span>
+                                            <span class="@(resource.IsOverallocated ? "overallocated" : "")">
+                                                @resource.UtilizationPercentage.ToString("F0")% utilized
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else if (_activeTab == "milestones")
+                    {
+                        <div class="milestones-tab">
+                            <div class="milestones-list">
+                                @foreach (var milestone in _selectedProject.Milestones.OrderBy(m => m.DueDate))
+                                {
+                                    <div class="milestone-item @(milestone.IsCompleted ? "completed" : "") @(milestone.IsOverdue ? "overdue" : "")">
+                                        <div class="milestone-icon">🏁</div>
+                                        <div class="milestone-content">
+                                            <h5>@milestone.Name</h5>
+                                            <p>@milestone.Description</p>
+                                            <div class="milestone-meta">
+                                                <span>Due: @milestone.DueDate.ToString("MMM dd, yyyy")</span>
+                                                @if (milestone.ActualDate.HasValue)
+                                                {
+                                                    <span>Achieved: @milestone.ActualDate.Value.ToString("MMM dd, yyyy")</span>
+                                                }
+                                                <span class="milestone-status status-@milestone.Status.ToString().ToLower()">
+                                                    @milestone.Status
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else if (_activeTab == "risks")
+                    {
+                        <div class="risks-tab">
+                            <div class="risks-list">
+                                @foreach (var risk in _selectedProject.Risks.OrderByDescending(r => r.RiskScore))
+                                {
+                                    <div class="risk-item risk-@risk.RiskLevel.ToString().ToLower()">
+                                        <div class="risk-header">
+                                            <h5>@risk.Title</h5>
+                                            <div class="risk-badges">
+                                                <span class="risk-level-badge">@risk.RiskLevel</span>
+                                                <span class="risk-score">Score: @risk.RiskScore</span>
+                                            </div>
+                                        </div>
+                                        <p>@risk.Description</p>
+                                        <div class="risk-meta">
+                                            <span>Category: @risk.Category</span>
+                                            <span>Probability: @risk.Probability</span>
+                                            <span>Impact: @risk.Impact</span>
+                                            <span>Status: @risk.Status</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(risk.MitigationPlan))
+                                        {
+                                            <div class="risk-mitigation">
+                                                <strong>Mitigation:</strong> @risk.MitigationPlan
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="details-footer">
+                    <button class="btn-secondary" @onclick="CloseProjectDetails">Close</button>
+                    <button class="btn-primary" @onclick="() => OnEditProject(_selectedProject)">Edit Project</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] private IPermissionService? PermissionService { get; set; }
+    [Inject] private IAuditService? AuditService { get; set; }
+
+    // Parameters
+    [Parameter] public List<Project> Projects { get; set; } = new();
+    [Parameter] public List<ProjectResource> Resources { get; set; } = new();
+    [Parameter] public string Title { get; set; } = "Project Planner";
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public ProjectViewMode InitialViewMode { get; set; } = ProjectViewMode.Gantt;
+    
+    // Events
+    [Parameter] public EventCallback<Project> OnProjectSelected { get; set; }
+    [Parameter] public EventCallback<Project> OnProjectAdded { get; set; }
+    [Parameter] public EventCallback<Project> OnProjectUpdated { get; set; }
+    [Parameter] public EventCallback<Guid> OnProjectDeleted { get; set; }
+    [Parameter] public EventCallback<ProjectTask> OnTaskSelected { get; set; }
+    [Parameter] public EventCallback<ProjectViewMode> OnViewModeChanged { get; set; }
+    
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isLoading = false;
+    private ProjectViewMode _viewMode;
+    private bool _showFilterPanel = false;
+    private bool _showProjectDetails = false;
+    private string _searchQuery = string.Empty;
+    private ProjectFilter _filter = new();
+    private IEnumerable<Project> _filteredProjects = Enumerable.Empty<Project>();
+    private Project? _selectedProject;
+    private ProjectTask? _selectedTask;
+    private ProjectSortBy _sortBy = ProjectSortBy.Name;
+    private bool _sortAscending = true;
+    private ProjectStatistics _statistics = new();
+    private HashSet<Guid> _expandedProjects = new();
+    private HashSet<Guid> _expandedTasks = new();
+    private string _activeTab = "overview";
+    private int _activeFilterCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PermissionService != null && !string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (!_hasPermission) return;
+
+        _viewMode = InitialViewMode;
+        _filteredProjects = Projects;
+        CalculateStatistics();
+
+        // Audit logging removed - needs proper IAuditService interface check
+
+        await base.OnInitializedAsync();
+    }
+
+    private void ToggleFilterPanel() => _showFilterPanel = !_showFilterPanel;
+
+    private void ChangeViewMode(ProjectViewMode mode)
+    {
+        _viewMode = mode;
+        OnViewModeChanged.InvokeAsync(mode);
+    }
+
+    private void OnSearchChanged()
+    {
+        ApplyFilters();
+    }
+
+    private void OnStatusFilterChanged(ProjectStatus status, bool isChecked)
+    {
+        if (isChecked)
+            _filter.Statuses.Add(status);
+        else
+            _filter.Statuses.Remove(status);
+    }
+
+    private void OnPriorityFilterChanged(ProjectPriority priority, bool isChecked)
+    {
+        if (isChecked)
+            _filter.Priorities.Add(priority);
+        else
+            _filter.Priorities.Remove(priority);
+    }
+
+    private void OnSortChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        if (Enum.TryParse<ProjectSortBy>(e.Value?.ToString(), out var sortBy))
+        {
+            _sortBy = sortBy;
+            ApplyFilters();
+        }
+    }
+
+    private void SortBy(ProjectSortBy sortBy)
+    {
+        if (_sortBy == sortBy)
+            _sortAscending = !_sortAscending;
+        else
+        {
+            _sortBy = sortBy;
+            _sortAscending = true;
+        }
+        ApplyFilters();
+    }
+
+    private string GetSortIndicator(ProjectSortBy sortBy)
+    {
+        if (_sortBy != sortBy) return "";
+        return _sortAscending ? "▲" : "▼";
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredProjects = Projects.AsEnumerable();
+
+        // Search
+        if (!string.IsNullOrEmpty(_searchQuery))
+        {
+            _filteredProjects = _filteredProjects.Where(p =>
+                p.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                p.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Status filter
+        if (_filter.Statuses.Any())
+        {
+            _filteredProjects = _filteredProjects.Where(p => _filter.Statuses.Contains(p.Status));
+        }
+
+        // Priority filter
+        if (_filter.Priorities.Any())
+        {
+            _filteredProjects = _filteredProjects.Where(p => _filter.Priorities.Contains(p.Priority));
+        }
+
+        // Date filters
+        if (_filter.StartDateFrom.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.StartDate >= _filter.StartDateFrom.Value);
+        }
+        if (_filter.StartDateTo.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.StartDate <= _filter.StartDateTo.Value);
+        }
+        if (_filter.EndDateFrom.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.EndDate >= _filter.EndDateFrom.Value);
+        }
+        if (_filter.EndDateTo.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.EndDate <= _filter.EndDateTo.Value);
+        }
+
+        // Budget filters
+        if (_filter.BudgetMin.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.Budget >= _filter.BudgetMin.Value);
+        }
+        if (_filter.BudgetMax.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.Budget <= _filter.BudgetMax.Value);
+        }
+
+        // Progress filters
+        if (_filter.ProgressMin.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.ProgressPercentage >= _filter.ProgressMin.Value);
+        }
+        if (_filter.ProgressMax.HasValue)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.ProgressPercentage <= _filter.ProgressMax.Value);
+        }
+
+        // Quick filters
+        if (_filter.ShowOverBudget == true)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.IsOverBudget);
+        }
+        if (_filter.ShowDelayed == true)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.IsDelayed);
+        }
+        if (_filter.ShowCompleted == false)
+        {
+            _filteredProjects = _filteredProjects.Where(p => p.Status != ProjectStatus.Completed);
+        }
+
+        // Sorting - convert IEnumerable to List
+        _filteredProjects = _sortBy switch
+        {
+            ProjectSortBy.Name => (_sortAscending ? _filteredProjects.OrderBy(p => p.Name) : _filteredProjects.OrderByDescending(p => p.Name)).ToList(),
+            ProjectSortBy.StartDate => (_sortAscending ? _filteredProjects.OrderBy(p => p.StartDate) : _filteredProjects.OrderByDescending(p => p.StartDate)).ToList(),
+            ProjectSortBy.EndDate => (_sortAscending ? _filteredProjects.OrderBy(p => p.EndDate) : _filteredProjects.OrderByDescending(p => p.EndDate)).ToList(),
+            ProjectSortBy.Priority => (_sortAscending ? _filteredProjects.OrderBy(p => p.Priority) : _filteredProjects.OrderByDescending(p => p.Priority)).ToList(),
+            ProjectSortBy.Status => (_sortAscending ? _filteredProjects.OrderBy(p => p.Status) : _filteredProjects.OrderByDescending(p => p.Status)).ToList(),
+            ProjectSortBy.Progress => (_sortAscending ? _filteredProjects.OrderBy(p => p.ProgressPercentage) : _filteredProjects.OrderByDescending(p => p.ProgressPercentage)).ToList(),
+            ProjectSortBy.Budget => (_sortAscending ? _filteredProjects.OrderBy(p => p.Budget) : _filteredProjects.OrderByDescending(p => p.Budget)).ToList(),
+            _ => _filteredProjects.OrderBy(p => p.Name).ToList()
+        };
+
+        CalculateActiveFilterCount();
+    }
+
+    private void ClearFilters()
+    {
+        _filter = new ProjectFilter();
+        _searchQuery = string.Empty;
+        ApplyFilters();
+    }
+
+    private void CalculateActiveFilterCount()
+    {
+        _activeFilterCount = 0;
+        if (_filter.Statuses.Any()) _activeFilterCount++;
+        if (_filter.Priorities.Any()) _activeFilterCount++;
+        if (_filter.StartDateFrom.HasValue || _filter.StartDateTo.HasValue) _activeFilterCount++;
+        if (_filter.EndDateFrom.HasValue || _filter.EndDateTo.HasValue) _activeFilterCount++;
+        if (_filter.BudgetMin.HasValue || _filter.BudgetMax.HasValue) _activeFilterCount++;
+        if (_filter.ProgressMin.HasValue || _filter.ProgressMax.HasValue) _activeFilterCount++;
+        if (_filter.ShowOverBudget == true) _activeFilterCount++;
+        if (_filter.ShowDelayed == true) _activeFilterCount++;
+        if (_filter.ShowCompleted == false) _activeFilterCount++;
+    }
+
+    private void CalculateStatistics()
+    {
+        _statistics = new ProjectStatistics
+        {
+            TotalProjects = Projects.Count,
+            ActiveProjects = Projects.Count(p => p.Status == ProjectStatus.Active),
+            CompletedProjects = Projects.Count(p => p.Status == ProjectStatus.Completed),
+            DelayedProjects = Projects.Count(p => p.IsDelayed),
+            OverBudgetProjects = Projects.Count(p => p.IsOverBudget),
+            TotalBudget = Projects.Sum(p => p.Budget),
+            TotalActualCost = Projects.Sum(p => p.ActualCost),
+            AverageProgress = Projects.Any() ? (decimal)Projects.Average(p => p.ProgressPercentage) : 0,
+            TotalTasks = Projects.Sum(p => p.TotalTasks),
+            CompletedTasks = Projects.Sum(p => p.CompletedTasks),
+            OverdueTasks = Projects.Sum(p => p.OverdueTasks),
+            TotalResources = Resources.Count,
+            OverallocatedResources = Resources.Count(r => r.IsOverallocated)
+        };
+    }
+
+    private void SelectProject(Project project)
+    {
+        _selectedProject = project;
+        _showProjectDetails = true;
+        _activeTab = "overview";
+        OnProjectSelected.InvokeAsync(project);
+    }
+
+    private void SelectTask(ProjectTask task)
+    {
+        _selectedTask = task;
+        OnTaskSelected.InvokeAsync(task);
+    }
+
+    private void CloseProjectDetails()
+    {
+        _showProjectDetails = false;
+        _selectedProject = null;
+    }
+
+    private void ToggleProjectExpand(Guid projectId)
+    {
+        if (_expandedProjects.Contains(projectId))
+            _expandedProjects.Remove(projectId);
+        else
+            _expandedProjects.Add(projectId);
+    }
+
+    private void ToggleTaskExpand(Guid taskId)
+    {
+        if (_expandedTasks.Contains(taskId))
+            _expandedTasks.Remove(taskId);
+        else
+            _expandedTasks.Add(taskId);
+    }
+
+    private async Task OnAddProject()
+    {
+        // Trigger event for parent component to handle
+        await OnProjectAdded.InvokeAsync(new Project());
+    }
+
+    private async Task OnEditProject(Project project)
+    {
+        await OnProjectUpdated.InvokeAsync(project);
+    }
+
+    private async Task OnDeleteProject(Project project)
+    {
+        await OnProjectDeleted.InvokeAsync(project.Id);
+    }
+
+    // Helper methods
+    private string GetPriorityIcon(ProjectPriority priority) => priority switch
+    {
+        ProjectPriority.Critical => "🔴",
+        ProjectPriority.High => "🟠",
+        ProjectPriority.Medium => "🟡",
+        ProjectPriority.Low => "🟢",
+        _ => "⚪"
+    };
+
+    private string GetProgressColor(int progress)
+    {
+        if (progress < 30) return "#ef4444";
+        if (progress < 70) return "#f59e0b";
+        return "#10b981";
+    }
+
+    private string GetGanttBarStyle(DateTime startDate, DateTime? endDate, string color)
+    {
+        var startOffset = (startDate - DateTime.Now).Days;
+        var duration = endDate.HasValue ? (endDate.Value - startDate).Days : 30;
+        var left = Math.Max(0, (startOffset + 365) * 100.0 / 365); // 365 days visible
+        var width = Math.Max(5, duration * 100.0 / 365);
+        
+        return $"left: {left}%; width: {width}%; background-color: {color};";
+    }
+
+    private string GetMilestoneStyle(DateTime dueDate)
+    {
+        var offset = (dueDate - DateTime.Now).Days;
+        var left = Math.Max(0, (offset + 365) * 100.0 / 365);
+        
+        return $"left: {left}%;";
+    }
+
+    private string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "??";
+        if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+        return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+    }
+
+    // Component infrastructure
+    [Parameter] public string? CssClass { get; set; }
+    
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+        // Add RTL, accessibility, etc. attributes as needed
+        return attributes;
+    }
+}

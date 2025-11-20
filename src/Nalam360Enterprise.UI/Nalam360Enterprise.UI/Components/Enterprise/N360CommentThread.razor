@@ -1,0 +1,794 @@
+@using Microsoft.AspNetCore.Components
+@using System.Linq
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TComment where TComment : class
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-comment-thread @CssClass @GetThemeClass()" dir="@(IsRtl ? "rtl" : "ltr")" @attributes="GetHtmlAttributes()">
+    <!-- Header with Stats and Actions -->
+    <div class="comment-thread-header">
+        <div class="thread-info">
+            <div class="thread-title">
+                <span class="icon">💬</span>
+                <h3>@Title</h3>
+            </div>
+            <div class="thread-stats">
+                <span class="stat-item">
+                    <span class="icon">📝</span>
+                    <span class="value">@GetFilteredComments().Count()</span>
+                    <span class="label">Comments</span>
+                </span>
+                @if (EnableReactions)
+                {
+                    <span class="stat-item">
+                        <span class="icon">👍</span>
+                        <span class="value">@GetTotalReactions()</span>
+                        <span class="label">Reactions</span>
+                    </span>
+                }
+                @if (ShowParticipants)
+                {
+                    <span class="stat-item">
+                        <span class="icon">👥</span>
+                        <span class="value">@GetUniqueParticipants().Count()</span>
+                        <span class="label">Participants</span>
+                    </span>
+                }
+            </div>
+        </div>
+        
+        <div class="thread-actions">
+            @if (EnableSorting)
+            {
+                <div class="sort-control">
+                    <label>Sort:</label>
+                    <select @bind="SortMode" @bind:after="OnSortChanged" class="sort-dropdown">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="popular">Most Popular</option>
+                    </select>
+                </div>
+            }
+            
+            @if (EnableFiltering)
+            {
+                <div class="filter-control">
+                    <input type="text" 
+                           @bind="SearchText" 
+                           @bind:event="oninput"
+                           @bind:after="OnSearchChanged"
+                           placeholder="Search comments..." 
+                           class="search-input" />
+                </div>
+            }
+            
+            @if (ShowRefreshButton)
+            {
+                <SfButton CssClass="btn-refresh" IconCss="e-icons e-refresh" @onclick="RefreshCommentsAsync">Refresh</SfButton>
+            }
+        </div>
+    </div>
+
+    <!-- New Comment Input -->
+    @if (AllowNewComments && _canUserComment)
+    {
+        <div class="new-comment-section">
+            <div class="comment-input-wrapper">
+                <div class="user-avatar">
+                    <span>@GetUserInitials(CurrentUser)</span>
+                </div>
+                <div class="input-container">
+                    <textarea @bind="NewCommentText" 
+                              @bind:event="oninput"
+                              placeholder="@NewCommentPlaceholder" 
+                              class="comment-textarea"
+                              rows="3"
+                              maxlength="@MaxCommentLength"></textarea>
+                    
+                    @if (EnableMentions && NewCommentText.Contains("@"))
+                    {
+                        <div class="mention-suggestions">
+                            @foreach (var user in GetMentionSuggestions())
+                            {
+                                <div class="mention-item" @onclick="() => InsertMention(user)">
+                                    <span class="mention-avatar">@GetUserInitials(user)</span>
+                                    <span class="mention-name">@GetUserName(user)</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    
+                    <div class="input-footer">
+                        <div class="input-meta">
+                            <span class="char-count @(NewCommentText.Length > MaxCommentLength * 0.9 ? "warning" : "")">
+                                @NewCommentText.Length / @MaxCommentLength
+                            </span>
+                            @if (EnableMentions)
+                            {
+                                <span class="hint">💡 Type @@ to mention someone</span>
+                            }
+                        </div>
+                        <div class="input-actions">
+                            <SfButton CssClass="btn-cancel" @onclick="ClearNewComment">Cancel</SfButton>
+                            <SfButton CssClass="btn-primary btn-post" 
+                                      Disabled="@(string.IsNullOrWhiteSpace(NewCommentText) || NewCommentText.Length > MaxCommentLength)"
+                                      @onclick="PostCommentAsync">
+                                Post Comment
+                            </SfButton>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Comments List -->
+    <div class="comments-list">
+        @if (!GetFilteredComments().Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">💬</div>
+                <h4>No comments yet</h4>
+                <p>@(AllowNewComments ? "Be the first to start the discussion!" : "No comments to display.")</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var comment in GetFilteredComments())
+            {
+                <div class="comment-item @(GetCommentDepthClass(comment)) @(IsCommentEditing(comment) ? "editing" : "")" 
+                     id="comment-@GetCommentId(comment)">
+                    
+                    <!-- Thread Indicator -->
+                    @if (GetCommentDepth(comment) > 0)
+                    {
+                        <div class="thread-indicator">
+                            <span class="thread-line"></span>
+                        </div>
+                    }
+                    
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    <span>@GetUserInitials(GetCommentUser(comment))</span>
+                                </div>
+                                <div class="user-details">
+                                    <span class="user-name">@GetUserName(GetCommentUser(comment))</span>
+                                    <span class="comment-time" title="@GetCommentTimestamp(comment).ToString("F")">
+                                        @FormatRelativeTime(GetCommentTimestamp(comment))
+                                    </span>
+                                    @if (IsCommentEdited(comment))
+                                    {
+                                        <span class="edited-badge">✏️ Edited</span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            @if (CanUserModifyComment(comment))
+                            {
+                                <div class="comment-menu">
+                                    <button class="menu-toggle" @onclick="() => ToggleCommentMenu(comment)">⋮</button>
+                                    @if (IsCommentMenuOpen(comment))
+                                    {
+                                        <div class="menu-dropdown">
+                                            <button @onclick="() => StartEditComment(comment)">✏️ Edit</button>
+                                            <button @onclick="() => DeleteCommentAsync(comment)">🗑️ Delete</button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="comment-body">
+                            @if (IsCommentEditing(comment))
+                            {
+                                <div class="edit-container">
+                                    <textarea @bind="EditingCommentText" 
+                                              class="comment-textarea edit-textarea"
+                                              rows="3"
+                                              maxlength="@MaxCommentLength"></textarea>
+                                    <div class="edit-actions">
+                                        <SfButton CssClass="btn-cancel" @onclick="CancelEditComment">Cancel</SfButton>
+                                        <SfButton CssClass="btn-primary" @onclick="() => SaveEditCommentAsync(comment)">Save</SfButton>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="comment-text">
+                                    @((MarkupString)FormatCommentText(GetCommentText(comment)))
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="comment-footer">
+                            @if (EnableReactions)
+                            {
+                                <div class="reactions-bar">
+                                    @foreach (var reaction in AvailableReactions)
+                                    {
+                                        var count = GetReactionCount(comment, reaction);
+                                        var hasReacted = HasUserReacted(comment, reaction);
+                                        
+                                        <button class="reaction-btn @(hasReacted ? "active" : "")"
+                                                @onclick="() => ToggleReactionAsync(comment, reaction)">
+                                            <span class="reaction-emoji">@reaction</span>
+                                            @if (count > 0)
+                                            {
+                                                <span class="reaction-count">@count</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            
+                            <div class="comment-actions">
+                                @if (AllowReplies && GetCommentDepth(comment) < MaxThreadDepth)
+                                {
+                                    <button class="action-btn" @onclick="() => ToggleReply(comment)">
+                                        <span class="icon">↩️</span>
+                                        <span>Reply</span>
+                                    </button>
+                                }
+                                
+                                @if (ShowReplyCount && GetReplyCount(comment) > 0)
+                                {
+                                    <button class="action-btn" @onclick="() => ToggleReplies(comment)">
+                                        <span class="icon">💬</span>
+                                        <span>@GetReplyCount(comment) @(GetReplyCount(comment) == 1 ? "Reply" : "Replies")</span>
+                                        <span class="expand-icon">@(AreRepliesExpanded(comment) ? "▼" : "▶")</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Reply Input -->
+                        @if (IsReplyingTo(comment))
+                        {
+                            <div class="reply-input-section">
+                                <div class="user-avatar small">
+                                    <span>@GetUserInitials(CurrentUser)</span>
+                                </div>
+                                <div class="input-container">
+                                    <textarea @bind="ReplyText" 
+                                              placeholder="Write a reply..." 
+                                              class="comment-textarea reply-textarea"
+                                              rows="2"
+                                              maxlength="@MaxCommentLength"></textarea>
+                                    <div class="reply-actions">
+                                        <SfButton CssClass="btn-cancel" @onclick="CancelReply">Cancel</SfButton>
+                                        <SfButton CssClass="btn-primary" 
+                                                  Disabled="@(string.IsNullOrWhiteSpace(ReplyText))"
+                                                  @onclick="() => PostReplyAsync(comment)">
+                                            Post Reply
+                                        </SfButton>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <!-- Nested Replies -->
+                    @if (AllowReplies && AreRepliesExpanded(comment))
+                    {
+                        <div class="replies-container">
+                            @foreach (var reply in GetReplies(comment))
+                            {
+                                @* Recursively render nested comments *@
+                                <div class="comment-item nested @GetCommentDepthClass(reply)">
+                                    <div class="thread-indicator">
+                                        <span class="thread-line"></span>
+                                    </div>
+                                    @* Similar structure as parent comment *@
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Load More -->
+    @if (EnablePagination && HasMoreComments())
+    {
+        <div class="load-more-section">
+            <SfButton CssClass="btn-load-more" @onclick="LoadMoreCommentsAsync">
+                Load More Comments (@RemainingComments())
+            </SfButton>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<TComment> Comments { get; set; } = new();
+    [Parameter] public EventCallback<List<TComment>> CommentsChanged { get; set; }
+    [Parameter] public string Title { get; set; } = "Comments";
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // Comment Functions
+    [Parameter] public Func<TComment, object> CommentIdFunc { get; set; } = comment => Guid.NewGuid();
+    [Parameter] public Func<TComment, string> CommentTextFunc { get; set; } = comment => comment?.ToString() ?? "";
+    [Parameter] public Func<TComment, object> CommentUserFunc { get; set; } = comment => "Anonymous";
+    [Parameter] public Func<TComment, DateTime> CommentTimestampFunc { get; set; } = comment => DateTime.Now;
+    [Parameter] public Func<TComment, object?> ParentCommentIdFunc { get; set; } = comment => null;
+    [Parameter] public Func<TComment, bool> IsEditedFunc { get; set; } = comment => false;
+    [Parameter] public Func<TComment, Dictionary<string, int>> ReactionsFunc { get; set; } = comment => new();
+    [Parameter] public Func<TComment, List<string>> MentionsFunc { get; set; } = comment => new();
+    
+    // User Information
+    [Parameter] public object? CurrentUser { get; set; }
+    [Parameter] public Func<object, string> UserNameFunc { get; set; } = user => user?.ToString() ?? "Anonymous";
+    [Parameter] public Func<object, string> UserInitialsFunc { get; set; } = user => "??";
+    [Parameter] public Func<TComment, bool> CanModifyFunc { get; set; } = comment => false;
+    
+    // Events
+    [Parameter] public EventCallback<TComment> OnCommentPosted { get; set; }
+    [Parameter] public EventCallback<TComment> OnCommentEdited { get; set; }
+    [Parameter] public EventCallback<TComment> OnCommentDeleted { get; set; }
+    [Parameter] public EventCallback<(TComment Comment, string Reaction)> OnReactionToggled { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    
+    // Feature Flags
+    [Parameter] public bool AllowNewComments { get; set; } = true;
+    [Parameter] public bool AllowReplies { get; set; } = true;
+    [Parameter] public bool EnableReactions { get; set; } = true;
+    [Parameter] public bool EnableMentions { get; set; } = true;
+    [Parameter] public bool EnableSorting { get; set; } = true;
+    [Parameter] public bool EnableFiltering { get; set; } = true;
+    [Parameter] public bool EnablePagination { get; set; } = true;
+    [Parameter] public bool ShowParticipants { get; set; } = true;
+    [Parameter] public bool ShowReplyCount { get; set; } = true;
+    [Parameter] public bool ShowRefreshButton { get; set; } = true;
+    
+    // Configuration
+    [Parameter] public int MaxCommentLength { get; set; } = 2000;
+    [Parameter] public int MaxThreadDepth { get; set; } = 3;
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public List<string> AvailableReactions { get; set; } = new() { "👍", "❤️", "😂", "😮", "😢", "🎉" };
+    [Parameter] public string NewCommentPlaceholder { get; set; } = "Share your thoughts...";
+    
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "CommentThread";
+    [Parameter] public string AuditAction { get; set; } = "View";
+    
+    // Accessibility
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? TabIndex { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    // State
+    private string NewCommentText = "";
+    private string ReplyText = "";
+    private string EditingCommentText = "";
+    private string SearchText = "";
+    private string SortMode = "newest";
+    private int CurrentPage = 1;
+    private TComment? ReplyingToComment;
+    private TComment? EditingComment;
+    private HashSet<object> ExpandedReplies = new();
+    private HashSet<object> OpenMenus = new();
+    private bool _canUserComment = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _canUserComment = await CanUserCommentAsync();
+        
+        if (EnableAudit && !string.IsNullOrEmpty(AuditResource))
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = AuditAction,
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(AriaLabel)) attrs["aria-label"] = AriaLabel;
+        if (!string.IsNullOrEmpty(TabIndex)) attrs["tabindex"] = TabIndex;
+        if (AdditionalAttributes != null)
+        {
+            foreach (var attr in AdditionalAttributes)
+            {
+                attrs[attr.Key] = attr.Value;
+            }
+        }
+        return attrs;
+    }
+
+    private string GetThemeClass() => "theme-light"; // Can be extended for theme support
+
+    private async Task<bool> CanUserCommentAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            return await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        return true;
+    }
+
+    // Comment Access Methods
+    private object GetCommentId(TComment comment) => CommentIdFunc(comment);
+    private string GetCommentText(TComment comment) => CommentTextFunc(comment);
+    private object GetCommentUser(TComment comment) => CommentUserFunc(comment);
+    private DateTime GetCommentTimestamp(TComment comment) => CommentTimestampFunc(comment);
+    private object? GetParentCommentId(TComment comment) => ParentCommentIdFunc(comment);
+    private bool IsCommentEdited(TComment comment) => IsEditedFunc(comment);
+    private Dictionary<string, int> GetCommentReactions(TComment comment) => ReactionsFunc(comment);
+    private List<string> GetCommentMentions(TComment comment) => MentionsFunc(comment);
+    
+    // User Methods
+    private string GetUserName(object user) => UserNameFunc(user);
+    private string GetUserInitials(object user) => UserInitialsFunc(user);
+    private bool CanUserModifyComment(TComment comment) => CanModifyFunc(comment);
+
+    // Filtering and Sorting
+    private List<TComment> GetFilteredComments()
+    {
+        var filtered = Comments.Where(c => GetParentCommentId(c) == null).ToList();
+        
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            filtered = filtered.Where(c => GetCommentText(c).Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        
+        filtered = SortMode switch
+        {
+            "oldest" => filtered.OrderBy(c => GetCommentTimestamp(c)).ToList(),
+            "popular" => filtered.OrderByDescending(c => GetTotalCommentReactions(c)).ToList(),
+            _ => filtered.OrderByDescending(c => GetCommentTimestamp(c)).ToList()
+        };
+        
+        if (EnablePagination)
+        {
+            filtered = filtered.Take(CurrentPage * PageSize).ToList();
+        }
+        
+        return filtered;
+    }
+
+    private List<TComment> GetReplies(TComment comment)
+    {
+        var commentId = GetCommentId(comment);
+        return Comments.Where(c => GetParentCommentId(c)?.Equals(commentId) == true)
+                      .OrderBy(c => GetCommentTimestamp(c))
+                      .ToList();
+    }
+
+    private int GetCommentDepth(TComment comment)
+    {
+        int depth = 0;
+        var parentId = GetParentCommentId(comment);
+        
+        while (parentId != null && depth < MaxThreadDepth)
+        {
+            var parent = Comments.FirstOrDefault(c => GetCommentId(c).Equals(parentId));
+            if (parent == null) break;
+            parentId = GetParentCommentId(parent);
+            depth++;
+        }
+        
+        return depth;
+    }
+
+    private string GetCommentDepthClass(TComment comment)
+    {
+        var depth = GetCommentDepth(comment);
+        return $"depth-{depth}";
+    }
+
+    // Statistics
+    private int GetTotalReactions()
+    {
+        return Comments.Sum(c => GetCommentReactions(c).Values.Sum());
+    }
+
+    private int GetTotalCommentReactions(TComment comment)
+    {
+        return GetCommentReactions(comment).Values.Sum();
+    }
+
+    private List<object> GetUniqueParticipants()
+    {
+        return Comments.Select(c => GetCommentUser(c)).Distinct().ToList();
+    }
+
+    private int GetReplyCount(TComment comment)
+    {
+        return GetReplies(comment).Count;
+    }
+
+    // Reactions
+    private int GetReactionCount(TComment comment, string reaction)
+    {
+        var reactions = GetCommentReactions(comment);
+        return reactions.ContainsKey(reaction) ? reactions[reaction] : 0;
+    }
+
+    private bool HasUserReacted(TComment comment, string reaction)
+    {
+        // This would check if current user has reacted - simplified for demo
+        return false;
+    }
+
+    private async Task ToggleReactionAsync(TComment comment, string reaction)
+    {
+        await OnReactionToggled.InvokeAsync((comment, reaction));
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ToggleReaction",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CommentId"] = GetCommentId(comment)?.ToString() ?? "",
+                    ["Reaction"] = reaction
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
+    // Comment Actions
+    private async Task PostCommentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewCommentText)) return;
+        
+        // In real implementation, create new comment object
+        await OnCommentPosted.InvokeAsync(default(TComment));
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "PostComment",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        NewCommentText = "";
+        StateHasChanged();
+    }
+
+    private async Task PostReplyAsync(TComment parentComment)
+    {
+        if (string.IsNullOrWhiteSpace(ReplyText)) return;
+        
+        // In real implementation, create new reply comment
+        await OnCommentPosted.InvokeAsync(default(TComment));
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "PostReply",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ParentCommentId"] = GetCommentId(parentComment)?.ToString() ?? ""
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        ReplyText = "";
+        ReplyingToComment = default;
+        StateHasChanged();
+    }
+
+    private void StartEditComment(TComment comment)
+    {
+        EditingComment = comment;
+        EditingCommentText = GetCommentText(comment);
+        OpenMenus.Clear();
+    }
+
+    private void CancelEditComment()
+    {
+        EditingComment = default;
+        EditingCommentText = "";
+    }
+
+    private async Task SaveEditCommentAsync(TComment comment)
+    {
+        await OnCommentEdited.InvokeAsync(comment);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "EditComment",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CommentId"] = GetCommentId(comment)?.ToString() ?? ""
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        EditingComment = default;
+        EditingCommentText = "";
+    }
+
+    private async Task DeleteCommentAsync(TComment comment)
+    {
+        await OnCommentDeleted.InvokeAsync(comment);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "DeleteComment",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CommentId"] = GetCommentId(comment)?.ToString() ?? ""
+                },
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        OpenMenus.Clear();
+    }
+
+    // UI State Management
+    private bool IsCommentEditing(TComment comment) => 
+        EditingComment != null && GetCommentId(EditingComment).Equals(GetCommentId(comment));
+    
+    private bool IsReplyingTo(TComment comment) => 
+        ReplyingToComment != null && GetCommentId(ReplyingToComment).Equals(GetCommentId(comment));
+    
+    private bool AreRepliesExpanded(TComment comment) => 
+        ExpandedReplies.Contains(GetCommentId(comment));
+    
+    private bool IsCommentMenuOpen(TComment comment) => 
+        OpenMenus.Contains(GetCommentId(comment));
+
+    private void ToggleReply(TComment comment)
+    {
+        if (IsReplyingTo(comment))
+            ReplyingToComment = default;
+        else
+            ReplyingToComment = comment;
+    }
+
+    private void ToggleReplies(TComment comment)
+    {
+        var commentId = GetCommentId(comment);
+        if (ExpandedReplies.Contains(commentId))
+            ExpandedReplies.Remove(commentId);
+        else
+            ExpandedReplies.Add(commentId);
+    }
+
+    private void ToggleCommentMenu(TComment comment)
+    {
+        var commentId = GetCommentId(comment);
+        if (OpenMenus.Contains(commentId))
+            OpenMenus.Remove(commentId);
+        else
+        {
+            OpenMenus.Clear();
+            OpenMenus.Add(commentId);
+        }
+    }
+
+    private void ClearNewComment()
+    {
+        NewCommentText = "";
+    }
+
+    private void CancelReply()
+    {
+        ReplyingToComment = default;
+        ReplyText = "";
+    }
+
+    // Mentions
+    private List<object> GetMentionSuggestions()
+    {
+        if (string.IsNullOrWhiteSpace(NewCommentText)) return new();
+        
+        var lastAtIndex = NewCommentText.LastIndexOf('@');
+        if (lastAtIndex == -1) return new();
+        
+        var searchTerm = NewCommentText.Substring(lastAtIndex + 1);
+        return GetUniqueParticipants()
+            .Where(u => GetUserName(u).Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            .Take(5)
+            .ToList();
+    }
+
+    private void InsertMention(object user)
+    {
+        var lastAtIndex = NewCommentText.LastIndexOf('@');
+        if (lastAtIndex >= 0)
+        {
+            NewCommentText = NewCommentText.Substring(0, lastAtIndex) + $"@{GetUserName(user)} ";
+        }
+    }
+
+    // Formatting
+    private string FormatRelativeTime(DateTime timestamp)
+    {
+        var span = DateTime.Now - timestamp;
+        
+        if (span.TotalMinutes < 1) return "Just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        
+        return timestamp.ToString("MMM d, yyyy");
+    }
+
+    private string FormatCommentText(string text)
+    {
+        // Format mentions
+        if (EnableMentions)
+        {
+            foreach (var mention in GetCommentMentions(default!))
+            {
+                text = text.Replace($"@{mention}", $"<span class='mention'>@{mention}</span>");
+            }
+        }
+        
+        // Convert line breaks
+        text = text.Replace("\n", "<br/>");
+        
+        return text;
+    }
+
+    // Pagination
+    private bool HasMoreComments() => Comments.Count > CurrentPage * PageSize;
+    private int RemainingComments() => Math.Max(0, Comments.Count - (CurrentPage * PageSize));
+    
+    private async Task LoadMoreCommentsAsync()
+    {
+        CurrentPage++;
+        StateHasChanged();
+    }
+
+    // Event Handlers
+    private async Task OnSortChanged()
+    {
+        StateHasChanged();
+    }
+
+    private async Task OnSearchChanged()
+    {
+        StateHasChanged();
+    }
+
+    private async Task RefreshCommentsAsync()
+    {
+        await OnRefresh.InvokeAsync();
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "RefreshComments",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+}

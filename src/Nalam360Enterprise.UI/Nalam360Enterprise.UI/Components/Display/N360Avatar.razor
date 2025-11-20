@@ -1,0 +1,149 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-avatar @GetAvatarClass()" style="@GetAvatarStyle()" @attributes="GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(ImageSrc))
+        {
+            <img src="@ImageSrc" alt="@Alt" class="n360-avatar__image" />
+        }
+        else if (!string.IsNullOrEmpty(Icon))
+        {
+            <i class="@Icon n360-avatar__icon"></i>
+        }
+        else if (!string.IsNullOrEmpty(Text))
+        {
+            <span class="n360-avatar__text">@GetInitials()</span>
+        }
+        else
+        {
+            <i class="fas fa-user n360-avatar__icon"></i>
+        }
+
+        @if (ShowBadge)
+        {
+            <span class="n360-avatar__badge n360-avatar__badge--@BadgeStatus.ToString().ToLower()">
+                @if (!string.IsNullOrEmpty(BadgeContent))
+                {
+                    @BadgeContent
+                }
+            </span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? ImageSrc { get; set; }
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? Alt { get; set; }
+    [Parameter] public AvatarSize Size { get; set; } = AvatarSize.Medium;
+    [Parameter] public AvatarShape Shape { get; set; } = AvatarShape.Circle;
+    [Parameter] public string? BackgroundColor { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public bool ShowBadge { get; set; }
+    [Parameter] public string? BadgeContent { get; set; }
+    [Parameter] public BadgeStatus BadgeStatus { get; set; } = BadgeStatus.Default;
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetAvatarClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-avatar",
+            $"n360-avatar--{Size.ToString().ToLower()}",
+            $"n360-avatar--{Shape.ToString().ToLower()}"
+        };
+
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        if (OnClick.HasDelegate)
+        {
+            classes.Add("n360-avatar--clickable");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetAvatarStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(BackgroundColor))
+        {
+            styles.Add($"background-color: {BackgroundColor}");
+        }
+
+        if (!string.IsNullOrEmpty(Color))
+        {
+            styles.Add($"color: {Color}");
+        }
+
+        return styles.Any() ? string.Join("; ", styles) : string.Empty;
+    }
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrEmpty(Text))
+            return string.Empty;
+
+        var words = Text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0)
+            return string.Empty;
+
+        if (words.Length == 1)
+            return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
+
+        return $"{words[0][0]}{words[^1][0]}".ToUpper();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        if (!string.IsNullOrEmpty(Alt))
+        {
+            attributes["aria-label"] = Alt;
+        }
+
+        attributes["role"] = "img";
+
+        if (OnClick.HasDelegate)
+        {
+            attributes["tabindex"] = "0";
+            attributes["onclick"] = EventCallback.Factory.Create(this, OnClick);
+        }
+
+        return attributes;
+    }
+}

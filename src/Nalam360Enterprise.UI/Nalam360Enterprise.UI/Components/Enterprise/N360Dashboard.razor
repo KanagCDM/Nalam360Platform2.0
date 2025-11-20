@@ -1,0 +1,711 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+<div class="n360-dashboard @GetThemeClass() @(CssClass ?? "")" style="@Style">
+    @if (_hasPermission)
+    {
+        <!-- Dashboard Toolbar -->
+        <div class="dashboard-toolbar">
+            <div class="toolbar-left">
+                <h2 class="dashboard-title">@Layout.Name</h2>
+                @if (!string.IsNullOrEmpty(Layout.Description))
+                {
+                    <span class="dashboard-description">@Layout.Description</span>
+                }
+            </div>
+            <div class="toolbar-right">
+                @if (Layout.AllowEditing && !IsEditMode)
+                {
+                    <button class="btn btn-secondary" @onclick="OnEnterEditModeAsync">
+                        <span class="icon">✏️</span> Edit Layout
+                    </button>
+                }
+                @if (IsEditMode)
+                {
+                    <button class="btn btn-primary" @onclick="OnAddWidgetAsync">
+                        <span class="icon">➕</span> Add Widget
+                    </button>
+                    <button class="btn btn-secondary" @onclick="OnSaveLayoutAsync">
+                        <span class="icon">💾</span> Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="OnCancelEditAsync">
+                        <span class="icon">✖️</span> Cancel
+                    </button>
+                }
+                @if (AllowLayoutSwitch && AvailableLayouts.Any())
+                {
+                    <select class="layout-selector" @onchange="OnLayoutChangedAsync" value="@Layout.Id">
+                        @foreach (var dashboardLayout in AvailableLayouts)
+                        {
+                            <option value="@dashboardLayout.Id">@dashboardLayout.Name</option>
+                        }
+                    </select>
+                }
+                <button class="btn btn-icon" @onclick="OnRefreshAllAsync" title="Refresh All">
+                    <span class="icon">🔄</span>
+                </button>
+                <button class="btn btn-icon" @onclick="OnToggleFullscreenAsync" title="Fullscreen">
+                    <span class="icon">@(IsFullscreen ? "⛶" : "⛶")</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid" 
+             style="grid-template-columns: repeat(@Layout.Columns, 1fr); grid-auto-rows: @(Layout.RowHeight)px; gap: @(Layout.Gap)px;">
+            @foreach (var widget in Layout.Widgets.Where(w => w.IsVisible))
+            {
+                <div class="dashboard-widget @(IsEditMode ? "edit-mode" : "") @(_selectedWidget?.Id == widget.Id ? "selected" : "")"
+                     style="grid-row: @(widget.Row + 1) / span @widget.RowSpan; grid-column: @(widget.Column + 1) / span @widget.ColumnSpan; @(widget.BackgroundColor != null ? $"background-color: {widget.BackgroundColor};" : "")"
+                     draggable="@IsEditMode"
+                     @ondragstart="@(() => OnWidgetDragStart(widget))"
+                     @ondragover:preventDefault="true"
+                     @ondrop="@(() => OnWidgetDrop(widget))"
+                     @onclick="@(() => OnWidgetClick(widget))">
+                    
+                    <!-- Widget Header -->
+                    <div class="widget-header">
+                        <div class="widget-header-left">
+                            @if (!string.IsNullOrEmpty(widget.Icon))
+                            {
+                                <span class="widget-icon">@widget.Icon</span>
+                            }
+                            <h3 class="widget-title">@widget.Title</h3>
+                        </div>
+                        <div class="widget-header-right">
+                            @if (widget.LastUpdated.HasValue)
+                            {
+                                <span class="widget-timestamp" title="@widget.LastUpdated.Value.ToString("yyyy-MM-dd HH:mm:ss")">
+                                    Updated @GetRelativeTime(widget.LastUpdated.Value)
+                                </span>
+                            }
+                            @if (widget.RefreshInterval > 0)
+                            {
+                                <button class="btn-icon-small" @onclick="@(() => OnRefreshWidgetAsync(widget))" @onclick:stopPropagation="true" title="Refresh">
+                                    <span class="icon">🔄</span>
+                                </button>
+                            }
+                            @if (IsEditMode)
+                            {
+                                <button class="btn-icon-small" @onclick="@(() => OnConfigureWidgetAsync(widget))" @onclick:stopPropagation="true" title="Configure">
+                                    <span class="icon">⚙️</span>
+                                </button>
+                                <button class="btn-icon-small" @onclick="@(() => OnDeleteWidgetAsync(widget))" @onclick:stopPropagation="true" title="Delete">
+                                    <span class="icon">🗑️</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Widget Content -->
+                    <div class="widget-content">
+                        @if (WidgetTemplate != null)
+                        {
+                            @WidgetTemplate(widget)
+                        }
+                        else
+                        {
+                            @RenderWidgetContent(widget)
+                        }
+                    </div>
+
+                    @if (IsEditMode && !widget.IsLocked)
+                    {
+                        <div class="widget-resize-handle" 
+                             @onmousedown="@(() => OnResizeStart(widget))"
+                             @onmousedown:stopPropagation="true">
+                            <span class="icon">⇲</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Add Widget Modal -->
+        @if (_showAddWidgetModal)
+        {
+            <div class="modal-overlay" @onclick="OnCancelAddWidget">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3>Add Widget</h3>
+                        <button class="btn-close" @onclick="OnCancelAddWidget">✖️</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="widget-categories">
+                            @foreach (var category in WidgetTemplates.GroupBy(t => t.Category))
+                            {
+                                <div class="widget-category">
+                                    <h4>@category.Key</h4>
+                                    <div class="widget-templates">
+                                        @foreach (var template in category)
+                                        {
+                                            <div class="widget-template-card" @onclick="@(() => OnSelectTemplate(template))">
+                                                @if (!string.IsNullOrEmpty(template.Icon))
+                                                {
+                                                    <span class="template-icon">@template.Icon</span>
+                                                }
+                                                <h5>@template.Name</h5>
+                                                @if (!string.IsNullOrEmpty(template.Description))
+                                                {
+                                                    <p>@template.Description</p>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Configure Widget Modal -->
+        @if (_showConfigureModal && _selectedWidget != null)
+        {
+            <div class="modal-overlay" @onclick="OnCancelConfigure">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3>Configure Widget: @_selectedWidget.Title</h3>
+                        <button class="btn-close" @onclick="OnCancelConfigure">✖️</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" class="form-control" @bind="_selectedWidget.Title" />
+                        </div>
+                        <div class="form-group">
+                            <label>Icon (emoji)</label>
+                            <input type="text" class="form-control" @bind="_selectedWidget.Icon" placeholder="📊" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Row</label>
+                                <input type="number" class="form-control" @bind="_selectedWidget.Row" min="0" max="@(Layout.Rows - 1)" />
+                            </div>
+                            <div class="form-group">
+                                <label>Column</label>
+                                <input type="number" class="form-control" @bind="_selectedWidget.Column" min="0" max="@(Layout.Columns - 1)" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Row Span</label>
+                                <input type="number" class="form-control" @bind="_selectedWidget.RowSpan" min="1" max="@Layout.Rows" />
+                            </div>
+                            <div class="form-group">
+                                <label>Column Span</label>
+                                <input type="number" class="form-control" @bind="_selectedWidget.ColumnSpan" min="1" max="@Layout.Columns" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Background Color</label>
+                            <input type="color" class="form-control" @bind="_selectedWidget.BackgroundColor" />
+                        </div>
+                        <div class="form-group">
+                            <label>Refresh Interval (seconds, 0 = manual)</label>
+                            <input type="number" class="form-control" @bind="_selectedWidget.RefreshInterval" min="0" step="5" />
+                        </div>
+                        @if (_selectedWidget.Type == "chart" || _selectedWidget.Type == "table" || _selectedWidget.Type == "list")
+                        {
+                            <div class="form-group">
+                                <label>Data Source</label>
+                                <input type="text" class="form-control" @bind="_selectedWidget.DataSource" placeholder="API endpoint or data source" />
+                            </div>
+                        }
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" @bind="_selectedWidget.IsLocked" />
+                                Lock widget (prevent editing)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="OnSaveWidgetConfigAsync">Save</button>
+                        <button class="btn btn-secondary" @onclick="OnCancelConfigure">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (HideIfNoPermission)
+    {
+        <!-- Hidden -->
+    }
+    else
+    {
+        <div class="permission-denied">
+            <span class="icon">🔒</span>
+            <p>You don't have permission to view this dashboard.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public DashboardLayout Layout { get; set; } = new();
+    [Parameter] public EventCallback<DashboardLayout> LayoutChanged { get; set; }
+    [Parameter] public List<DashboardLayout> AvailableLayouts { get; set; } = new();
+    [Parameter] public bool AllowLayoutSwitch { get; set; } = true;
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public EventCallback<bool> IsEditModeChanged { get; set; }
+    [Parameter] public List<WidgetTemplate> WidgetTemplates { get; set; } = new();
+    [Parameter] public RenderFragment<DashboardWidget>? WidgetTemplate { get; set; }
+    [Parameter] public EventCallback<DashboardWidget> OnWidgetRefresh { get; set; }
+    [Parameter] public EventCallback<DashboardWidget> OnWidgetAdded { get; set; }
+    [Parameter] public EventCallback<DashboardWidget> OnWidgetDeleted { get; set; }
+    [Parameter] public EventCallback<DashboardWidget> OnWidgetConfigured { get; set; }
+    [Parameter] public EventCallback<DashboardLayout> OnLayoutSaved { get; set; }
+    [Parameter] public EventCallback<string> OnLayoutSwitched { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "Dashboard";
+    [Parameter] public string AuditAction { get; set; } = "View";
+
+    private bool _hasPermission = true;
+    private bool _showAddWidgetModal;
+    private bool _showConfigureModal;
+    private DashboardWidget? _selectedWidget;
+    private DashboardWidget? _draggingWidget;
+    private bool _isResizing;
+    private bool IsFullscreen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (_hasPermission && EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "ViewDashboard",
+                AdditionalData = new() { ["Details"] = $"Viewed dashboard: {Layout.Name}" }
+            });
+        }
+
+        // Initialize default templates if none provided
+        if (!WidgetTemplates.Any())
+        {
+            InitializeDefaultTemplates();
+        }
+
+        // Start auto-refresh timers for widgets with refresh intervals
+        foreach (var widget in Layout.Widgets.Where(w => w.RefreshInterval > 0))
+        {
+            _ = StartWidgetRefreshTimer(widget);
+        }
+    }
+
+    private async Task OnEnterEditModeAsync()
+    {
+        IsEditMode = true;
+        await IsEditModeChanged.InvokeAsync(true);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "EnterEditMode",
+                AdditionalData = new() { ["Details"] = $"Entered edit mode for dashboard: {Layout.Name}" }
+            });
+        }
+    }
+
+    private async Task OnCancelEditAsync()
+    {
+        IsEditMode = false;
+        await IsEditModeChanged.InvokeAsync(false);
+    }
+
+    private async Task OnSaveLayoutAsync()
+    {
+        Layout.ModifiedDate = DateTime.UtcNow;
+        await OnLayoutSaved.InvokeAsync(Layout);
+        IsEditMode = false;
+        await IsEditModeChanged.InvokeAsync(false);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "SaveLayout",
+                AdditionalData = new() { ["Details"] = $"Saved dashboard layout: {Layout.Name}" }
+            });
+        }
+    }
+
+    private async Task OnLayoutChangedAsync(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        var layoutId = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(layoutId))
+        {
+            var newLayout = AvailableLayouts.FirstOrDefault(l => l.Id == layoutId);
+            if (newLayout != null)
+            {
+                Layout = newLayout;
+                await LayoutChanged.InvokeAsync(Layout);
+                await OnLayoutSwitched.InvokeAsync(layoutId);
+                
+                if (EnableAudit)
+                {
+                    await AuditService.LogAsync(new AuditMetadata
+                    {
+                        Resource = AuditResource,
+                        Action = "SwitchLayout",
+                        AdditionalData = new() { ["Details"] = $"Switched to dashboard layout: {Layout.Name}" }
+                    });
+                }
+            }
+        }
+    }
+
+    private Task OnAddWidgetAsync()
+    {
+        _showAddWidgetModal = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCancelAddWidget()
+    {
+        _showAddWidgetModal = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSelectTemplate(WidgetTemplate template)
+    {
+        var widget = new DashboardWidget
+        {
+            Title = template.Name,
+            Type = template.Type,
+            Icon = template.Icon,
+            RowSpan = template.DefaultRowSpan,
+            ColumnSpan = template.DefaultColumnSpan,
+            Settings = new Dictionary<string, object>(template.DefaultSettings),
+            Row = 0,
+            Column = 0
+        };
+
+        // Find first available position
+        var position = FindAvailablePosition(widget.RowSpan, widget.ColumnSpan);
+        widget.Row = position.row;
+        widget.Column = position.col;
+
+        Layout.Widgets.Add(widget);
+        _showAddWidgetModal = false;
+        
+        await OnWidgetAdded.InvokeAsync(widget);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "AddWidget",
+                AdditionalData = new() { ["Details"] = $"Added widget: {widget.Title}" }
+            });
+        }
+    }
+
+    private (int row, int col) FindAvailablePosition(int rowSpan, int columnSpan)
+    {
+        for (int row = 0; row <= Layout.Rows - rowSpan; row++)
+        {
+            for (int col = 0; col <= Layout.Columns - columnSpan; col++)
+            {
+                if (IsPositionAvailable(row, col, rowSpan, columnSpan))
+                {
+                    return (row, col);
+                }
+            }
+        }
+        return (0, 0); // Default to top-left if no space found
+    }
+
+    private bool IsPositionAvailable(int row, int col, int rowSpan, int columnSpan)
+    {
+        foreach (var widget in Layout.Widgets)
+        {
+            if (widget.Row < row + rowSpan && widget.Row + widget.RowSpan > row &&
+                widget.Column < col + columnSpan && widget.Column + widget.ColumnSpan > col)
+            {
+                return false; // Overlaps with existing widget
+            }
+        }
+        return true;
+    }
+
+    private Task OnWidgetClick(DashboardWidget widget)
+    {
+        if (IsEditMode)
+        {
+            _selectedWidget = widget;
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task OnConfigureWidgetAsync(DashboardWidget widget)
+    {
+        _selectedWidget = widget;
+        _showConfigureModal = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSaveWidgetConfigAsync()
+    {
+        if (_selectedWidget != null)
+        {
+            _showConfigureModal = false;
+            await OnWidgetConfigured.InvokeAsync(_selectedWidget);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Resource = AuditResource,
+                    Action = "ConfigureWidget",
+                    AdditionalData = new() { ["Details"] = $"Configured widget: {_selectedWidget.Title}" }
+                });
+            }
+        }
+    }
+
+    private Task OnCancelConfigure()
+    {
+        _showConfigureModal = false;
+        _selectedWidget = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnDeleteWidgetAsync(DashboardWidget widget)
+    {
+        Layout.Widgets.Remove(widget);
+        await OnWidgetDeleted.InvokeAsync(widget);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = "DeleteWidget",
+                AdditionalData = new() { ["Details"] = $"Deleted widget: {widget.Title}" }
+            });
+        }
+    }
+
+    private async Task OnRefreshWidgetAsync(DashboardWidget widget)
+    {
+        widget.LastUpdated = DateTime.UtcNow;
+        await OnWidgetRefresh.InvokeAsync(widget);
+    }
+
+    private async Task OnRefreshAllAsync()
+    {
+        foreach (var widget in Layout.Widgets)
+        {
+            widget.LastUpdated = DateTime.UtcNow;
+            await OnWidgetRefresh.InvokeAsync(widget);
+        }
+    }
+
+    private Task OnToggleFullscreenAsync()
+    {
+        IsFullscreen = !IsFullscreen;
+        // In real implementation, use JavaScript interop to toggle fullscreen
+        return Task.CompletedTask;
+    }
+
+    private void OnWidgetDragStart(DashboardWidget widget)
+    {
+        if (!widget.IsLocked)
+        {
+            _draggingWidget = widget;
+        }
+    }
+
+    private async Task OnWidgetDrop(DashboardWidget targetWidget)
+    {
+        if (_draggingWidget != null && _draggingWidget.Id != targetWidget.Id)
+        {
+            // Swap positions
+            var tempRow = _draggingWidget.Row;
+            var tempCol = _draggingWidget.Column;
+            
+            _draggingWidget.Row = targetWidget.Row;
+            _draggingWidget.Column = targetWidget.Column;
+            
+            targetWidget.Row = tempRow;
+            targetWidget.Column = tempCol;
+            
+            _draggingWidget = null;
+            await Task.CompletedTask;
+        }
+    }
+
+    private void OnResizeStart(DashboardWidget widget)
+    {
+        _isResizing = true;
+        _selectedWidget = widget;
+        // In real implementation, add mousemove and mouseup event listeners
+    }
+
+    private async Task StartWidgetRefreshTimer(DashboardWidget widget)
+    {
+        while (widget.RefreshInterval > 0)
+        {
+            await Task.Delay(widget.RefreshInterval * 1000);
+            await OnRefreshWidgetAsync(widget);
+        }
+    }
+
+    private RenderFragment RenderWidgetContent(DashboardWidget widget) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "default-widget-content");
+        
+        if (widget.Type == "metric" && widget.Data is MetricData metric)
+        {
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "class", "metric-widget");
+            
+            builder.OpenElement(4, "div");
+            builder.AddAttribute(5, "class", "metric-value");
+            builder.AddContent(6, metric.Value?.ToString() ?? "0");
+            if (!string.IsNullOrEmpty(metric.Unit))
+            {
+                builder.OpenElement(7, "span");
+                builder.AddAttribute(8, "class", "metric-unit");
+                builder.AddContent(9, metric.Unit);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            
+            if (!string.IsNullOrEmpty(metric.Label))
+            {
+                builder.OpenElement(10, "div");
+                builder.AddAttribute(11, "class", "metric-label");
+                builder.AddContent(12, metric.Label);
+                builder.CloseElement();
+            }
+            
+            if (metric.Change.HasValue)
+            {
+                builder.OpenElement(13, "div");
+                builder.AddAttribute(14, "class", $"metric-change {metric.TrendDirection}");
+                builder.AddContent(15, $"{(metric.Change > 0 ? "+" : "")}{metric.Change:F1}%");
+                if (!string.IsNullOrEmpty(metric.ChangeLabel))
+                {
+                    builder.OpenElement(16, "span");
+                    builder.AddContent(17, $" {metric.ChangeLabel}");
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+            
+            builder.CloseElement();
+        }
+        else if (widget.Type == "list" && widget.Data is ListData listData)
+        {
+            builder.OpenElement(18, "div");
+            builder.AddAttribute(19, "class", "list-widget");
+            
+            foreach (var item in listData.Items.Take(listData.MaxItems))
+            {
+                builder.OpenElement(20, "div");
+                builder.AddAttribute(21, "class", "list-item");
+                
+                if (listData.ShowIcons && !string.IsNullOrEmpty(item.Icon))
+                {
+                    builder.OpenElement(22, "span");
+                    builder.AddAttribute(23, "class", "list-item-icon");
+                    builder.AddAttribute(24, "style", item.IconColor != null ? $"color: {item.IconColor}" : "");
+                    builder.AddContent(25, item.Icon);
+                    builder.CloseElement();
+                }
+                
+                builder.OpenElement(26, "div");
+                builder.AddAttribute(27, "class", "list-item-content");
+                builder.OpenElement(28, "div");
+                builder.AddAttribute(29, "class", "list-item-title");
+                builder.AddContent(30, item.Title);
+                builder.CloseElement();
+                
+                if (!string.IsNullOrEmpty(item.Subtitle))
+                {
+                    builder.OpenElement(31, "div");
+                    builder.AddAttribute(32, "class", "list-item-subtitle");
+                    builder.AddContent(33, item.Subtitle);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+                
+                if (listData.ShowTimestamps && item.Timestamp.HasValue)
+                {
+                    builder.OpenElement(34, "div");
+                    builder.AddAttribute(35, "class", "list-item-timestamp");
+                    builder.AddContent(36, GetRelativeTime(item.Timestamp.Value));
+                    builder.CloseElement();
+                }
+                
+                builder.CloseElement();
+            }
+            
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(37, "div");
+            builder.AddAttribute(38, "class", "placeholder-content");
+            builder.AddContent(39, $"Widget Type: {widget.Type}");
+            builder.AddContent(40, " - Configure widget to add content");
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+    };
+
+    private void InitializeDefaultTemplates()
+    {
+        WidgetTemplates = new List<WidgetTemplate>
+        {
+            new() { Name = "Metric Card", Category = "Analytics", Type = "metric", Icon = "📊", Description = "Display a key metric with trend", DefaultRowSpan = 1, DefaultColumnSpan = 2 },
+            new() { Name = "Line Chart", Category = "Analytics", Type = "chart", Icon = "📈", Description = "Time series line chart", DefaultRowSpan = 2, DefaultColumnSpan = 4, RequiresDataSource = true },
+            new() { Name = "Bar Chart", Category = "Analytics", Type = "chart", Icon = "📊", Description = "Bar chart visualization", DefaultRowSpan = 2, DefaultColumnSpan = 4, RequiresDataSource = true },
+            new() { Name = "Pie Chart", Category = "Analytics", Type = "chart", Icon = "🥧", Description = "Pie chart for proportions", DefaultRowSpan = 2, DefaultColumnSpan = 3, RequiresDataSource = true },
+            new() { Name = "Data Table", Category = "General", Type = "table", Icon = "📋", Description = "Sortable data table", DefaultRowSpan = 3, DefaultColumnSpan = 6, RequiresDataSource = true },
+            new() { Name = "Activity List", Category = "General", Type = "list", Icon = "📝", Description = "List of recent activities", DefaultRowSpan = 3, DefaultColumnSpan = 3 },
+            new() { Name = "Calendar", Category = "General", Type = "calendar", Icon = "📅", Description = "Calendar with events", DefaultRowSpan = 3, DefaultColumnSpan = 4 },
+            new() { Name = "Information Card", Category = "General", Type = "card", Icon = "ℹ️", Description = "Simple information display", DefaultRowSpan = 2, DefaultColumnSpan = 2 },
+        };
+    }
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan.TotalMinutes < 1) return "just now";
+        if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays}d ago";
+        return dateTime.ToString("MMM dd");
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+}

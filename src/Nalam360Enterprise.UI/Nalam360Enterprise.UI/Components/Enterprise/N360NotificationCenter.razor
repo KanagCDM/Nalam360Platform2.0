@@ -1,0 +1,679 @@
+@using Microsoft.AspNetCore.Components
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Components.Enterprise
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Lists
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@typeparam TNotification where TNotification : class
+
+<div class="n360-notification-center @CssClass" style="@Style">
+    @if (_hasPermission)
+    {
+        <div class="notification-header">
+            <div class="header-left">
+                <h3 class="notification-title">
+                    <span class="title-icon">🔔</span>
+                    @Title
+                    @if (UnreadCount > 0)
+                    {
+                        <span class="unread-badge">@UnreadCount</span>
+                    }
+                </h3>
+            </div>
+            <div class="header-right">
+                @if (ShowCategoryFilter)
+                {
+                    <SfDropDownList TValue="string"
+                                    TItem="string"
+                                    @bind-Value="@_selectedCategory"
+                                    DataSource="@_categories"
+                                    Placeholder="All Categories"
+                                    CssClass="category-filter">
+                    </SfDropDownList>
+                }
+                
+                @if (ShowTypeFilter)
+                {
+                    <SfDropDownList TValue="NotificationType?"
+                                    TItem="NotificationType"
+                                    @bind-Value="@_selectedType"
+                                    DataSource="@_notificationTypes"
+                                    Placeholder="All Types"
+                                    CssClass="type-filter">
+                        <ItemTemplate>
+                            <div class="type-filter-item">
+                                <span class="type-icon @($"type-{context.ToString().ToLower()}")">@GetTypeIcon(context)</span>
+                                <span>@context</span>
+                            </div>
+                        </ItemTemplate>
+                    </SfDropDownList>
+                }
+
+                @if (ShowMarkAllRead && UnreadCount > 0)
+                {
+                    <SfButton CssClass="btn-mark-all-read" OnClick="@OnMarkAllAsRead" IconCss="e-icons e-check">
+                        Mark All Read
+                    </SfButton>
+                }
+
+                @if (ShowClearAll && FilteredNotifications.Any())
+                {
+                    <SfButton CssClass="btn-clear-all" OnClick="@OnClearAll" IconCss="e-icons e-close">
+                        Clear All
+                    </SfButton>
+                }
+
+                @if (ShowRefresh)
+                {
+                    <SfButton CssClass="btn-refresh" OnClick="@OnRefresh" IconCss="e-icons e-refresh" IsPrimary="true">
+                        Refresh
+                    </SfButton>
+                }
+            </div>
+        </div>
+
+        <div class="notification-tabs">
+            <button class="tab-button @(_activeTab == "all" ? "active" : "")" @onclick="@(() => SetActiveTab("all"))">
+                All (@Notifications.Count())
+            </button>
+            <button class="tab-button @(_activeTab == "unread" ? "active" : "")" @onclick="@(() => SetActiveTab("unread"))">
+                Unread (@UnreadCount)
+            </button>
+            <button class="tab-button @(_activeTab == "read" ? "active" : "")" @onclick="@(() => SetActiveTab("read"))">
+                Read (@(_notifications.Count(n => IsRead(n))))
+            </button>
+        </div>
+
+        <div class="notification-list-container">
+            @if (!FilteredNotifications.Any())
+            {
+                <div class="empty-state">
+                    <span class="empty-icon">📭</span>
+                    <p class="empty-message">@EmptyMessage</p>
+                </div>
+            }
+            else
+            {
+                <div class="notification-list">
+                    @foreach (var notification in FilteredNotifications.Take(MaxDisplayCount))
+                    {
+                        var isRead = IsRead(notification);
+                        var notificationType = GetNotificationType(notification);
+                        
+                        var priority = EnableAIPriority ? CalculateMLPriority(notification) : NotificationPriority.Medium;
+                        var showAIPrompt = EnableAIPriority && priority == NotificationPriority.High && !isRead;
+                        
+                        <div class="notification-item @(isRead ? "read" : "unread") @($"type-{notificationType.ToString().ToLower()}") @($"priority-{priority.ToString().ToLower()}")"
+                             @onclick="@(() => OnNotificationClick(notification))">
+                            
+                            <div class="notification-icon">
+                                @GetTypeIcon(notificationType)
+                            </div>
+
+                            <div class="notification-content">
+                                <div class="notification-header-row">
+                                    <h4 class="notification-item-title">
+                                        @GetTitle(notification)
+                                        @if (EnableAIPriority && ShowPriorityBadges)
+                                        {
+                                            <span class="priority-badge priority-@priority.ToString().ToLower()">
+                                                @(priority == NotificationPriority.High ? "🔥" : priority == NotificationPriority.Low ? "❄️" : "⚡")
+                                                @priority
+                                            </span>
+                                        }
+                                    </h4>
+                                    <span class="notification-time">@FormatTime(GetTimestamp(notification))</span>
+                                </div>
+                                
+                                @if (showAIPrompt)
+                                {
+                                    <div class="ai-priority-prompt">
+                                        <span class="ai-icon">🤖</span>
+                                        <span class="ai-message">AI thinks you should read this</span>
+                                        <span class="confidence-score">@($"{_lastPriorityScore:F0}% priority")</span>
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(GetMessage(notification)))
+                                {
+                                    <p class="notification-message">@GetMessage(notification)</p>
+                                }
+
+                                @if (!string.IsNullOrEmpty(GetCategory(notification)))
+                                {
+                                    <span class="notification-category">@GetCategory(notification)</span>
+                                }
+
+                                @if (NotificationTemplate != null)
+                                {
+                                    <div class="notification-custom-content">
+                                        @NotificationTemplate(notification)
+                                    </div>
+                                }
+
+                                @if (ShowActions)
+                                {
+                                    <div class="notification-actions">
+                                        @if (!isRead)
+                                        {
+                                            <button class="action-btn btn-mark-read" @onclick="@(() => OnMarkAsRead(notification))" @onclick:stopPropagation="true">
+                                                Mark as Read
+                                            </button>
+                                        }
+
+                                        @if (PrimaryActionText != null)
+                                        {
+                                            <button class="action-btn btn-primary" @onclick="@(() => OnPrimaryAction(notification))" @onclick:stopPropagation="true">
+                                                @PrimaryActionText(notification)
+                                            </button>
+                                        }
+
+                                        @if (SecondaryActionText != null)
+                                        {
+                                            <button class="action-btn btn-secondary" @onclick="@(() => OnSecondaryAction(notification))" @onclick:stopPropagation="true">
+                                                @SecondaryActionText(notification)
+                                            </button>
+                                        }
+
+                                        @if (ShowDismiss)
+                                        {
+                                            <button class="action-btn btn-dismiss" @onclick="@(() => OnDismiss(notification))" @onclick:stopPropagation="true">
+                                                Dismiss
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            @if (!isRead)
+                            {
+                                <div class="unread-indicator"></div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (ShowLoadMore && FilteredNotifications.Count() > MaxDisplayCount)
+                {
+                    <div class="load-more-container">
+                        <SfButton CssClass="btn-load-more" OnClick="@OnLoadMore">
+                            Load More (@(FilteredNotifications.Count() - MaxDisplayCount) remaining)
+                        </SfButton>
+                    </div>
+                }
+
+                @if (ShowPagination && TotalPages > 1)
+                {
+                    <div class="pagination-container">
+                        <button class="pagination-btn" @onclick="@OnPreviousPage" disabled="@(_currentPage == 1)">
+                            Previous
+                        </button>
+                        <span class="pagination-info">Page @_currentPage of @TotalPages</span>
+                        <button class="pagination-btn" @onclick="@OnNextPage" disabled="@(_currentPage == TotalPages)">
+                            Next
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+
+        @if (ShowStatistics)
+        {
+            <div class="notification-statistics">
+                <div class="stat-item">
+                    <span class="stat-label">Total:</span>
+                    <span class="stat-value">@Notifications.Count()</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Unread:</span>
+                    <span class="stat-value">@UnreadCount</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Info:</span>
+                    <span class="stat-value">@_notifications.Count(n => GetNotificationType(n) == NotificationType.Info)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Success:</span>
+                    <span class="stat-value">@_notifications.Count(n => GetNotificationType(n) == NotificationType.Success)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Warning:</span>
+                    <span class="stat-value">@_notifications.Count(n => GetNotificationType(n) == NotificationType.Warning)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Error:</span>
+                    <span class="stat-value">@_notifications.Count(n => GetNotificationType(n) == NotificationType.Error)</span>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @if (!HideIfNoPermission)
+        {
+            <div class="no-permission-message">
+                You do not have permission to view notifications.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "NotificationCenter";
+
+    // Data
+    [Parameter] public IEnumerable<TNotification> Notifications { get; set; } = new List<TNotification>();
+    [Parameter] public EventCallback<IEnumerable<TNotification>> NotificationsChanged { get; set; }
+
+    // Display Configuration
+    [Parameter] public string Title { get; set; } = "Notifications";
+    [Parameter] public string EmptyMessage { get; set; } = "No notifications to display";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+    [Parameter] public int MaxDisplayCount { get; set; } = 10;
+    [Parameter] public int PageSize { get; set; } = 10;
+
+    // Feature Toggles
+    [Parameter] public bool ShowCategoryFilter { get; set; } = true;
+    [Parameter] public bool ShowTypeFilter { get; set; } = true;
+    [Parameter] public bool ShowMarkAllRead { get; set; } = true;
+    [Parameter] public bool ShowClearAll { get; set; } = true;
+    [Parameter] public bool ShowRefresh { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowDismiss { get; set; } = true;
+    [Parameter] public bool ShowLoadMore { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = false;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public bool AutoRefresh { get; set; } = false;
+    [Parameter] public int AutoRefreshInterval { get; set; } = 30000; // 30 seconds
+    
+    // AI Priority Features
+    [Parameter] public bool EnableAIPriority { get; set; } = true;
+    [Parameter] public bool ShowPriorityBadges { get; set; } = true;
+    [Parameter] public bool EnableSmartSorting { get; set; } = true;
+    [Parameter] public Func<TNotification, string>? GetSender { get; set; }
+
+    // Property Accessors (required for generic TNotification)
+    [Parameter] public Func<TNotification, bool> IsRead { get; set; } = _ => false;
+    [Parameter] public Func<TNotification, NotificationType> GetNotificationType { get; set; } = _ => NotificationType.Info;
+    [Parameter] public Func<TNotification, string> GetTitle { get; set; } = _ => "Notification";
+    [Parameter] public Func<TNotification, string> GetMessage { get; set; } = _ => string.Empty;
+    [Parameter] public Func<TNotification, string> GetCategory { get; set; } = _ => string.Empty;
+    [Parameter] public Func<TNotification, DateTime> GetTimestamp { get; set; } = _ => DateTime.Now;
+
+    // Templates
+    [Parameter] public RenderFragment<TNotification>? NotificationTemplate { get; set; }
+
+    // Actions
+    [Parameter] public Func<TNotification, string>? PrimaryActionText { get; set; }
+    [Parameter] public Func<TNotification, string>? SecondaryActionText { get; set; }
+    [Parameter] public EventCallback<TNotification> OnNotificationClicked { get; set; }
+    [Parameter] public EventCallback<TNotification> OnMarkAsReadClicked { get; set; }
+    [Parameter] public EventCallback<TNotification> OnPrimaryActionClicked { get; set; }
+    [Parameter] public EventCallback<TNotification> OnSecondaryActionClicked { get; set; }
+    [Parameter] public EventCallback<TNotification> OnDismissClicked { get; set; }
+    [Parameter] public EventCallback OnMarkAllReadClicked { get; set; }
+    [Parameter] public EventCallback OnClearAllClicked { get; set; }
+    [Parameter] public EventCallback OnRefreshClicked { get; set; }
+
+    private bool _hasPermission = true;
+    private List<TNotification> _notifications = new();
+    private string _activeTab = "all";
+    private string? _selectedCategory = null;
+    private NotificationType? _selectedType = null;
+    private List<string> _categories = new();
+    private List<NotificationType> _notificationTypes = new();
+    private int _currentPage = 1;
+    private Timer? _autoRefreshTimer;
+    private double _lastPriorityScore = 0;
+
+    private int UnreadCount => _notifications.Count(n => !IsRead(n));
+    private int TotalPages => (int)Math.Ceiling((double)FilteredNotifications.Count() / PageSize);
+
+    private IEnumerable<TNotification> FilteredNotifications
+    {
+        get
+        {
+            var filtered = _notifications.AsEnumerable();
+
+            // Tab filter
+            filtered = _activeTab switch
+            {
+                "unread" => filtered.Where(n => !IsRead(n)),
+                "read" => filtered.Where(n => IsRead(n)),
+                _ => filtered
+            };
+
+            // Category filter
+            if (!string.IsNullOrEmpty(_selectedCategory))
+            {
+                filtered = filtered.Where(n => GetCategory(n) == _selectedCategory);
+            }
+
+            // Type filter
+            if (_selectedType.HasValue)
+            {
+                filtered = filtered.Where(n => GetNotificationType(n) == _selectedType.Value);
+            }
+
+            // Sort by timestamp descending (newest first)
+            filtered = filtered.OrderByDescending(n => GetTimestamp(n));
+            
+            // AI Smart Sorting (priority-based)
+            if (EnableAIPriority && EnableSmartSorting)
+            {
+                filtered = filtered.OrderByDescending(n => CalculateMLPriority(n))
+                                   .ThenByDescending(n => GetTimestamp(n));
+            }
+
+            // Pagination
+            if (ShowPagination)
+            {
+                filtered = filtered.Skip((_currentPage - 1) * PageSize).Take(PageSize);
+            }
+
+            return filtered;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permissions
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        // Initialize notification types
+        _notificationTypes = Enum.GetValues<NotificationType>().ToList();
+
+        // Load notifications
+        await LoadNotifications();
+
+        // Setup auto-refresh
+        if (AutoRefresh && AutoRefreshInterval > 0)
+        {
+            _autoRefreshTimer = new Timer(async _ => await InvokeAsync(async () =>
+            {
+                await OnRefresh();
+                StateHasChanged();
+            }), null, AutoRefreshInterval, AutoRefreshInterval);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadNotifications();
+    }
+
+    private async Task LoadNotifications()
+    {
+        _notifications = Notifications.ToList();
+
+        // Extract unique categories
+        _categories = _notifications
+            .Select(n => GetCategory(n))
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        await Task.CompletedTask;
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        _activeTab = tab;
+        _currentPage = 1;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Reset page when filters change
+        if (_selectedCategory != null || _selectedType != null)
+        {
+            _currentPage = 1;
+        }
+    }
+
+
+
+    private async Task OnNotificationClick(TNotification notification)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "NotificationClicked",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Title"] = GetTitle(notification),
+                    ["Type"] = GetNotificationType(notification).ToString(),
+                    ["Category"] = GetCategory(notification)
+                }
+            });
+        }
+
+        await OnNotificationClicked.InvokeAsync(notification);
+    }
+
+    private async Task OnMarkAsRead(TNotification notification)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "NotificationMarkedRead",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Title"] = GetTitle(notification)
+                }
+            });
+        }
+
+        await OnMarkAsReadClicked.InvokeAsync(notification);
+    }
+
+    private async Task OnPrimaryAction(TNotification notification)
+    {
+        await OnPrimaryActionClicked.InvokeAsync(notification);
+    }
+
+    private async Task OnSecondaryAction(TNotification notification)
+    {
+        await OnSecondaryActionClicked.InvokeAsync(notification);
+    }
+
+    private async Task OnDismiss(TNotification notification)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "NotificationDismissed",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Title"] = GetTitle(notification)
+                }
+            });
+        }
+
+        await OnDismissClicked.InvokeAsync(notification);
+    }
+
+    private async Task OnMarkAllAsRead()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "AllNotificationsMarkedRead",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Count"] = UnreadCount
+                }
+            });
+        }
+
+        await OnMarkAllReadClicked.InvokeAsync();
+    }
+
+    private async Task OnClearAll()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "AllNotificationsCleared",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Count"] = _notifications.Count
+                }
+            });
+        }
+
+        await OnClearAllClicked.InvokeAsync();
+    }
+
+    private async Task OnRefresh()
+    {
+        await OnRefreshClicked.InvokeAsync();
+    }
+
+    private async Task OnLoadMore()
+    {
+        MaxDisplayCount += 10;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnPreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task OnNextPage()
+    {
+        if (_currentPage < TotalPages)
+        {
+            _currentPage++;
+        }
+        await Task.CompletedTask;
+    }
+
+    private string GetTypeIcon(NotificationType type) => type switch
+    {
+        NotificationType.Info => "ℹ️",
+        NotificationType.Success => "✅",
+        NotificationType.Warning => "⚠️",
+        NotificationType.Error => "❌",
+        _ => "📌"
+    };
+
+    private string FormatTime(DateTime timestamp)
+    {
+        var diff = DateTime.Now - timestamp;
+
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)}w ago";
+
+        return timestamp.ToString("MMM d, yyyy");
+    }
+    
+    // AI ML Priority Scoring
+    private NotificationPriority CalculateMLPriority(TNotification notification)
+    {
+        double priorityScore = 0;
+        
+        // 1. Type Weight (40%)
+        var type = GetNotificationType(notification);
+        priorityScore += type switch
+        {
+            NotificationType.Error => 40,
+            NotificationType.Warning => 30,
+            NotificationType.Success => 15,
+            NotificationType.Info => 10,
+            _ => 10
+        };
+        
+        // 2. Sender Importance (25%)
+        if (GetSender != null)
+        {
+            var sender = GetSender(notification)?.ToLower() ?? "";
+            if (sender.Contains("admin") || sender.Contains("system") || sender.Contains("security"))
+                priorityScore += 25;
+            else if (sender.Contains("manager") || sender.Contains("supervisor"))
+                priorityScore += 18;
+            else if (sender.Contains("doctor") || sender.Contains("nurse"))
+                priorityScore += 15;
+            else
+                priorityScore += 10;
+        }
+        else
+        {
+            priorityScore += 15; // Default moderate importance
+        }
+        
+        // 3. Time Sensitivity (20%)
+        var age = DateTime.Now - GetTimestamp(notification);
+        if (age.TotalMinutes < 5)
+            priorityScore += 20; // Very recent
+        else if (age.TotalMinutes < 30)
+            priorityScore += 15; // Recent
+        else if (age.TotalHours < 2)
+            priorityScore += 10; // Within 2 hours
+        else if (age.TotalHours < 24)
+            priorityScore += 5; // Today
+        else
+            priorityScore += 0; // Older
+        
+        // 4. Category Priority (15%)
+        var category = GetCategory(notification)?.ToLower() ?? "";
+        if (category.Contains("urgent") || category.Contains("critical") || category.Contains("emergency"))
+            priorityScore += 15;
+        else if (category.Contains("important") || category.Contains("priority"))
+            priorityScore += 10;
+        else
+            priorityScore += 5;
+        
+        // Store last score for display
+        _lastPriorityScore = priorityScore;
+        
+        // Classify priority
+        return priorityScore switch
+        {
+            >= 70 => NotificationPriority.High,
+            >= 40 => NotificationPriority.Medium,
+            _ => NotificationPriority.Low
+        };
+    }
+
+    public void Dispose()
+    {
+        _autoRefreshTimer?.Dispose();
+    }
+}

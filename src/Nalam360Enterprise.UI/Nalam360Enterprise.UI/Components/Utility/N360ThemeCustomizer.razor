@@ -1,0 +1,387 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+@inject IJSRuntime JSRuntime
+
+<div class="n360-theme-customizer @Position.ToString().ToLower() @(IsOpen ? "open" : "") @(IsDark ? "dark" : "")">
+    <!-- Toggle Button -->
+    <button 
+        class="customizer-toggle"
+        @onclick="Toggle"
+        title="@ToggleTooltip">
+        <i class="@ToggleIcon customizer-toggle-icon"></i>
+    </button>
+
+    <!-- Panel -->
+    @if (IsOpen)
+    {
+        <div class="customizer-backdrop" @onclick="Close"></div>
+        <div class="customizer-panel">
+            <!-- Header -->
+            <div class="panel-header">
+                <div class="header-left">
+                    <i class="fas fa-palette header-icon"></i>
+                    <h3 class="header-title">@Title</h3>
+                </div>
+                <button class="close-button" @onclick="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="panel-content">
+                <!-- Theme Mode -->
+                <div class="customizer-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-moon"></i>
+                        Theme Mode
+                    </h4>
+                    <div class="mode-selector">
+                        <button 
+                            class="mode-option @(_currentTheme.Mode == ThemeMode.Light ? "active" : "")"
+                            @onclick="() => SetMode(ThemeMode.Light)">
+                            <i class="fas fa-sun"></i>
+                            <span>Light</span>
+                        </button>
+                        <button 
+                            class="mode-option @(_currentTheme.Mode == ThemeMode.Dark ? "active" : "")"
+                            @onclick="() => SetMode(ThemeMode.Dark)">
+                            <i class="fas fa-moon"></i>
+                            <span>Dark</span>
+                        </button>
+                        <button 
+                            class="mode-option @(_currentTheme.Mode == ThemeMode.Auto ? "active" : "")"
+                            @onclick="() => SetMode(ThemeMode.Auto)">
+                            <i class="fas fa-magic"></i>
+                            <span>Auto</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Primary Color -->
+                <div class="customizer-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-palette"></i>
+                        Primary Color
+                    </h4>
+                    <div class="color-palette">
+                        @foreach (var color in PrimaryColors)
+                        {
+                            <button 
+                                class="color-swatch @(_currentTheme.PrimaryColor == color.Value ? "active" : "")"
+                                style="background: @color.Value"
+                                @onclick="() => SetPrimaryColor(color.Value)"
+                                title="@color.Name">
+                                @if (_currentTheme.PrimaryColor == color.Value)
+                                {
+                                    <i class="fas fa-check"></i>
+                                }
+                            </button>
+                        }
+                    </div>
+                    <input 
+                        type="color" 
+                        class="custom-color-picker"
+                        value="@_currentTheme.PrimaryColor"
+                        @onchange="@((e) => SetPrimaryColor(e.Value?.ToString() ?? "#6366f1"))" />
+                </div>
+
+                <!-- Border Radius -->
+                <div class="customizer-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-border-style"></i>
+                        Border Radius
+                    </h4>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            class="radius-slider"
+                            min="0" 
+                            max="24" 
+                            step="2"
+                            value="@_currentTheme.BorderRadius"
+                            @oninput="@((e) => SetBorderRadius(int.Parse(e.Value?.ToString() ?? "8")))" />
+                        <span class="slider-value">@_currentTheme.BorderRadius px</span>
+                    </div>
+                    <div class="radius-preview">
+                        <div class="preview-box" style="border-radius: @(_currentTheme.BorderRadius)px">
+                            Preview
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Font Size -->
+                <div class="customizer-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-text-height"></i>
+                        Font Size
+                    </h4>
+                    <div class="size-selector">
+                        <button 
+                            class="size-option @(_currentTheme.FontSize == FontSize.Small ? "active" : "")"
+                            @onclick="() => SetFontSize(FontSize.Small)">
+                            Small
+                        </button>
+                        <button 
+                            class="size-option @(_currentTheme.FontSize == FontSize.Medium ? "active" : "")"
+                            @onclick="() => SetFontSize(FontSize.Medium)">
+                            Medium
+                        </button>
+                        <button 
+                            class="size-option @(_currentTheme.FontSize == FontSize.Large ? "active" : "")"
+                            @onclick="() => SetFontSize(FontSize.Large)">
+                            Large
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Density -->
+                @if (ShowDensityOption)
+                {
+                    <div class="customizer-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-compress"></i>
+                            Spacing Density
+                        </h4>
+                        <div class="density-selector">
+                            <button 
+                                class="density-option @(_currentTheme.Density == Density.Compact ? "active" : "")"
+                                @onclick="() => SetDensity(Density.Compact)">
+                                Compact
+                            </button>
+                            <button 
+                                class="density-option @(_currentTheme.Density == Density.Normal ? "active" : "")"
+                                @onclick="() => SetDensity(Density.Normal)">
+                                Normal
+                            </button>
+                            <button 
+                                class="density-option @(_currentTheme.Density == Density.Comfortable ? "active" : "")"
+                                @onclick="() => SetDensity(Density.Comfortable)">
+                                Comfortable
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <!-- Animations -->
+                <div class="customizer-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-magic"></i>
+                        Animations
+                    </h4>
+                    <label class="toggle-option">
+                        <input 
+                            type="checkbox" 
+                            checked="@_currentTheme.EnableAnimations"
+                            @onchange="@((e) => SetAnimations((bool)(e.Value ?? false)))" />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Enable animations and transitions</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="panel-footer">
+                <button class="action-button secondary" @onclick="ResetTheme">
+                    <i class="fas fa-undo"></i>
+                    Reset
+                </button>
+                <button class="action-button primary" @onclick="ApplyTheme">
+                    <i class="fas fa-check"></i>
+                    Apply
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string Title { get; set; } = "Theme Customizer";
+    [Parameter] public string ToggleIcon { get; set; } = "fas fa-palette";
+    [Parameter] public string ToggleTooltip { get; set; } = "Customize Theme";
+    [Parameter] public CustomizerPosition Position { get; set; } = CustomizerPosition.Right;
+    [Parameter] public bool ShowDensityOption { get; set; } = true;
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public ThemeConfiguration InitialTheme { get; set; } = new();
+
+    // Events
+    [Parameter] public EventCallback<ThemeConfiguration> OnThemeChanged { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // Audit parameters
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // State
+    private bool IsOpen { get; set; } = false;
+    private ThemeConfiguration _currentTheme = new();
+
+    // Enums
+    public enum CustomizerPosition { Left, Right }
+    public enum ThemeMode { Light, Dark, Auto }
+    public enum FontSize { Small, Medium, Large }
+    public enum Density { Compact, Normal, Comfortable }
+
+    // Models
+    public class ThemeConfiguration
+    {
+        public ThemeMode Mode { get; set; } = ThemeMode.Light;
+        public string PrimaryColor { get; set; } = "#6366f1";
+        public int BorderRadius { get; set; } = 8;
+        public FontSize FontSize { get; set; } = FontSize.Medium;
+        public Density Density { get; set; } = Density.Normal;
+        public bool EnableAnimations { get; set; } = true;
+    }
+
+    public class ColorOption
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    // Color palette
+    private List<ColorOption> PrimaryColors = new()
+    {
+        new() { Name = "Indigo", Value = "#6366f1" },
+        new() { Name = "Purple", Value = "#8b5cf6" },
+        new() { Name = "Blue", Value = "#3b82f6" },
+        new() { Name = "Green", Value = "#10b981" },
+        new() { Name = "Red", Value = "#ef4444" },
+        new() { Name = "Orange", Value = "#f59e0b" },
+        new() { Name = "Pink", Value = "#ec4899" },
+        new() { Name = "Teal", Value = "#14b8a6" }
+    };
+
+    // Methods
+    public void Open()
+    {
+        IsOpen = true;
+        StateHasChanged();
+        OnOpen.InvokeAsync();
+        LogAudit("ThemeCustomizerOpened", "Opened theme customizer");
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+        StateHasChanged();
+        OnClose.InvokeAsync();
+        LogAudit("ThemeCustomizerClosed", "Closed theme customizer");
+    }
+
+    public void Toggle()
+    {
+        if (IsOpen) Close();
+        else Open();
+    }
+
+    private void SetMode(ThemeMode mode)
+    {
+        _currentTheme.Mode = mode;
+        StateHasChanged();
+    }
+
+    private void SetPrimaryColor(string color)
+    {
+        _currentTheme.PrimaryColor = color;
+        StateHasChanged();
+    }
+
+    private void SetBorderRadius(int radius)
+    {
+        _currentTheme.BorderRadius = radius;
+        StateHasChanged();
+    }
+
+    private void SetFontSize(FontSize size)
+    {
+        _currentTheme.FontSize = size;
+        StateHasChanged();
+    }
+
+    private void SetDensity(Density density)
+    {
+        _currentTheme.Density = density;
+        StateHasChanged();
+    }
+
+    private void SetAnimations(bool enabled)
+    {
+        _currentTheme.EnableAnimations = enabled;
+        StateHasChanged();
+    }
+
+    private async Task ApplyTheme()
+    {
+        await OnThemeChanged.InvokeAsync(_currentTheme);
+        LogAudit("ThemeApplied", $"Applied theme: Mode={_currentTheme.Mode}, Color={_currentTheme.PrimaryColor}");
+        
+        // Apply to CSS variables via JS
+        await ApplyThemeToDocument();
+        
+        Close();
+    }
+
+    private void ResetTheme()
+    {
+        _currentTheme = new ThemeConfiguration();
+        StateHasChanged();
+        LogAudit("ThemeReset", "Reset theme to defaults");
+    }
+
+    private async Task ApplyThemeToDocument()
+    {
+        try
+        {
+            var script = $@"
+                document.documentElement.style.setProperty('--primary-color', '{_currentTheme.PrimaryColor}');
+                document.documentElement.style.setProperty('--border-radius', '{_currentTheme.BorderRadius}px');
+                document.documentElement.style.setProperty('--font-size', '{GetFontSizeValue(_currentTheme.FontSize)}');
+                document.documentElement.style.setProperty('--density', '{GetDensityValue(_currentTheme.Density)}');
+            ";
+            await JSRuntime.InvokeVoidAsync("eval", script);
+        }
+        catch { /* JS not available */ }
+    }
+
+    private string GetFontSizeValue(FontSize size) => size switch
+    {
+        FontSize.Small => "14px",
+        FontSize.Large => "18px",
+        _ => "16px"
+    };
+
+    private string GetDensityValue(Density density) => density switch
+    {
+        Density.Compact => "0.75",
+        Density.Comfortable => "1.25",
+        _ => "1"
+    };
+
+    private void LogAudit(string action, string details)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "ThemeCustomizer",
+                Action = action,
+                AdditionalData = new Dictionary<string, object> { ["Details"] = details }
+            });
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _currentTheme = InitialTheme ?? new ThemeConfiguration();
+    }
+}

@@ -1,0 +1,414 @@
+@typeparam TConfiguration where TConfiguration : SettingsConfiguration
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.AspNetCore.Components
+@using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
+@inject IPermissionService? PermissionService
+
+<div class="n360-settings @CssClass @(IsResponsive ? "responsive" : "")" @attributes="GetHtmlAttributes()">
+    @if (ShowToolbar)
+    {
+        <div class="settings-toolbar">
+            <div class="toolbar-start">
+                @if (DisplayOptions?.ShowSearch == true)
+                {
+                    <div class="search-box">
+                        <input type="text" 
+                               placeholder="Search settings..." 
+                               @bind="_searchQuery" 
+                               @bind:event="oninput"
+                               @onkeyup="HandleSearch" />
+                        <span class="search-icon">🔍</span>
+                    </div>
+                }
+            </div>
+            <div class="toolbar-end">
+                @if (HasUnsavedChanges && ShowSaveIndicator)
+                {
+                    <span class="unsaved-indicator">⚠️ Unsaved changes</span>
+                }
+                @if (DisplayOptions?.ShowReset == true)
+                {
+                    <button class="toolbar-button btn-secondary" @onclick="ShowResetDialog" disabled="@IsLoading">
+                        🔄 Reset to Defaults
+                    </button>
+                }
+                @if (DisplayOptions?.ShowExport == true)
+                {
+                    <button class="toolbar-button btn-secondary" @onclick="ShowExportDialog" disabled="@IsLoading">
+                        📥 Export
+                    </button>
+                }
+                @if (DisplayOptions?.ShowImport == true)
+                {
+                    <button class="toolbar-button btn-secondary" @onclick="ShowImportDialog" disabled="@IsLoading">
+                        📤 Import
+                    </button>
+                }
+                <button class="toolbar-button btn-primary" @onclick="SaveSettings" disabled="@(!HasUnsavedChanges || IsLoading)">
+                    💾 Save Changes
+                </button>
+            </div>
+        </div>
+    }
+
+    <div class="settings-content">
+        @if (IsLoading)
+        {
+            <div class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <div>Loading settings...</div>
+            </div>
+        }
+
+        @if (_filteredSections.Any())
+        {
+            @if (ShowTabs && Configuration?.Sections.Count > 1)
+            {
+                <div class="settings-tabs">
+                    @foreach (var section in _filteredSections)
+                    {
+                        <button class="tab-button @(_activeSection == section.Id ? "active" : "")"
+                                @onclick="() => SelectSection(section.Id)">
+                            @if (!string.IsNullOrEmpty(section.Icon))
+                            {
+                                <span class="tab-icon">@(section.Icon)</span>
+                            }
+                            <span class="tab-label">@(section.Name)</span>
+                            @if (HasModifiedSettingsInSection(section.Id))
+                            {
+                                <span class="modified-badge">●</span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="settings-sections">
+                @foreach (var section in _filteredSections)
+                {
+                    @if (!ShowTabs || _activeSection == section.Id)
+                    {
+                        <div class="settings-section @(section.IsExpanded ? "expanded" : "collapsed")">
+                            @if (section.IsCollapsible)
+                            {
+                                <div class="section-header" @onclick="() => ToggleSection(section.Id)">
+                                    @if (!string.IsNullOrEmpty(section.Icon))
+                                    {
+                                        <span class="section-icon">@(section.Icon)</span>
+                                    }
+                                    <h3 class="section-title">@(section.Name)</h3>
+                                    @if (!string.IsNullOrEmpty(section.Description) && DisplayOptions?.ShowDescriptions == true)
+                                    {
+                                        <span class="section-description">@(section.Description)</span>
+                                    }
+                                    <span class="expand-icon">@(section.IsExpanded ? "▼" : "▶")</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="section-header static">
+                                    @if (!string.IsNullOrEmpty(section.Icon))
+                                    {
+                                        <span class="section-icon">@(section.Icon)</span>
+                                    }
+                                    <h3 class="section-title">@(section.Name)</h3>
+                                    @if (!string.IsNullOrEmpty(section.Description) && DisplayOptions?.ShowDescriptions == true)
+                                    {
+                                        <span class="section-description">@(section.Description)</span>
+                                    }
+                                </div>
+                            }
+
+                            @if (section.IsExpanded)
+                            {
+                                <div class="section-content">
+                                    @foreach (var item in section.Items.Where(i => i.IsVisible && IsItemVisible(i)))
+                                    {
+                                        <div class="setting-item @(IsSettingModified(item.Key) ? "modified" : "") @(item.IsRequired ? "required" : "")">
+                                            <div class="setting-label-area">
+                                                <label class="setting-label">
+                                                    @item.Label
+                                                    @if (item.IsRequired)
+                                                    {
+                                                        <span class="required-indicator">*</span>
+                                                    }
+                                                    @if (item.RequiresRestart)
+                                                    {
+                                                        <span class="restart-indicator" title="Requires restart">🔄</span>
+                                                    }
+                                                </label>
+                                                @if (!string.IsNullOrEmpty(item.Description) && DisplayOptions?.ShowDescriptions == true)
+                                                {
+                                                    <div class="setting-description">@item.Description</div>
+                                                }
+                                            </div>
+
+                                            <div class="setting-control-area">
+                                                @RenderSettingControl(item)
+                                                
+                                                @if (!string.IsNullOrEmpty(item.Unit))
+                                                {
+                                                    <span class="setting-unit">@item.Unit</span>
+                                                }
+                                            </div>
+
+                                            @if (_validationErrors.ContainsKey(item.Key))
+                                            {
+                                                <div class="validation-error">
+                                                    ❌ @_validationErrors[item.Key]
+                                                </div>
+                                            }
+
+                                            @if (DisplayOptions?.ShowDefaults == true && item.DefaultValue != null)
+                                            {
+                                                <div class="default-value">
+                                                    Default: @item.DefaultValue
+                                                    @if (IsSettingModified(item.Key))
+                                                    {
+                                                        <button class="reset-single" @onclick="() => ResetSingleSetting(item.Key)">Reset</button>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">⚙️</div>
+                <div class="empty-state-message">@EmptyText</div>
+                @if (!string.IsNullOrEmpty(_searchQuery))
+                {
+                    <button class="btn-primary" @onclick="ClearSearch">Clear Search</button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (DisplayOptions?.ShowHistory == true && _changeHistory.Any())
+    {
+        <div class="settings-footer">
+            <div class="change-history">
+                <h4>Recent Changes</h4>
+                <div class="history-list">
+                    @foreach (var change in _changeHistory.Take(5))
+                    {
+                        <div class="history-item">
+                            <span class="history-key">@change.Key</span>
+                            <span class="history-change">@change.OldValue → @change.NewValue</span>
+                            <span class="history-timestamp">@change.Timestamp.ToString("g")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Reset Confirmation Dialog *@
+@if (_showResetDialog)
+{
+    <div class="modal-overlay" @onclick="CloseResetDialog">
+        <div class="modal-dialog" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Reset Settings</h3>
+                <button class="modal-close" @onclick="CloseResetDialog">✖</button>
+            </div>
+            <div class="modal-content">
+                <p>Are you sure you want to reset all settings to their default values?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CloseResetDialog">Cancel</button>
+                <button class="btn-danger" @onclick="ConfirmReset">Reset All</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Export Dialog *@
+@if (_showExportDialog)
+{
+    <div class="modal-overlay" @onclick="CloseExportDialog">
+        <div class="modal-dialog" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Export Settings</h3>
+                <button class="modal-close" @onclick="CloseExportDialog">✖</button>
+            </div>
+            <div class="modal-content">
+                <div class="export-options">
+                    <label>
+                        <input type="checkbox" @bind="_exportAllSections" />
+                        Export all sections
+                    </label>
+                    @if (!_exportAllSections && Configuration?.Sections != null)
+                    {
+                        <div class="section-selection">
+                            @foreach (var section in Configuration.Sections)
+                            {
+                                <label>
+                                    <input type="checkbox" 
+                                           checked="@_selectedExportSections.Contains(section.Id)"
+                                           @onchange="@((e) => ToggleExportSection(section.Id, (bool)e.Value!))" />
+                                    @(section.Name)
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CloseExportDialog">Cancel</button>
+                <button class="btn-primary" @onclick="ConfirmExport">Export</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Import Dialog *@
+@if (_showImportDialog)
+{
+    <div class="modal-overlay" @onclick="CloseImportDialog">
+        <div class="modal-dialog" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Import Settings</h3>
+                <button class="modal-close" @onclick="CloseImportDialog">✖</button>
+            </div>
+            <div class="modal-content">
+                <div class="import-options">
+                    <label>
+                        <input type="checkbox" @bind="_mergeOnImport" />
+                        Merge with existing settings (uncheck to replace all)
+                    </label>
+                    <div class="file-upload">
+                        <input type="file" accept=".json" @ref="_fileInput" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" @onclick="CloseImportDialog">Cancel</button>
+                <button class="btn-primary" @onclick="ConfirmImport">Import</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private RenderFragment RenderSettingControl(SettingItem item)
+    {
+        return builder =>
+        {
+            var currentValue = _currentValues.ContainsKey(item.Key) ? _currentValues[item.Key] : item.Value;
+
+            switch (item.Type)
+            {
+                case SettingType.Text:
+                case SettingType.Email:
+                case SettingType.Url:
+                    builder.OpenElement(0, "input");
+                    builder.AddAttribute(1, "type", item.Type == SettingType.Email ? "email" : item.Type == SettingType.Url ? "url" : "text");
+                    builder.AddAttribute(2, "class", "setting-input");
+                    builder.AddAttribute(3, "value", currentValue?.ToString() ?? "");
+                    builder.AddAttribute(4, "placeholder", item.Placeholder);
+                    builder.AddAttribute(5, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(6, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.Number:
+                    builder.OpenElement(0, "input");
+                    builder.AddAttribute(1, "type", "number");
+                    builder.AddAttribute(2, "class", "setting-input");
+                    builder.AddAttribute(3, "value", currentValue?.ToString() ?? "");
+                    if (item.MinValue.HasValue) builder.AddAttribute(4, "min", item.MinValue.Value);
+                    if (item.MaxValue.HasValue) builder.AddAttribute(5, "max", item.MaxValue.Value);
+                    builder.AddAttribute(6, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(7, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.Boolean:
+                    builder.OpenElement(0, "label");
+                    builder.AddAttribute(1, "class", "setting-switch");
+                    builder.OpenElement(2, "input");
+                    builder.AddAttribute(3, "type", "checkbox");
+                    builder.AddAttribute(4, "checked", currentValue is bool b && b);
+                    builder.AddAttribute(5, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(6, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    builder.OpenElement(7, "span");
+                    builder.AddAttribute(8, "class", "switch-slider");
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.Dropdown:
+                    builder.OpenElement(0, "select");
+                    builder.AddAttribute(1, "class", "setting-select");
+                    builder.AddAttribute(2, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(3, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    if (item.Options != null)
+                    {
+                        foreach (var option in item.Options)
+                        {
+                            builder.OpenElement(4, "option");
+                            builder.AddAttribute(5, "value", option.Value);
+                            builder.AddAttribute(6, "selected", currentValue?.ToString() == option.Value);
+                            builder.AddContent(7, option.Label);
+                            builder.CloseElement();
+                        }
+                    }
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.TextArea:
+                    builder.OpenElement(0, "textarea");
+                    builder.AddAttribute(1, "class", "setting-textarea");
+                    builder.AddAttribute(2, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(3, "placeholder", item.Placeholder);
+                    builder.AddAttribute(4, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.AddContent(5, currentValue?.ToString() ?? "");
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.Color:
+                    builder.OpenElement(0, "input");
+                    builder.AddAttribute(1, "type", "color");
+                    builder.AddAttribute(2, "class", "setting-color");
+                    builder.AddAttribute(3, "value", currentValue?.ToString() ?? "#000000");
+                    builder.AddAttribute(4, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(5, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    break;
+
+                case SettingType.Password:
+                    builder.OpenElement(0, "input");
+                    builder.AddAttribute(1, "type", "password");
+                    builder.AddAttribute(2, "class", "setting-input");
+                    builder.AddAttribute(3, "value", currentValue?.ToString() ?? "");
+                    builder.AddAttribute(4, "placeholder", item.Placeholder);
+                    builder.AddAttribute(5, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(6, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    break;
+
+                default:
+                    builder.OpenElement(0, "input");
+                    builder.AddAttribute(1, "type", "text");
+                    builder.AddAttribute(2, "class", "setting-input");
+                    builder.AddAttribute(3, "value", currentValue?.ToString() ?? "");
+                    builder.AddAttribute(4, "disabled", item.IsReadOnly || IsLoading);
+                    builder.AddAttribute(5, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => UpdateSettingValue(item.Key, e.Value)));
+                    builder.CloseElement();
+                    break;
+            }
+        };
+    }
+}

@@ -1,0 +1,322 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-patient-card @CssClass @GetSeverityCssClass()" 
+     dir="@(IsRtl ? "rtl" : "ltr")"
+     @attributes="@GetHtmlAttributes()">
+    
+    @if (!string.IsNullOrEmpty(RequiredPermission) && !HasPermission)
+    {
+        if (!HideIfNoPermission)
+        {
+            <div class="n360-patient-card__no-permission">Access Denied</div>
+        }
+        return;
+    }
+
+    <div class="n360-patient-card__container">
+        <!-- Header Section -->
+        <div class="n360-patient-card__header">
+            <div class="n360-patient-card__avatar-section">
+                @if (!string.IsNullOrEmpty(PatientPhotoUrl))
+                {
+                    <img src="@PatientPhotoUrl" alt="@PatientName" class="n360-patient-card__avatar" />
+                }
+                else
+                {
+                    <div class="n360-patient-card__avatar n360-patient-card__avatar--placeholder">
+                        <span class="n360-patient-card__initials">@GetInitials()</span>
+                    </div>
+                }
+                @if (ShowEmergencyIndicator && IsEmergency)
+                {
+                    <span class="n360-patient-card__emergency-badge" title="Emergency Patient">⚠️</span>
+                }
+            </div>
+
+            <div class="n360-patient-card__info">
+                <div class="n360-patient-card__name-section">
+                    <h3 class="n360-patient-card__name">@PatientName</h3>
+                    @if (!string.IsNullOrEmpty(PreferredName))
+                    {
+                        <span class="n360-patient-card__preferred-name">(@PreferredName)</span>
+                    }
+                </div>
+                
+                <div class="n360-patient-card__demographics">
+                    @if (!string.IsNullOrEmpty(MedicalRecordNumber))
+                    {
+                        <span class="n360-patient-card__mrn">MRN: @MedicalRecordNumber</span>
+                    }
+                    @if (DateOfBirth.HasValue)
+                    {
+                        <span class="n360-patient-card__dob">
+                            DOB: @DateOfBirth.Value.ToString("MMM dd, yyyy") 
+                            (@CalculateAge() years)
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Gender))
+                    {
+                        <span class="n360-patient-card__gender">@Gender</span>
+                    }
+                </div>
+            </div>
+
+            @if (ShowActions && Actions != null)
+            {
+                <div class="n360-patient-card__actions">
+                    @Actions
+                </div>
+            }
+        </div>
+
+        <!-- Critical Information Section -->
+        @if (ShowAllergies || ShowMedications || ShowVitalSigns)
+        {
+            <div class="n360-patient-card__critical-info">
+                @if (ShowAllergies && Allergies?.Any() == true)
+                {
+                    <div class="n360-patient-card__section n360-patient-card__allergies">
+                        <div class="n360-patient-card__section-header">
+                            <span class="n360-patient-card__icon">⚠️</span>
+                            <strong>Allergies</strong>
+                        </div>
+                        <div class="n360-patient-card__section-content">
+                            @foreach (var allergy in Allergies)
+                            {
+                                <span class="n360-patient-card__allergy-tag">@allergy</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (ShowMedications && CurrentMedications?.Any() == true)
+                {
+                    <div class="n360-patient-card__section n360-patient-card__medications">
+                        <div class="n360-patient-card__section-header">
+                            <span class="n360-patient-card__icon">💊</span>
+                            <strong>Current Medications</strong>
+                        </div>
+                        <div class="n360-patient-card__section-content">
+                            <ul class="n360-patient-card__medication-list">
+                                @foreach (var medication in CurrentMedications.Take(MaxMedicationsDisplay))
+                                {
+                                    <li>@medication</li>
+                                }
+                                @if (CurrentMedications.Count > MaxMedicationsDisplay)
+                                {
+                                    <li class="n360-patient-card__more-items">
+                                        +@(CurrentMedications.Count - MaxMedicationsDisplay) more
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+
+                @if (ShowVitalSigns && LatestVitalSigns != null)
+                {
+                    <div class="n360-patient-card__section n360-patient-card__vitals">
+                        <div class="n360-patient-card__section-header">
+                            <span class="n360-patient-card__icon">❤️</span>
+                            <strong>Latest Vitals</strong>
+                            @if (VitalsTimestamp.HasValue)
+                            {
+                                <span class="n360-patient-card__timestamp">(@VitalsTimestamp.Value.ToString("g"))</span>
+                            }
+                        </div>
+                        <div class="n360-patient-card__section-content n360-patient-card__vitals-grid">
+                            @LatestVitalSigns
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Contact Information -->
+        @if (ShowContactInfo && (!string.IsNullOrEmpty(PhoneNumber) || !string.IsNullOrEmpty(Email)))
+        {
+            <div class="n360-patient-card__contact">
+                @if (!string.IsNullOrEmpty(PhoneNumber))
+                {
+                    <div class="n360-patient-card__contact-item">
+                        <span class="n360-patient-card__icon">📞</span>
+                        <a href="tel:@PhoneNumber">@PhoneNumber</a>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Email))
+                {
+                    <div class="n360-patient-card__contact-item">
+                        <span class="n360-patient-card__icon">✉️</span>
+                        <a href="mailto:@Email">@Email</a>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Emergency Contact -->
+        @if (ShowEmergencyContact && !string.IsNullOrEmpty(EmergencyContactName))
+        {
+            <div class="n360-patient-card__emergency-contact">
+                <div class="n360-patient-card__section-header">
+                    <span class="n360-patient-card__icon">🚨</span>
+                    <strong>Emergency Contact</strong>
+                </div>
+                <div class="n360-patient-card__section-content">
+                    <div>@EmergencyContactName (@EmergencyContactRelationship)</div>
+                    @if (!string.IsNullOrEmpty(EmergencyContactPhone))
+                    {
+                        <div>
+                            <a href="tel:@EmergencyContactPhone">@EmergencyContactPhone</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Custom Content -->
+        @if (ChildContent != null)
+        {
+            <div class="n360-patient-card__custom-content">
+                @ChildContent
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; } = "PatientCard";
+    [Parameter] public string? AuditAction { get; set; } = "View";
+
+    // Basic Demographics
+    [Parameter, EditorRequired] public string PatientName { get; set; } = string.Empty;
+    [Parameter] public string? PreferredName { get; set; }
+    [Parameter] public string? MedicalRecordNumber { get; set; }
+    [Parameter] public DateTime? DateOfBirth { get; set; }
+    [Parameter] public string? Gender { get; set; }
+    [Parameter] public string? PatientPhotoUrl { get; set; }
+
+    // Contact Information
+    [Parameter] public string? PhoneNumber { get; set; }
+    [Parameter] public string? Email { get; set; }
+    [Parameter] public bool ShowContactInfo { get; set; } = true;
+
+    // Emergency Contact
+    [Parameter] public string? EmergencyContactName { get; set; }
+    [Parameter] public string? EmergencyContactRelationship { get; set; }
+    [Parameter] public string? EmergencyContactPhone { get; set; }
+    [Parameter] public bool ShowEmergencyContact { get; set; } = true;
+
+    // Clinical Information
+    [Parameter] public List<string>? Allergies { get; set; }
+    [Parameter] public List<string>? CurrentMedications { get; set; }
+    [Parameter] public RenderFragment? LatestVitalSigns { get; set; }
+    [Parameter] public DateTime? VitalsTimestamp { get; set; }
+
+    // Display Options
+    [Parameter] public bool ShowAllergies { get; set; } = true;
+    [Parameter] public bool ShowMedications { get; set; } = true;
+    [Parameter] public bool ShowVitalSigns { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public int MaxMedicationsDisplay { get; set; } = 5;
+
+    // Emergency Indicator
+    [Parameter] public bool IsEmergency { get; set; }
+    [Parameter] public bool ShowEmergencyIndicator { get; set; } = true;
+
+    // Actions & Custom Content
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Internal State
+    private bool HasPermission { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permissions
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            HasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        // Audit logging
+        if (EnableAudit && HasPermission && AuditService != null)
+        {
+            await LogAuditAsync();
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrWhiteSpace(PatientName)) return "?";
+        
+        var parts = PatientName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+        
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    private int CalculateAge()
+    {
+        if (!DateOfBirth.HasValue) return 0;
+        
+        var today = DateTime.Today;
+        var age = today.Year - DateOfBirth.Value.Year;
+        if (DateOfBirth.Value.Date > today.AddYears(-age)) age--;
+        
+        return age;
+    }
+
+    private string GetSeverityCssClass()
+    {
+        if (IsEmergency) return "n360-patient-card--emergency";
+        if (Allergies?.Any() == true) return "n360-patient-card--has-allergies";
+        return string.Empty;
+    }
+
+    private async Task LogAuditAsync()
+    {
+        if (AuditService != null && !string.IsNullOrEmpty(AuditResource))
+        {
+            var metadata = new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "View",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["PatientName"] = PatientName,
+                    ["MRN"] = MedicalRecordNumber ?? "N/A"
+                }
+            };
+            
+            await AuditService.LogAsync(metadata);
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+        
+        if (!string.IsNullOrEmpty(PatientName))
+        {
+            attributes["aria-label"] = $"Patient card for {PatientName}";
+        }
+        
+        attributes["role"] = "article";
+        
+        return attributes;
+    }
+}

@@ -1,0 +1,292 @@
+@typeparam TItem
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService? PermissionService
+
+<div class="n360-pivot @CssClass @(IsResponsive ? "responsive" : "")" 
+     dir="@(IsRTL ? "rtl" : "ltr")"
+     @attributes="GetHtmlAttributes()">
+
+    @* Toolbar *@
+    @if (ShowToolbar)
+    {
+        <div class="pivot-toolbar">
+            <div class="toolbar-start">
+                <button class="toolbar-btn" @onclick="ToggleFieldList" title="Field List">
+                    📊 Fields
+                </button>
+                <button class="toolbar-btn" @onclick="RefreshPivot" title="Refresh">
+                    🔄 Refresh
+                </button>
+                @if (AllowExport)
+                {
+                    <button class="toolbar-btn" @onclick="ExportData" title="Export">
+                        📥 Export
+                    </button>
+                }
+                @if (ShowDisplayModeToggle)
+                {
+                    <div class="display-mode-toggle">
+                        <button class="mode-btn @(CurrentDisplayMode == PivotDisplayMode.Grid ? "active" : "")"
+                                @onclick="() => ChangeDisplayMode(PivotDisplayMode.Grid)">
+                            📋 Grid
+                        </button>
+                        <button class="mode-btn @(CurrentDisplayMode == PivotDisplayMode.Chart ? "active" : "")"
+                                @onclick="() => ChangeDisplayMode(PivotDisplayMode.Chart)">
+                            📈 Chart
+                        </button>
+                        <button class="mode-btn @(CurrentDisplayMode == PivotDisplayMode.GridAndChart ? "active" : "")"
+                                @onclick="() => ChangeDisplayMode(PivotDisplayMode.GridAndChart)">
+                            📊 Both
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="toolbar-end">
+                @if (ShowStatistics && _pivotResult != null)
+                {
+                    <div class="pivot-stats">
+                        <span class="stat-item">Rows: @_pivotResult.Statistics.DataRows</span>
+                        <span class="stat-item">Columns: @_pivotResult.Statistics.TotalColumns</span>
+                        <span class="stat-item">Grand Total: @_pivotResult.Statistics.GrandTotal.ToString("N2")</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="pivot-container">
+        @* Field List Panel *@
+        @if (_showFieldList && AvailableFields != null)
+        {
+            <div class="field-list-panel">
+                <div class="field-list-header">
+                    <h3>Pivot Fields</h3>
+                    <button class="close-btn" @onclick="ToggleFieldList">✖️</button>
+                </div>
+                
+                <div class="available-fields">
+                    <h4>Available Fields</h4>
+                    <div class="field-items">
+                        @foreach (var field in AvailableFields.Where(f => !f.IsSelected))
+                        {
+                            <div class="field-item" draggable="true" @ondragstart="() => OnFieldDragStart(field)">
+                                <span class="field-icon">@GetFieldIcon(field.DataType)</span>
+                                <span class="field-name">@field.Caption</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="drop-zones">
+                    <div class="drop-zone" @ondrop="() => OnFieldDrop(PivotFieldType.Filter)" @ondragover:preventDefault>
+                        <h4>🔍 Filters</h4>
+                        <div class="zone-items">
+                            @foreach (var field in Configuration.FilterFields)
+                            {
+                                <div class="zone-item">
+                                    <span>@field.Caption</span>
+                                    <button class="remove-btn" @onclick="() => RemoveField(field, PivotFieldType.Filter)">✖️</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="drop-zone" @ondrop="() => OnFieldDrop(PivotFieldType.Column)" @ondragover:preventDefault>
+                        <h4>📊 Columns</h4>
+                        <div class="zone-items">
+                            @foreach (var field in Configuration.ColumnFields)
+                            {
+                                <div class="zone-item">
+                                    <span>@field.Caption</span>
+                                    <button class="remove-btn" @onclick="() => RemoveField(field, PivotFieldType.Column)">✖️</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="drop-zone" @ondrop="() => OnFieldDrop(PivotFieldType.Row)" @ondragover:preventDefault>
+                        <h4>📋 Rows</h4>
+                        <div class="zone-items">
+                            @foreach (var field in Configuration.RowFields)
+                            {
+                                <div class="zone-item">
+                                    <span>@field.Caption</span>
+                                    <button class="remove-btn" @onclick="() => RemoveField(field, PivotFieldType.Row)">✖️</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="drop-zone" @ondrop="() => OnFieldDrop(PivotFieldType.Value)" @ondragover:preventDefault>
+                        <h4>🔢 Values</h4>
+                        <div class="zone-items">
+                            @foreach (var field in Configuration.ValueFields)
+                            {
+                                <div class="zone-item">
+                                    <span>@GetAggregateLabel(field)</span>
+                                    <select class="aggregate-selector" @bind="field.AggregateFunction" @bind:after="() => RefreshPivot()">
+                                        <option value="@PivotAggregateFunction.Sum">Sum</option>
+                                        <option value="@PivotAggregateFunction.Average">Average</option>
+                                        <option value="@PivotAggregateFunction.Count">Count</option>
+                                        <option value="@PivotAggregateFunction.Min">Min</option>
+                                        <option value="@PivotAggregateFunction.Max">Max</option>
+                                    </select>
+                                    <button class="remove-btn" @onclick="() => RemoveField(field, PivotFieldType.Value)">✖️</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-list-footer">
+                    <button class="btn btn-secondary" @onclick="ClearAllFields">Clear All</button>
+                    <button class="btn btn-primary" @onclick="ApplyConfiguration">Apply</button>
+                </div>
+            </div>
+        }
+
+        @* Pivot Grid *@
+        @if (CurrentDisplayMode == PivotDisplayMode.Grid || CurrentDisplayMode == PivotDisplayMode.GridAndChart)
+        {
+            <div class="pivot-grid">
+                @if (IsLoading)
+                {
+                    <div class="pivot-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Calculating pivot table...</p>
+                    </div>
+                }
+                else if (_pivotResult != null && _pivotResult.Rows.Any())
+                {
+                    <div class="grid-scroll">
+                        <table class="pivot-table">
+                            <thead>
+                                @* Column Headers *@
+                                @foreach (var headerRow in _pivotResult.HeaderRows)
+                                {
+                                    <tr class="header-row">
+                                        @foreach (var cell in headerRow)
+                                        {
+                                            <th class="pivot-header @cell.CssClass"
+                                                colspan="@cell.ColSpan"
+                                                rowspan="@cell.RowSpan">
+                                                @cell.FormattedValue
+                                            </th>
+                                        }
+                                    </tr>
+                                }
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _pivotResult.Rows)
+                                {
+                                    <tr class="pivot-row @(row.IsTotal ? "total-row" : "") level-@row.Level">
+                                        @foreach (var cell in row.Cells)
+                                        {
+                                            @if (cell.CellType == PivotCellType.RowHeader)
+                                            {
+                                                <th class="row-header @cell.CssClass"
+                                                    colspan="@cell.ColSpan"
+                                                    rowspan="@cell.RowSpan"
+                                                    style="padding-left: @(row.Level * 20)px;">
+                                                    @if (row.Level > 0 && !row.IsTotal)
+                                                    {
+                                                        <button class="expand-btn" @onclick="() => ToggleRowExpand(row)">
+                                                            @(row.IsExpanded ? "▼" : "▶")
+                                                        </button>
+                                                    }
+                                                    <span>@cell.FormattedValue</span>
+                                                </th>
+                                            }
+                                            else
+                                            {
+                                                <td class="pivot-cell @cell.CssClass @(cell.IsGrandTotal ? "grand-total" : "") @(cell.IsSubTotal ? "sub-total" : "")"
+                                                    @onclick="() => OnCellClick(row, cell)">
+                                                    @cell.FormattedValue
+                                                </td>
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <span class="empty-icon">📊</span>
+                        <p>@EmptyText</p>
+                        <button class="btn btn-primary" @onclick="ToggleFieldList">Configure Fields</button>
+                    </div>
+                }
+            </div>
+        }
+
+        @* Pivot Chart *@
+        @if (CurrentDisplayMode == PivotDisplayMode.Chart || CurrentDisplayMode == PivotDisplayMode.GridAndChart)
+        {
+            <div class="pivot-chart">
+                <div class="chart-placeholder">
+                    <span class="chart-icon">📈</span>
+                    <p>Chart visualization (coming soon)</p>
+                    <small>Integrate with charting library for visual representation</small>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Drill-Down Modal *@
+    @if (_showDrillDown && _drillDownData != null)
+    {
+        <div class="pivot-modal-overlay" @onclick="CloseDrillDown">
+            <div class="pivot-modal" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Detail Records</h3>
+                    <button class="modal-close" @onclick="CloseDrillDown">✖️</button>
+                </div>
+                <div class="modal-content">
+                    <div class="drill-down-info">
+                        <span><strong>Row:</strong> @_drillDownData.RowField = @_drillDownData.RowValue</span>
+                        <span><strong>Column:</strong> @_drillDownData.ColumnField = @_drillDownData.ColumnValue</span>
+                        <span><strong>Records:</strong> @_drillDownData.DetailRecords.Count</span>
+                    </div>
+                    <div class="drill-down-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    @if (_drillDownData.DetailRecords.Any())
+                                    {
+                                        @foreach (var key in _drillDownData.DetailRecords.First().Keys)
+                                        {
+                                            <th>@key</th>
+                                        }
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var record in _drillDownData.DetailRecords.Take(100))
+                                {
+                                    <tr>
+                                        @foreach (var value in record.Values)
+                                        {
+                                            <td>@value</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        @if (_drillDownData.DetailRecords.Count > 100)
+                        {
+                            <p class="drill-down-note">Showing first 100 of @_drillDownData.DetailRecords.Count records</p>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDrillDown">Close</button>
+                    <button class="btn btn-primary" @onclick="ExportDrillDown">Export Details</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,98 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetAffixClass()" style="@GetAffixStyle()" @attributes="@GetHtmlAttributes()">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public int OffsetTop { get; set; }
+    [Parameter] public int OffsetBottom { get; set; }
+    [Parameter] public string? Target { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<bool> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isFixed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetAffixClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-affix"
+        };
+        
+        if (_isFixed)
+        {
+            classes.Add("n360-affix--fixed");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetAffixStyle()
+    {
+        var styles = new List<string>();
+        
+        if (_isFixed)
+        {
+            if (OffsetTop > 0)
+            {
+                styles.Add($"top: {OffsetTop}px");
+                styles.Add("position: fixed");
+            }
+            else if (OffsetBottom > 0)
+            {
+                styles.Add($"bottom: {OffsetBottom}px");
+                styles.Add("position: fixed");
+            }
+        }
+        
+        if (!string.IsNullOrEmpty(Style))
+        {
+            styles.Add(Style);
+        }
+        
+        return string.Join("; ", styles);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

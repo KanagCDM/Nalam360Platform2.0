@@ -1,0 +1,15 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\bin\Debug\net8.0\Nalam360.Platform.Validation.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.csproj.AssemblyReference.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\refint\Nalam360.Platform.Validation.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\Nalam360.Platform.Validation.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Validation\obj\Debug\net8.0\ref\Nalam360.Platform.Validation.dll

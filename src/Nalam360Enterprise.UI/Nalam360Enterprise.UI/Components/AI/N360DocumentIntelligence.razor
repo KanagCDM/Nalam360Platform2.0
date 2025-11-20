@@ -1,0 +1,162 @@
+@typeparam TDocument
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-document-intelligence @CssClass" style="@Style" @attributes="GetHtmlAttributes()">
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <SfUploader @ref="_uploader"
+                    AllowedExtensions="@AllowedExtensions"
+                    AutoUpload="@AutoUpload"
+                    Multiple="@AllowMultiple"
+                    MaxFileSize="@MaxFileSize"
+                    Success="@OnUploadSuccess"
+                    Failure="@OnUploadFailure">
+            <UploaderButtons Browse="@BrowseButtonText" Upload="Upload Document" Clear="Clear"></UploaderButtons>
+            <UploaderTemplates>
+                <Template>
+                    <div class="upload-template">
+                        <span class="upload-icon">📄</span>
+                        <span class="upload-text">Drop medical documents here or click to browse</span>
+                        <span class="upload-hint">Supports: PDF, DOCX, JPG, PNG, DICOM</span>
+                    </div>
+                </Template>
+            </UploaderTemplates>
+        </SfUploader>
+    </div>
+
+    @if (IsProcessing)
+    {
+        <div class="processing-indicator">
+            <div class="spinner"></div>
+            <span>@ProcessingMessage</span>
+        </div>
+    }
+
+    @if (AnalysisResults.Any())
+    {
+        <div class="analysis-results">
+            <h4>Document Analysis Results</h4>
+            
+            @foreach (var result in AnalysisResults)
+            {
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="doc-icon">@GetDocumentIcon(result.DocumentType)</span>
+                        <span class="doc-name">@result.FileName</span>
+                        <span class="confidence-badge" style="background-color: @GetConfidenceColor(result.ConfidenceScore)">
+                            @($"{result.ConfidenceScore:P0}")
+                        </span>
+                    </div>
+
+                    <div class="result-body">
+                        <!-- Document Classification -->
+                        <div class="classification-section">
+                            <label>Document Type:</label>
+                            <span class="value">@result.DocumentType</span>
+                        </div>
+
+                        <!-- Extracted Entities -->
+                        @if (result.ExtractedEntities.Any())
+                        {
+                            <div class="entities-section">
+                                <label>Extracted Information:</label>
+                                <div class="entity-list">
+                                    @foreach (var entity in result.ExtractedEntities)
+                                    {
+                                        <div class="entity-item">
+                                            <span class="entity-type">@entity.Type:</span>
+                                            <span class="entity-value">@entity.Value</span>
+                                            <span class="entity-confidence">(@($"{entity.Confidence:P0}"))</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Key Findings -->
+                        @if (result.KeyFindings.Any())
+                        {
+                            <div class="findings-section">
+                                <label>Key Findings:</label>
+                                <ul class="findings-list">
+                                    @foreach (var finding in result.KeyFindings)
+                                    {
+                                        <li>@finding</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <!-- AI Summary -->
+                        @if (!string.IsNullOrEmpty(result.Summary))
+                        {
+                            <div class="summary-section">
+                                <label>AI Summary:</label>
+                                <p class="summary-text">@result.Summary</p>
+                            </div>
+                        }
+
+                        <!-- Compliance Check -->
+                        @if (EnableComplianceCheck && result.ComplianceIssues.Any())
+                        {
+                            <div class="compliance-section">
+                                <label class="warning-label">⚠️ Compliance Issues:</label>
+                                <ul class="compliance-list">
+                                    @foreach (var issue in result.ComplianceIssues)
+                                    {
+                                        <li class="@GetIssueSeverityClass(issue.Severity)">
+                                            <strong>[@issue.Severity]</strong> @issue.Description
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="result-actions">
+                        <button class="btn-secondary" @onclick="() => ExportResultAsync(result)">
+                            📥 Export
+                        </button>
+                        <button class="btn-secondary" @onclick="() => ViewDetailsAsync(result)">
+                            🔍 View Details
+                        </button>
+                        @if (AllowReprocess)
+                        {
+                            <button class="btn-secondary" @onclick="() => ReprocessDocumentAsync(result)">
+                                🔄 Reprocess
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (ShowStatistics && AnalysisResults.Any())
+    {
+        <div class="statistics-panel">
+            <h5>Processing Statistics</h5>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Total Documents:</span>
+                    <span class="stat-value">@AnalysisResults.Count</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Avg. Confidence:</span>
+                    <span class="stat-value">@($"{AnalysisResults.Average(r => r.ConfidenceScore):P0}")</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Processing Time:</span>
+                    <span class="stat-value">@($"{TotalProcessingTime:N2}s")</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Entities Found:</span>
+                    <span class="stat-value">@AnalysisResults.Sum(r => r.ExtractedEntities.Count)</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>

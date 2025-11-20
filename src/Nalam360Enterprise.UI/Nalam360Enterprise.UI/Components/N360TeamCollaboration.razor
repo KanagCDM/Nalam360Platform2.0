@@ -1,0 +1,872 @@
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+
+<div class="n360-team-collaboration @(Class ?? "") @($"view-{_viewMode.ToString().ToLower()}")" style="@Style" @attributes="GetHtmlAttributes()">
+    
+    @* Statistics Header *@
+    <div class="collaboration-stats">
+        <div class="stat-card">
+            <div class="stat-icon channels">📢</div>
+            <div class="stat-content">
+                <div class="stat-value">@_statistics.ActiveChannels</div>
+                <div class="stat-label">Active Channels</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon messages">💬</div>
+            <div class="stat-content">
+                <div class="stat-value">@_statistics.TodayMessages</div>
+                <div class="stat-label">Today's Messages</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon meetings">📹</div>
+            <div class="stat-content">
+                <div class="stat-value">@_statistics.UpcomingMeetings</div>
+                <div class="stat-label">Upcoming Meetings</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon members">👥</div>
+            <div class="stat-content">
+                <div class="stat-value">@_statistics.OnlineMembers / @_statistics.ActiveMembers</div>
+                <div class="stat-label">Online Members</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon engagement">📊</div>
+            <div class="stat-content">
+                <div class="stat-value">@_statistics.EngagementRate.ToString("P0")</div>
+                <div class="stat-label">Engagement Rate</div>
+            </div>
+        </div>
+    </div>
+
+    @* Toolbar *@
+    <div class="collaboration-toolbar">
+        <div class="toolbar-left">
+            <div class="view-mode-selector">
+                <button class="mode-btn @(_viewMode == CollaborationViewMode.Channels ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(CollaborationViewMode.Channels)">
+                    📢 Channels
+                </button>
+                <button class="mode-btn @(_viewMode == CollaborationViewMode.Threads ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(CollaborationViewMode.Threads)">
+                    🧵 Threads
+                </button>
+                <button class="mode-btn @(_viewMode == CollaborationViewMode.Meetings ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(CollaborationViewMode.Meetings)">
+                    📹 Meetings
+                </button>
+                <button class="mode-btn @(_viewMode == CollaborationViewMode.Files ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(CollaborationViewMode.Files)">
+                    📁 Files
+                </button>
+                <button class="mode-btn @(_viewMode == CollaborationViewMode.Activity ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(CollaborationViewMode.Activity)">
+                    📊 Activity
+                </button>
+            </div>
+        </div>
+        <div class="toolbar-right">
+            <input type="text" class="search-input" placeholder="Search channels, messages, meetings..." 
+                   @bind="_searchQuery" @bind:event="oninput" />
+            <button class="toolbar-btn" @onclick="ToggleFilterPanel">
+                🔍 Filter @(_activeFilterCount > 0 ? $"({_activeFilterCount})" : "")
+            </button>
+            <button class="toolbar-btn primary" @onclick="CreateChannel">
+                ➕ Create Channel
+            </button>
+        </div>
+    </div>
+
+    @* Main Content Area *@
+    <div class="collaboration-content">
+        
+        @* Sidebar *@
+        <div class="collaboration-sidebar">
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span>Pinned Channels</span>
+                    <span class="count">@_filteredChannels.Count(c => c.IsPinned)</span>
+                </div>
+                @foreach (var channel in _filteredChannels.Where(c => c.IsPinned).Take(5))
+                {
+                    <div class="channel-item @(channel.Id == _selectedChannel?.Id ? "active" : "")" 
+                         @onclick="() => SelectChannel(channel)">
+                        <div class="channel-icon">@GetChannelIcon(channel.Type)</div>
+                        <div class="channel-info">
+                            <div class="channel-name">@channel.Name</div>
+                            <div class="channel-preview">@channel.LastMessage</div>
+                        </div>
+                        @if (channel.UnreadCount > 0)
+                        {
+                            <span class="unread-badge">@channel.UnreadCount</span>
+                        }
+                        @if (channel.IsMuted)
+                        {
+                            <span class="muted-icon">🔕</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span>All Channels</span>
+                    <span class="count">@_filteredChannels.Count()</span>
+                </div>
+                @foreach (var channel in _filteredChannels.Where(c => !c.IsPinned))
+                {
+                    <div class="channel-item @(channel.Id == _selectedChannel?.Id ? "active" : "")" 
+                         @onclick="() => SelectChannel(channel)">
+                        <div class="channel-icon">@GetChannelIcon(channel.Type)</div>
+                        <div class="channel-info">
+                            <div class="channel-name">
+                                @channel.Name
+                                @if (channel.Visibility == ChannelVisibility.Private)
+                                {
+                                    <span class="private-icon">🔒</span>
+                                }
+                            </div>
+                            <div class="channel-preview">@channel.LastMessage</div>
+                        </div>
+                        @if (channel.UnreadCount > 0)
+                        {
+                            <span class="unread-badge">@channel.UnreadCount</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Main View Area *@
+        <div class="collaboration-main">
+            @if (_viewMode == CollaborationViewMode.Channels && _selectedChannel != null)
+            {
+                @* Channel View *@
+                <div class="channel-view">
+                    <div class="channel-header">
+                        <div class="header-left">
+                            <h2>@GetChannelIcon(_selectedChannel.Type) @_selectedChannel.Name</h2>
+                            <span class="member-count">@_selectedChannel.MemberCount members</span>
+                        </div>
+                        <div class="header-right">
+                            <button class="action-btn" @onclick="ToggleChannelDetails">ℹ️ Details</button>
+                            <button class="action-btn" @onclick="StartMeeting">📹 Start Meeting</button>
+                            <button class="action-btn" @onclick="InviteMembers">➕ Invite</button>
+                        </div>
+                    </div>
+
+                    <div class="messages-container" @ref="_messagesContainer">
+                        @foreach (var message in _messages)
+                        {
+                            <div class="message @(message.IsDeleted ? "deleted" : "") @(message.IsPinned ? "pinned" : "")">
+                                <div class="message-avatar">
+                                    <img src="@message.SenderAvatar" alt="@message.SenderName" />
+                                    <span class="presence-indicator @message.SenderId"></span>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-header">
+                                        <span class="sender-name">@message.SenderName</span>
+                                        <span class="message-time">@FormatMessageTime(message.SentDate)</span>
+                                        @if (message.IsEdited)
+                                        {
+                                            <span class="edited-badge">(edited)</span>
+                                        }
+                                        @if (message.IsPinned)
+                                        {
+                                            <span class="pinned-badge">📌 Pinned</span>
+                                        }
+                                    </div>
+                                    <div class="message-body">
+                                        @if (message.IsDeleted)
+                                        {
+                                            <em class="deleted-text">This message has been deleted</em>
+                                        }
+                                        else
+                                        {
+                                            @message.Content
+                                        }
+                                    </div>
+                                    @if (message.Attachments.Any())
+                                    {
+                                        <div class="message-attachments">
+                                            @foreach (var attachment in message.Attachments)
+                                            {
+                                                <div class="attachment">
+                                                    <div class="attachment-icon">📎</div>
+                                                    <div class="attachment-info">
+                                                        <div class="attachment-name">@attachment.FileName</div>
+                                                        <div class="attachment-size">@FormatFileSize(attachment.FileSize)</div>
+                                                    </div>
+                                                    <button class="attachment-download">⬇️</button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="message-actions">
+                                        @if (message.Reactions.Any())
+                                        {
+                                            <div class="reactions">
+                                                @foreach (var reaction in message.Reactions)
+                                                {
+                                                    <button class="reaction @(reaction.HasCurrentUser ? "active" : "")"
+                                                            @onclick="() => ToggleReaction(message.Id, reaction.Emoji)">
+                                                        @reaction.Emoji @reaction.Count
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                        <button class="action-icon" @onclick="() => AddReaction(message.Id)">😊</button>
+                                        <button class="action-icon" @onclick="() => ReplyToMessage(message.Id)">💬 @message.ReplyCount</button>
+                                        <button class="action-icon" @onclick="() => ToggleMessagePin(message.Id)">📌</button>
+                                        <button class="action-icon" @onclick="() => ShowMessageMenu(message.Id)">⋯</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="message-composer">
+                        <div class="composer-toolbar">
+                            <button class="composer-btn">📎</button>
+                            <button class="composer-btn">😊</button>
+                            <button class="composer-btn">🎤</button>
+                            <button class="composer-btn">📹</button>
+                        </div>
+                        <textarea class="composer-input" 
+                                  placeholder="Type a message... (@@mention someone)" 
+                                  @bind="_composerText"
+                                  @onkeydown="HandleComposerKeyDown"></textarea>
+                        <button class="send-btn" @onclick="SendMessage" disabled="@string.IsNullOrWhiteSpace(_composerText)">
+                            ➤ Send
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (_viewMode == CollaborationViewMode.Threads)
+            {
+                @* Threads View *@
+                <div class="threads-view">
+                    <div class="threads-header">
+                        <h2>🧵 Active Threads</h2>
+                        <select @bind="_threadSort" class="sort-select">
+                            <option value="recent">Most Recent</option>
+                            <option value="popular">Most Popular</option>
+                            <option value="unread">Unread</option>
+                        </select>
+                    </div>
+                    <div class="threads-list">
+                        @foreach (var thread in _threads)
+                        {
+                            <div class="thread-card" @onclick="() => OpenThread(thread.MessageId)">
+                                <div class="thread-header">
+                                    <img src="@thread.ThreadStarterAvatar" alt="@thread.ThreadStarter" class="thread-avatar" />
+                                    <div class="thread-info">
+                                        <div class="thread-starter">@thread.ThreadStarter started a thread</div>
+                                        <div class="thread-time">@FormatMessageTime(thread.LastReplyDate)</div>
+                                    </div>
+                                </div>
+                                <div class="thread-preview">@thread.PreviewText</div>
+                                <div class="thread-footer">
+                                    <div class="thread-participants">
+                                        @foreach (var avatar in thread.ParticipantAvatars.Take(3))
+                                        {
+                                            <img src="@avatar" class="participant-avatar" />
+                                        }
+                                        @if (thread.ParticipantCount > 3)
+                                        {
+                                            <span class="more-participants">+@(thread.ParticipantCount - 3)</span>
+                                        }
+                                    </div>
+                                    <div class="thread-stats">
+                                        <span>💬 @thread.ReplyCount replies</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (_viewMode == CollaborationViewMode.Meetings)
+            {
+                @* Meetings View *@
+                <div class="meetings-view">
+                    <div class="meetings-header">
+                        <h2>📹 Meetings</h2>
+                        <button class="primary-btn" @onclick="ScheduleMeeting">📅 Schedule Meeting</button>
+                    </div>
+                    <div class="meetings-grid">
+                        @foreach (var meeting in _meetings)
+                        {
+                            <div class="meeting-card @meeting.Status.ToString().ToLower()">
+                                <div class="meeting-status-badge @meeting.Status.ToString().ToLower()">
+                                    @meeting.Status.ToString()
+                                </div>
+                                <div class="meeting-header">
+                                    <h3>@meeting.Title</h3>
+                                    <span class="meeting-type">@GetMeetingIcon(meeting.Type) @meeting.Type</span>
+                                </div>
+                                <div class="meeting-time">
+                                    <div class="time-slot">
+                                        <span class="time-icon">📅</span>
+                                        <span>@meeting.StartTime.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="time-slot">
+                                        <span class="time-icon">🕐</span>
+                                        <span>@meeting.StartTime.ToString("HH:mm") - @meeting.EndTime.ToString("HH:mm")</span>
+                                    </div>
+                                    <div class="time-slot">
+                                        <span class="time-icon">⏱️</span>
+                                        <span>@meeting.Duration.TotalMinutes min</span>
+                                    </div>
+                                </div>
+                                <div class="meeting-organizer">
+                                    <span class="label">Organizer:</span>
+                                    <span>@meeting.OrganizerName</span>
+                                </div>
+                                <div class="meeting-participants">
+                                    <span class="label">Participants (@meeting.Participants.Count):</span>
+                                    <div class="participants-list">
+                                        @foreach (var participant in meeting.Participants.Take(5))
+                                        {
+                                            <img src="@participant.Avatar" alt="@participant.UserName" 
+                                                 class="participant-avatar" title="@participant.UserName" />
+                                        }
+                                        @if (meeting.Participants.Count > 5)
+                                        {
+                                            <span class="more-count">+@(meeting.Participants.Count - 5)</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="meeting-actions">
+                                    @if (meeting.Status == MeetingStatus.Scheduled)
+                                    {
+                                        <button class="meeting-btn join" @onclick="() => JoinMeeting(meeting.Id)">
+                                            🎥 Join Meeting
+                                        </button>
+                                    }
+                                    else if (meeting.Status == MeetingStatus.InProgress)
+                                    {
+                                        <button class="meeting-btn join active" @onclick="() => JoinMeeting(meeting.Id)">
+                                            🔴 Join Now (In Progress)
+                                        </button>
+                                    }
+                                    else if (meeting.Status == MeetingStatus.Completed && meeting.IsRecorded)
+                                    {
+                                        <button class="meeting-btn" @onclick="() => ViewRecording(meeting.Id)">
+                                            ▶️ View Recording
+                                        </button>
+                                    }
+                                    <button class="meeting-btn secondary" @onclick="() => ViewMeetingDetails(meeting.Id)">
+                                        ℹ️ Details
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (_viewMode == CollaborationViewMode.Activity)
+            {
+                @* Activity Feed *@
+                <div class="activity-view">
+                    <div class="activity-header">
+                        <h2>📊 Activity Feed</h2>
+                        <select @bind="_activityFilter" class="filter-select">
+                            <option value="all">All Activities</option>
+                            <option value="channels">Channels</option>
+                            <option value="messages">Messages</option>
+                            <option value="meetings">Meetings</option>
+                            <option value="members">Members</option>
+                        </select>
+                    </div>
+                    <div class="activity-timeline">
+                        @foreach (var activity in _activities)
+                        {
+                            <div class="activity-item">
+                                <div class="activity-icon" style="background-color: @activity.IconColor">
+                                    @activity.Icon
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-actor">
+                                        <img src="@activity.ActorAvatar" alt="@activity.ActorName" />
+                                        <span class="actor-name">@activity.ActorName</span>
+                                    </div>
+                                    <div class="activity-description">@activity.Description</div>
+                                    <div class="activity-time">@FormatActivityTime(activity.Timestamp)</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Right Panel - Details/Members *@
+        @if (_showChannelDetails && _selectedChannel != null)
+        {
+            <div class="collaboration-details">
+                <div class="details-header">
+                    <h3>Channel Details</h3>
+                    <button class="close-btn" @onclick="ToggleChannelDetails">✕</button>
+                </div>
+                
+                <div class="details-section">
+                    <h4>About</h4>
+                    <p>@_selectedChannel.Description</p>
+                    <div class="detail-item">
+                        <span class="label">Type:</span>
+                        <span class="value">@_selectedChannel.Type</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Visibility:</span>
+                        <span class="value">@_selectedChannel.Visibility</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Created:</span>
+                        <span class="value">@_selectedChannel.CreatedDate.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Created By:</span>
+                        <span class="value">@_selectedChannel.CreatedBy</span>
+                    </div>
+                </div>
+
+                <div class="details-section">
+                    <h4>Members (@_selectedChannel.Members.Count)</h4>
+                    <div class="members-list">
+                        @foreach (var member in _selectedChannel.Members)
+                        {
+                            <div class="member-item">
+                                <img src="@member.Avatar" alt="@member.UserName" class="member-avatar" />
+                                <div class="member-info">
+                                    <div class="member-name">@member.UserName</div>
+                                    <div class="member-role">@member.Role</div>
+                                </div>
+                                <span class="presence-indicator @member.Status.ToString().ToLower()"></span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="details-section">
+                    <h4>Settings</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="_selectedChannel.IsPinned" />
+                            Pin this channel
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="_selectedChannel.IsMuted" />
+                            Mute notifications
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Notification Level:</label>
+                        <select class="setting-select">
+                            <option>All Messages</option>
+                            <option>@@Mentions Only</option>
+                            <option>Nothing</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="details-actions">
+                    <button class="action-btn danger" @onclick="LeaveChannel">🚪 Leave Channel</button>
+                    @if (_selectedChannel.IsArchived)
+                    {
+                        <button class="action-btn" @onclick="UnarchiveChannel">📂 Unarchive</button>
+                    }
+                    else
+                    {
+                        <button class="action-btn" @onclick="ArchiveChannel">📦 Archive</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Filter Panel *@
+    @if (_showFilterPanel)
+    {
+        <div class="filter-panel">
+            <div class="filter-header">
+                <h3>🔍 Filters</h3>
+                <button class="close-btn" @onclick="ToggleFilterPanel">✕</button>
+            </div>
+            
+            <div class="filter-section">
+                <h4>Channel Type</h4>
+                @foreach (var type in Enum.GetValues<ChannelType>())
+                {
+                    <label class="filter-checkbox">
+                        <input type="checkbox" 
+                               checked="@_filter.Types.Contains(type)"
+                               @onchange="e => ToggleFilterType(type, (bool)e.Value!)" />
+                        @type
+                    </label>
+                }
+            </div>
+
+            <div class="filter-section">
+                <h4>Visibility</h4>
+                @foreach (var visibility in Enum.GetValues<ChannelVisibility>())
+                {
+                    <label class="filter-checkbox">
+                        <input type="checkbox" 
+                               checked="@_filter.Visibilities.Contains(visibility)"
+                               @onchange="e => ToggleFilterVisibility(visibility, (bool)e.Value!)" />
+                        @visibility
+                    </label>
+                }
+            </div>
+
+            <div class="filter-section">
+                <h4>Status</h4>
+                <label class="filter-checkbox">
+                    <input type="checkbox" @bind="_filter.HasUnread" />
+                    Has Unread Messages
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" @bind="_filter.IsPinned" />
+                    Pinned Channels
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" @bind="_filter.IsArchived" />
+                    Archived Channels
+                </label>
+            </div>
+
+            <div class="filter-section">
+                <h4>Member Count</h4>
+                <div class="range-inputs">
+                    <input type="number" placeholder="Min" @bind="_filter.MinMembers" class="range-input" />
+                    <span>to</span>
+                    <input type="number" placeholder="Max" @bind="_filter.MaxMembers" class="range-input" />
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h4>Created Date</h4>
+                <div class="date-inputs">
+                    <input type="date" @bind="_filter.CreatedAfter" class="date-input" />
+                    <span>to</span>
+                    <input type="date" @bind="_filter.CreatedBefore" class="date-input" />
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button class="filter-btn primary" @onclick="ApplyFilters">Apply Filters</button>
+                <button class="filter-btn secondary" @onclick="ClearFilters">Clear All</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<Channel> Channels { get; set; } = new();
+    [Parameter] public List<CollaborationMessage> Messages { get; set; } = new();
+    [Parameter] public List<Meeting> Meetings { get; set; } = new();
+    [Parameter] public EventCallback<Channel> OnChannelSelected { get; set; }
+    [Parameter] public EventCallback<CollaborationMessage> OnMessageSent { get; set; }
+    [Parameter] public EventCallback<Meeting> OnMeetingScheduled { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    private CollaborationViewMode _viewMode = CollaborationViewMode.Channels;
+    private bool _showFilterPanel = false;
+    private bool _showChannelDetails = false;
+    private string _searchQuery = string.Empty;
+    private string _composerText = string.Empty;
+    private string _threadSort = "recent";
+    private string _activityFilter = "all";
+    private ChannelFilter _filter = new();
+    private IEnumerable<Channel> _filteredChannels = Enumerable.Empty<Channel>();
+    private Channel? _selectedChannel;
+    private List<CollaborationMessage> _messages = new();
+    private List<ThreadSummary> _threads = new();
+    private List<Meeting> _meetings = new();
+    private List<ActivityFeed> _activities = new();
+    private TeamCollaborationStatistics _statistics = new();
+    private int _activeFilterCount = 0;
+    private ElementReference _messagesContainer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            var hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            if (!hasPermission && HideIfNoPermission) return;
+        }
+
+        _filteredChannels = Channels;
+        _meetings = Meetings;
+        CalculateStatistics();
+        GenerateSampleData();
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+        // Add accessibility, RTL, theming attributes
+        return attributes;
+    }
+
+    private void ChangeViewMode(CollaborationViewMode mode)
+    {
+        _viewMode = mode;
+        StateHasChanged();
+    }
+
+    private void SelectChannel(Channel channel)
+    {
+        _selectedChannel = channel;
+        LoadChannelMessages(channel.Id);
+        OnChannelSelected.InvokeAsync(channel);
+    }
+
+    private void LoadChannelMessages(Guid channelId)
+    {
+        _messages = Messages.Where(m => m.ChannelId == channelId).OrderBy(m => m.SentDate).ToList();
+    }
+
+    private void ToggleFilterPanel()
+    {
+        _showFilterPanel = !_showFilterPanel;
+    }
+
+    private void ToggleChannelDetails()
+    {
+        _showChannelDetails = !_showChannelDetails;
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredChannels = Channels.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(_searchQuery))
+        {
+            _filteredChannels = _filteredChannels.Where(c =>
+                c.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_filter.Types.Any())
+        {
+            _filteredChannels = _filteredChannels.Where(c => _filter.Types.Contains(c.Type));
+        }
+
+        if (_filter.Visibilities.Any())
+        {
+            _filteredChannels = _filteredChannels.Where(c => _filter.Visibilities.Contains(c.Visibility));
+        }
+
+        if (_filter.HasUnread == true)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.UnreadCount > 0);
+        }
+
+        if (_filter.IsPinned == true)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.IsPinned);
+        }
+
+        if (_filter.IsArchived == true)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.IsArchived);
+        }
+
+        if (_filter.MinMembers.HasValue)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.MemberCount >= _filter.MinMembers.Value);
+        }
+
+        if (_filter.MaxMembers.HasValue)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.MemberCount <= _filter.MaxMembers.Value);
+        }
+
+        if (_filter.CreatedAfter.HasValue)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.CreatedDate >= _filter.CreatedAfter.Value);
+        }
+
+        if (_filter.CreatedBefore.HasValue)
+        {
+            _filteredChannels = _filteredChannels.Where(c => c.CreatedDate <= _filter.CreatedBefore.Value);
+        }
+
+        _filteredChannels = _filteredChannels.ToList();
+        CalculateActiveFilterCount();
+    }
+
+    private void ClearFilters()
+    {
+        _filter = new ChannelFilter();
+        _searchQuery = string.Empty;
+        ApplyFilters();
+    }
+
+    private void CalculateActiveFilterCount()
+    {
+        _activeFilterCount = 0;
+        if (_filter.Types.Any()) _activeFilterCount++;
+        if (_filter.Visibilities.Any()) _activeFilterCount++;
+        if (_filter.HasUnread == true) _activeFilterCount++;
+        if (_filter.IsPinned == true) _activeFilterCount++;
+        if (_filter.IsArchived == true) _activeFilterCount++;
+        if (_filter.MinMembers.HasValue || _filter.MaxMembers.HasValue) _activeFilterCount++;
+        if (_filter.CreatedAfter.HasValue || _filter.CreatedBefore.HasValue) _activeFilterCount++;
+    }
+
+    private void ToggleFilterType(ChannelType type, bool isChecked)
+    {
+        if (isChecked) _filter.Types.Add(type);
+        else _filter.Types.Remove(type);
+    }
+
+    private void ToggleFilterVisibility(ChannelVisibility visibility, bool isChecked)
+    {
+        if (isChecked) _filter.Visibilities.Add(visibility);
+        else _filter.Visibilities.Remove(visibility);
+    }
+
+    private void CalculateStatistics()
+    {
+        _statistics = new TeamCollaborationStatistics
+        {
+            TotalChannels = Channels.Count,
+            ActiveChannels = Channels.Count(c => !c.IsArchived),
+            TotalMessages = Messages.Count,
+            TodayMessages = Messages.Count(m => m.SentDate.Date == DateTime.Today),
+            TotalMeetings = Meetings.Count,
+            UpcomingMeetings = Meetings.Count(m => m.Status == MeetingStatus.Scheduled),
+            ActiveMembers = Channels.SelectMany(c => c.Members).Select(m => m.UserId).Distinct().Count(),
+            OnlineMembers = Channels.SelectMany(c => c.Members).Count(m => m.Status == PresenceStatus.Online),
+            EngagementRate = 0.78
+        };
+    }
+
+    private void GenerateSampleData()
+    {
+        // Generate sample threads
+        _threads = new List<ThreadSummary>();
+        
+        // Generate sample activities
+        _activities = new List<ActivityFeed>();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_composerText) || _selectedChannel == null) return;
+
+        var message = new CollaborationMessage
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = _selectedChannel.Id,
+            Content = _composerText,
+            Type = MessageType.Text,
+            SentDate = DateTime.Now,
+            SenderId = "current-user",
+            SenderName = "Current User",
+            SenderAvatar = "/avatars/current-user.png"
+        };
+
+        _messages.Add(message);
+        _composerText = string.Empty;
+        StateHasChanged();
+        await OnMessageSent.InvokeAsync(message);
+    }
+
+    private void HandleComposerKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            SendMessage();
+        }
+    }
+
+    private string GetChannelIcon(ChannelType type) => type switch
+    {
+        ChannelType.Public => "🌐",
+        ChannelType.Private => "🔒",
+        ChannelType.Direct => "💬",
+        ChannelType.Group => "👥",
+        ChannelType.Announcement => "📢",
+        ChannelType.Project => "📁",
+        ChannelType.Department => "🏢",
+        ChannelType.Topic => "💡",
+        _ => "📢"
+    };
+
+    private string GetMeetingIcon(MeetingType type) => type switch
+    {
+        MeetingType.Video => "📹",
+        MeetingType.Audio => "🎙️",
+        MeetingType.ScreenShare => "🖥️",
+        MeetingType.Webinar => "🎓",
+        MeetingType.Training => "📚",
+        MeetingType.Review => "📊",
+        MeetingType.Standup => "🗣️",
+        MeetingType.Retrospective => "🔄",
+        _ => "📹"
+    };
+
+    private string FormatMessageTime(DateTime date)
+    {
+        var diff = DateTime.Now - date;
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return date.ToString("MMM dd");
+    }
+
+    private string FormatActivityTime(DateTime date)
+    {
+        var diff = DateTime.Now - date;
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} minutes ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} hours ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} days ago";
+        return date.ToString("MMM dd, yyyy");
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    // Action handlers (stubs)
+    private void CreateChannel() { }
+    private void StartMeeting() { }
+    private void InviteMembers() { }
+    private void ToggleReaction(Guid messageId, string emoji) { }
+    private void AddReaction(Guid messageId) { }
+    private void ReplyToMessage(Guid messageId) { }
+    private void ToggleMessagePin(Guid messageId) { }
+    private void ShowMessageMenu(Guid messageId) { }
+    private void OpenThread(Guid messageId) { }
+    private void ScheduleMeeting() { }
+    private void JoinMeeting(Guid meetingId) { }
+    private void ViewRecording(Guid meetingId) { }
+    private void ViewMeetingDetails(Guid meetingId) { }
+    private void LeaveChannel() { }
+    private void ArchiveChannel() { }
+    private void UnarchiveChannel() { }
+}

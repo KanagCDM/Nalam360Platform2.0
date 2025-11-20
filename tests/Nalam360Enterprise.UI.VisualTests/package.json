@@ -1,0 +1,17 @@
+{
+  "name": "nalam360-visual-tests",
+  "version": "1.0.0",
+  "description": "Visual regression tests for Nalam360Enterprise.UI",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.8.0",
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^24.10.1"
+  }
+}

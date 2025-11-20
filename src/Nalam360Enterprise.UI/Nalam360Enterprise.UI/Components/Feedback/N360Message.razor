@@ -1,0 +1,192 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (_visible && (!HideIfNoPermission || _hasPermission))
+{
+    <div class="@GetMessageClass()" style="@GetMessageStyle()" @attributes="GetHtmlAttributes()">
+        @if (ShowIcon)
+        {
+            <div class="n360-message__icon">
+                @if (CustomIcon != null)
+                {
+                    @CustomIcon
+                }
+                else
+                {
+                    <span class="@GetDefaultIconClass()"></span>
+                }
+            </div>
+        }
+        
+        <div class="n360-message__content">
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                @Content
+            }
+        </div>
+        
+        @if (Closable)
+        {
+            <button type="button" class="n360-message__close" @onclick="HandleCloseAsync" aria-label="Close message">
+                @if (CloseIcon != null)
+                {
+                    @CloseIcon
+                }
+                else
+                {
+                    <span>×</span>
+                }
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public MessageType Type { get; set; } = MessageType.Info;
+    [Parameter] public int Duration { get; set; } = 3000;
+    [Parameter] public bool Closable { get; set; } = true;
+    [Parameter] public bool ShowIcon { get; set; } = true;
+    [Parameter] public RenderFragment? CustomIcon { get; set; }
+    [Parameter] public RenderFragment? CloseIcon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    [Parameter] public MessagePosition Position { get; set; } = MessagePosition.TopCenter;
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _visible = true;
+    private Timer? _autoCloseTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        if (Duration > 0 && _visible)
+        {
+            _autoCloseTimer = new Timer(async _ => await HandleCloseAsync(), null, Duration, Timeout.Infinite);
+        }
+    }
+
+    private async Task HandleCloseAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Close",
+                Resource = AuditResource ?? "Message",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Type", Type.ToString() },
+                    { "Content", Content ?? string.Empty },
+                    { "Duration", Duration }
+                }
+            });
+        }
+        
+        _autoCloseTimer?.Dispose();
+        _visible = false;
+        await InvokeAsync(StateHasChanged);
+        await OnClose.InvokeAsync();
+    }
+
+    private string GetMessageClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-message",
+            $"n360-message--{Type.ToString().ToLower()}",
+            $"n360-message--{GetPositionClass()}"
+        };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetPositionClass()
+    {
+        return Position switch
+        {
+            MessagePosition.TopLeft => "top-left",
+            MessagePosition.TopCenter => "top-center",
+            MessagePosition.TopRight => "top-right",
+            MessagePosition.BottomLeft => "bottom-left",
+            MessagePosition.BottomCenter => "bottom-center",
+            MessagePosition.BottomRight => "bottom-right",
+            _ => "top-center"
+        };
+    }
+
+    private string GetMessageStyle()
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrEmpty(Style))
+        {
+            styles.Add(Style);
+        }
+        
+        return styles.Any() ? string.Join("; ", styles) : string.Empty;
+    }
+
+    private string GetDefaultIconClass()
+    {
+        return Type switch
+        {
+            MessageType.Success => "n360-icon-check-circle",
+            MessageType.Warning => "n360-icon-exclamation-circle",
+            MessageType.Error => "n360-icon-times-circle",
+            MessageType.Loading => "n360-icon-spinner n360-icon-spin",
+            _ => "n360-icon-info-circle"
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "role", "status" },
+            { "aria-live", Type == MessageType.Error ? "assertive" : "polite" }
+        };
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+
+    public void Dispose()
+    {
+        _autoCloseTimer?.Dispose();
+    }
+}

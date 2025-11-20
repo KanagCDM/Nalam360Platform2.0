@@ -1,0 +1,661 @@
+@* Syncfusion.Blazor.Diagrams not available in v29.1.33 - using Diagram instead *@
+@using Syncfusion.Blazor.Diagram
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-clinical-pathways" @attributes="GetHtmlAttributes()">
+    @if (!string.IsNullOrEmpty(RequiredPermission))
+    {
+        if (!HasPermission && HideIfNoPermission)
+        {
+            return;
+        }
+        if (!HasPermission)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> You don't have permission to view clinical pathways.
+            </div>
+            return;
+        }
+    }
+
+    <div class="pathways-header">
+        <div class="header-left">
+            <h3>
+                <i class="fas fa-route"></i> AI-Driven Clinical Pathways
+                @if (UseRealAI)
+                {
+                    <span class="badge bg-success ms-2">🤖 Real AI</span>
+                }
+            </h3>
+            <p class="text-muted">Evidence-based treatment protocols with AI-powered recommendations</p>
+        </div>
+        <div class="header-right">
+            <button @onclick="CreateNewPathway" class="btn btn-primary" disabled="@IsLoading">
+                <i class="fas fa-plus"></i> New Pathway
+            </button>
+        </div>
+    </div>
+
+    <div class="pathways-controls">
+        <div class="control-group">
+            <label>
+                Condition:
+                <SfDropDownList TValue="string" TItem="ConditionOption"
+                                DataSource="@AvailableConditions"
+                                @bind-Value="SelectedCondition"
+                                Placeholder="Select condition">
+                    <DropDownListFieldSettings Text="Name" Value="Code"></DropDownListFieldSettings>
+                    <DropDownListEvents TValue="string" TItem="ConditionOption" ValueChange="OnConditionChanged"></DropDownListEvents>
+                </SfDropDownList>
+            </label>
+        </div>
+        <div class="control-group">
+            <label>
+                Severity:
+                <SfDropDownList TValue="string" TItem="string"
+                                DataSource="@SeverityLevels"
+                                @bind-Value="SelectedSeverity"
+                                Placeholder="Select severity">
+                    <DropDownListEvents TValue="string" TItem="string" ValueChange="OnSeverityChanged"></DropDownListEvents>
+                </SfDropDownList>
+            </label>
+        </div>
+        <div class="control-group">
+            <label>
+                Patient Risk:
+                <SfDropDownList TValue="string" TItem="string"
+                                DataSource="@RiskLevels"
+                                @bind-Value="SelectedRisk"
+                                Placeholder="Select risk level">
+                    <DropDownListEvents TValue="string" TItem="string" ValueChange="OnRiskChanged"></DropDownListEvents>
+                </SfDropDownList>
+            </label>
+        </div>
+        <div class="control-group">
+            <SfButton IsPrimary="true" @onclick="GeneratePathway" Disabled="@IsGenerating">
+                <i class="fas fa-magic"></i> Generate AI Pathway
+            </SfButton>
+        </div>
+    </div>
+
+    @if (IsGenerating)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Generating clinical pathway...</span>
+            </div>
+            <p class="mt-3">Analyzing evidence-based protocols and patient data...</p>
+        </div>
+    }
+    else if (CurrentPathway != null)
+    {
+        <div class="pathway-content">
+            <div class="pathway-overview">
+                <div class="overview-card">
+                    <div class="card-icon" style="background: #4CAF50;">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-label">Pathway Name</div>
+                        <div class="card-value">@CurrentPathway.Name</div>
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon" style="background: #2196F3;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-label">Expected Duration</div>
+                        <div class="card-value">@CurrentPathway.ExpectedDuration</div>
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon" style="background: #FF9800;">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-label">Success Rate</div>
+                        <div class="card-value">@CurrentPathway.SuccessRate.ToString("F1")%</div>
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon" style="background: #9C27B0;">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-label">Est. Cost</div>
+                        <div class="card-value">$@CurrentPathway.EstimatedCost.ToString("N0")</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pathway-stages">
+                <h5>Treatment Stages</h5>
+                <div class="stages-timeline">
+                    @foreach (var stage in CurrentPathway.Stages.OrderBy(s => s.Order))
+                    {
+                        var isActive = stage.Order == CurrentPathway.CurrentStage;
+                        var isCompleted = stage.Order < CurrentPathway.CurrentStage;
+                        var stageClass = isActive ? "active" : isCompleted ? "completed" : "pending";
+                        
+                        <div class="stage-item @stageClass">
+                            <div class="stage-marker">
+                                <span class="stage-number">@stage.Order</span>
+                                @if (isCompleted)
+                                {
+                                    <i class="fas fa-check"></i>
+                                }
+                            </div>
+                            <div class="stage-content">
+                                <div class="stage-header">
+                                    <h6>@stage.Name</h6>
+                                    <span class="stage-duration">@stage.Duration</span>
+                                </div>
+                                <p class="stage-description">@stage.Description</p>
+                                
+                                <div class="stage-actions">
+                                    <h7>Actions:</h7>
+                                    <ul>
+                                        @foreach (var action in stage.Actions)
+                                        {
+                                            <li>
+                                                <i class="fas fa-check-circle text-success"></i>
+                                                @action
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+
+                                @if (stage.Milestones.Any())
+                                {
+                                    <div class="stage-milestones">
+                                        <h7>Milestones:</h7>
+                                        @foreach (var milestone in stage.Milestones)
+                                        {
+                                            <span class="milestone-badge">@milestone</span>
+                                        }
+                                    </div>
+                                }
+
+                                @if (isActive)
+                                {
+                                    <div class="stage-ai-insights">
+                                        <i class="fas fa-robot"></i>
+                                        <strong>AI Insight:</strong> @stage.AIRecommendation
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="pathway-grid">
+                <div class="pathway-section">
+                    <h5>Risk Factors</h5>
+                    <div class="risk-factors-list">
+                        @foreach (var risk in CurrentPathway.RiskFactors)
+                        {
+                            var riskColor = risk.Severity == "High" ? "danger" : risk.Severity == "Medium" ? "warning" : "info";
+                            <div class="risk-factor-item">
+                                <div class="risk-header">
+                                    <span class="risk-name">@risk.Factor</span>
+                                    <span class="badge bg-@riskColor">@risk.Severity</span>
+                                </div>
+                                <div class="risk-mitigation">
+                                    <small><strong>Mitigation:</strong> @risk.Mitigation</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="pathway-section">
+                    <h5>Expected Outcomes</h5>
+                    <div class="outcomes-list">
+                        @foreach (var outcome in CurrentPathway.ExpectedOutcomes)
+                        {
+                            <div class="outcome-item">
+                                <div class="outcome-header">
+                                    <i class="fas fa-flag-checkered text-success"></i>
+                                    <span>@outcome.Outcome</span>
+                                </div>
+                                <div class="outcome-probability">
+                                    <div class="probability-bar">
+                                        <div class="probability-fill" style="width: @outcome.Probability%"></div>
+                                    </div>
+                                    <span class="probability-text">@outcome.Probability% probability</span>
+                                </div>
+                                <div class="outcome-timeframe">
+                                    <small class="text-muted">Expected: @outcome.Timeframe</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="pathway-section">
+                <h5>Care Team Coordination</h5>
+                <div class="care-team-grid">
+                    @foreach (var member in CurrentPathway.CareTeam)
+                    {
+                        <div class="care-team-member">
+                            <div class="member-avatar">
+                                <i class="fas @member.Icon"></i>
+                            </div>
+                            <div class="member-info">
+                                <div class="member-role">@member.Role</div>
+                                <div class="member-name">@member.Name</div>
+                                <div class="member-involvement">@member.Involvement</div>
+                            </div>
+                            <div class="member-actions">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ContactMember(member)">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="pathway-section">
+                <h5>Alternative Pathways</h5>
+                <div class="alternatives-list">
+                    @foreach (var alt in CurrentPathway.AlternativePathways)
+                    {
+                        <div class="alternative-item">
+                            <div class="alt-header">
+                                <h6>@alt.Name</h6>
+                                <span class="badge bg-secondary">@alt.Confidence% match</span>
+                            </div>
+                            <p class="alt-description">@alt.Description</p>
+                            <div class="alt-footer">
+                                <span class="alt-pros"><i class="fas fa-plus-circle text-success"></i> @alt.Advantages</span>
+                                <button class="btn btn-sm btn-link" @onclick="() => ComparePathways(alt)">
+                                    <i class="fas fa-exchange-alt"></i> Compare
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="pathway-actions">
+                <SfButton @onclick="ApplyPathway" IsPrimary="true">
+                    <i class="fas fa-check"></i> Apply Pathway
+                </SfButton>
+                <SfButton @onclick="ExportPathway">
+                    <i class="fas fa-download"></i> Export
+                </SfButton>
+                <SfButton @onclick="SharePathway">
+                    <i class="fas fa-share-alt"></i> Share with Team
+                </SfButton>
+                <SfButton @onclick="CustomizePathway">
+                    <i class="fas fa-edit"></i> Customize
+                </SfButton>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-route fa-3x text-muted"></i>
+            <h4>No Pathway Selected</h4>
+            <p>Select a condition, severity, and risk level to generate an AI-driven clinical pathway.</p>
+        </div>
+    }
+</div>
+
+<style>
+    .n360-clinical-pathways {
+        padding: 1rem;
+    }
+
+    .pathways-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .pathways-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 8px;
+        flex-wrap: wrap;
+    }
+
+    .control-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .control-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .pathway-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .overview-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .card-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .card-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .pathway-stages {
+        margin-bottom: 2rem;
+    }
+
+    .stages-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .stage-item {
+        position: relative;
+        padding-left: 3rem;
+        padding-bottom: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .stage-item::before {
+        content: '';
+        position: absolute;
+        left: 1.5rem;
+        top: 2rem;
+        bottom: -1rem;
+        width: 2px;
+        background: #e0e0e0;
+    }
+
+    .stage-item:last-child::before {
+        display: none;
+    }
+
+    .stage-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #999;
+    }
+
+    .stage-item.active .stage-marker {
+        border-color: #2196F3;
+        background: #2196F3;
+        color: white;
+    }
+
+    .stage-item.completed .stage-marker {
+        border-color: #4CAF50;
+        background: #4CAF50;
+        color: white;
+    }
+
+    .stage-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stage-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .stage-header h6 {
+        margin: 0;
+        color: #333;
+    }
+
+    .stage-duration {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .stage-description {
+        color: #666;
+        margin-bottom: 1rem;
+    }
+
+    .stage-actions ul {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0;
+    }
+
+    .stage-actions li {
+        padding: 0.25rem 0;
+    }
+
+    .stage-milestones {
+        margin-top: 1rem;
+    }
+
+    .milestone-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        background: #E3F2FD;
+        color: #1976D2;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stage-ai-insights {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #FFF3E0;
+        border-left: 4px solid #FF9800;
+        border-radius: 4px;
+    }
+
+    .pathway-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pathway-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .pathway-section h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .risk-factor-item {
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .risk-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .outcome-item {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .outcome-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .probability-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .probability-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4CAF50, #81C784);
+    }
+
+    .care-team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .care-team-member {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .member-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #2196F3;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .member-role {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .member-name {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .member-involvement {
+        color: #999;
+        font-size: 0.85rem;
+    }
+
+    .alternatives-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .alternative-item {
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 8px;
+        border-left: 4px solid #9C27B0;
+    }
+
+    .alt-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .alt-header h6 {
+        margin: 0;
+    }
+
+    .alt-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .pathway-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 2px solid #e0e0e0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #666;
+    }
+
+    .empty-state h4 {
+        margin: 1rem 0;
+    }
+</style>

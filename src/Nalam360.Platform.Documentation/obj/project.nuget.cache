@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "rosg6s8NyyE=",
+  "dgSpecHash": "l7E0RB5q3nQ=",
   "success": true,
-  "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Documentation/Nalam360.Platform.Documentation.csproj",
+  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Documentation\\Nalam360.Platform.Documentation.csproj",
   "expectedPackageFiles": [
-    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.netcore.app.ref/8.0.22/microsoft.netcore.app.ref.8.0.22.nupkg.sha512",
-    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.22/microsoft.aspnetcore.app.ref.8.0.22.nupkg.sha512"
+    "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
   ],
   "logs": []
 }

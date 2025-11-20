@@ -1,21 +1,26 @@
-@* Note: N360RichTextEditor requires Syncfusion.Blazor.RichTextEditor package *@
+@using Syncfusion.Blazor.RichTextEditor
 @inject IPermissionService PermissionService
 @inject IAuditService AuditService
 
 @if (_hasPermission || !HideIfNoPermission)
 {
-    <div class="n360-richtexteditor @CssClass n360-richtexteditor__placeholder" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
-        <div class="n360-richtexteditor__content">
-            <p>Rich Text Editor Component</p>
-            <small>Requires Syncfusion.Blazor.RichTextEditor package</small>
-            @if (!string.IsNullOrEmpty(Value))
-            {
-                <div class="n360-richtexteditor__preview">
-                    @((MarkupString)Value)
-                </div>
-            }
+    <div class="n360-richtexteditor @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfRichTextEditor @ref="_editor"
+                          Value="@Value"
+                          Enabled="@IsEffectivelyEnabled"
+                          Readonly="@Readonly"
+                          Height="@Height"
+                          Width="@Width"
+                          Placeholder="@Placeholder"
+                          EnableResize="@EnableResize"
+                          EnableHtmlEncode="@EnableHtmlEncode"
+                          EnableXhtml="@EnableXhtml"
+                          MaxLength="@MaxLength"
+                          CssClass="@InternalCssClass"
+                          ValueChange="@OnValueChangeAsync">
+            <RichTextEditorToolbarSettings Items="@ToolbarItems" />
             @ChildContent
-        </div>
+        </SfRichTextEditor>
     </div>
 }
 
@@ -31,8 +36,13 @@
     [Parameter] public bool EnableHtmlEncode { get; set; }
     [Parameter] public bool EnableXhtml { get; set; }
     [Parameter] public int MaxLength { get; set; } = -1;
-    [Parameter] public RenderFragment? ToolbarSettings { get; set; }
+    [Parameter] public bool ShowCharCount { get; set; } = true;
+    [Parameter] public bool EnableAutoUrl { get; set; } = true;
+    [Parameter] public bool EnableTabKey { get; set; } = true;
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Toolbar Configuration
+    [Parameter] public List<ToolbarItemModel>? CustomToolbarItems { get; set; }
     
     // Styling
     [Parameter] public string? CssClass { get; set; }
@@ -47,9 +57,45 @@
     [Parameter] public bool EnableAudit { get; set; }
     [Parameter] public string? AuditResource { get; set; }
     
+    // Events
+    [Parameter] public EventCallback<string> OnChange { get; set; }
+    [Parameter] public EventCallback OnActionBegin { get; set; }
+    [Parameter] public EventCallback OnActionComplete { get; set; }
+    
+    private SfRichTextEditor? _editor;
     private bool _hasPermission = true;
     private bool IsEffectivelyEnabled => Enabled && _hasPermission;
     private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    private List<ToolbarItemModel> ToolbarItems => CustomToolbarItems ?? new List<ToolbarItemModel>
+    {
+        new ToolbarItemModel { Command = ToolbarCommand.Bold },
+        new ToolbarItemModel { Command = ToolbarCommand.Italic },
+        new ToolbarItemModel { Command = ToolbarCommand.Underline },
+        new ToolbarItemModel { Command = ToolbarCommand.StrikeThrough },
+        new ToolbarItemModel { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel { Command = ToolbarCommand.FontName },
+        new ToolbarItemModel { Command = ToolbarCommand.FontSize },
+        new ToolbarItemModel { Command = ToolbarCommand.FontColor },
+        new ToolbarItemModel { Command = ToolbarCommand.BackgroundColor },
+        new ToolbarItemModel { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel { Command = ToolbarCommand.Formats },
+        new ToolbarItemModel { Command = ToolbarCommand.Alignments },
+        new ToolbarItemModel { Command = ToolbarCommand.OrderedList },
+        new ToolbarItemModel { Command = ToolbarCommand.UnorderedList },
+        new ToolbarItemModel { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel { Command = ToolbarCommand.Indent },
+        new ToolbarItemModel { Command = ToolbarCommand.Outdent },
+        new ToolbarItemModel { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel { Command = ToolbarCommand.CreateLink },
+        new ToolbarItemModel { Command = ToolbarCommand.Image },
+        new ToolbarItemModel { Command = ToolbarCommand.CreateTable },
+        new ToolbarItemModel { Command = ToolbarCommand.Separator },
+        new ToolbarItemModel { Command = ToolbarCommand.ClearFormat },
+        new ToolbarItemModel { Command = ToolbarCommand.SourceCode },
+        new ToolbarItemModel { Command = ToolbarCommand.Undo },
+        new ToolbarItemModel { Command = ToolbarCommand.Redo }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,7 +105,65 @@
         }
     }
 
-    public Task<string> GetHtmlAsync() => Task.FromResult(Value ?? string.Empty);
-    public Task<string> GetTextAsync() => Task.FromResult(Value ?? string.Empty);
-    public Task RefreshAsync() => Task.CompletedTask;
+    private async Task OnValueChangeAsync(Syncfusion.Blazor.RichTextEditor.ChangeEventArgs args)
+    {
+        Value = args.Value?.ToString();
+        await ValueChanged.InvokeAsync(Value);
+        await OnChange.InvokeAsync(Value ?? string.Empty);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ContentChanged",
+                Resource = AuditResource ?? $"RichTextEditor-{Id}",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ContentLength"] = Value?.Length ?? 0,
+                    ["ComponentId"] = Id
+                }
+            });
+        }
+    }
+
+    // Public API Methods
+    public Task<string> GetHtmlAsync()
+    {
+        // Return the current value as HTML
+        return Task.FromResult(Value ?? string.Empty);
+    }
+
+    public async Task<string> GetTextAsync()
+    {
+        if (_editor != null)
+        {
+            return await _editor.GetTextAsync() ?? string.Empty;
+        }
+        return Value ?? string.Empty;
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (_editor != null)
+        {
+            await _editor.RefreshUIAsync();
+        }
+    }
+
+    public async Task ExecuteCommandAsync(CommandName command, string? value = null)
+    {
+        if (_editor != null)
+        {
+            await _editor.ExecuteCommandAsync(command, value ?? string.Empty);
+        }
+    }
+
+    public async Task FocusAsync()
+    {
+        if (_editor != null)
+        {
+            await _editor.FocusAsync();
+        }
+    }
 }

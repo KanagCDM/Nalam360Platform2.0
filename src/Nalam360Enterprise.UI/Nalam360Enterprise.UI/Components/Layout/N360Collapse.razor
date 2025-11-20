@@ -1,0 +1,179 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetCollapseClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (Items != null && Items.Any())
+        {
+            @foreach (var item in Items)
+            {
+                var isActive = _activeKeys.Contains(item.Key);
+                
+                <div class="n360-collapse__item @(isActive ? "n360-collapse__item--active" : "") @(item.Disabled ? "n360-collapse__item--disabled" : "")">
+                    <div class="n360-collapse__header" @onclick="() => HandleHeaderClickAsync(item)">
+                        <span class="n360-collapse__expand-icon @(isActive ? "n360-collapse__expand-icon--open" : "")">
+                            @if (ExpandIcon != null)
+                            {
+                                @ExpandIcon(isActive)
+                            }
+                            else
+                            {
+                                <span>▶</span>
+                            }
+                        </span>
+                        <span class="n360-collapse__title">@item.Title</span>
+                        @if (item.Extra != null)
+                        {
+                            <span class="n360-collapse__extra" @onclick:stopPropagation="true">
+                                @item.Extra
+                            </span>
+                        }
+                    </div>
+                    <div class="n360-collapse__content @(isActive ? "n360-collapse__content--active" : "")">
+                        <div class="n360-collapse__content-box">
+                            @item.Content
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            @ChildContent
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<CollapseItem>? Items { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public List<string>? ActiveKeys { get; set; }
+    [Parameter] public EventCallback<List<string>> ActiveKeysChanged { get; set; }
+    [Parameter] public bool Accordion { get; set; }
+    [Parameter] public bool Bordered { get; set; } = true;
+    [Parameter] public bool Ghost { get; set; }
+    [Parameter] public RenderFragment<bool>? ExpandIcon { get; set; }
+    [Parameter] public CollapseExpandIconPosition ExpandIconPosition { get; set; } = CollapseExpandIconPosition.Left;
+    
+    // Events
+    [Parameter] public EventCallback<List<string>> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private HashSet<string> _activeKeys = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        if (ActiveKeys != null)
+        {
+            _activeKeys = new HashSet<string>(ActiveKeys);
+        }
+    }
+
+    private async Task HandleHeaderClickAsync(CollapseItem item)
+    {
+        if (item.Disabled) return;
+        
+        if (Accordion)
+        {
+            if (_activeKeys.Contains(item.Key))
+            {
+                _activeKeys.Remove(item.Key);
+            }
+            else
+            {
+                _activeKeys.Clear();
+                _activeKeys.Add(item.Key);
+            }
+        }
+        else
+        {
+            if (_activeKeys.Contains(item.Key))
+            {
+                _activeKeys.Remove(item.Key);
+            }
+            else
+            {
+                _activeKeys.Add(item.Key);
+            }
+        }
+        
+        var keysList = _activeKeys.ToList();
+        ActiveKeys = keysList;
+        await ActiveKeysChanged.InvokeAsync(keysList);
+        await OnChange.InvokeAsync(keysList);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CollapseChange",
+                Resource = AuditResource ?? "Collapse",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Key", item.Key },
+                    { "Title", item.Title },
+                    { "IsOpen", _activeKeys.Contains(item.Key) }
+                }
+            });
+        }
+    }
+
+    private string GetCollapseClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-collapse",
+            $"n360-collapse--icon-{ExpandIconPosition.ToString().ToLower()}"
+        };
+        
+        if (Bordered)
+        {
+            classes.Add("n360-collapse--bordered");
+        }
+        
+        if (Ghost)
+        {
+            classes.Add("n360-collapse--ghost");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.FeatureFlags</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.FeatureFlags.IFeatureFlagService">
+            <summary>
+            Feature flag service interface.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.IFeatureFlagService.IsEnabledAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a feature is enabled.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.IFeatureFlagService.IsEnabledAsync(System.String,Nalam360.Platform.FeatureFlags.FeatureContext,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a feature is enabled for a specific context.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.FeatureContext">
+            <summary>
+            Feature context for targeted feature toggles.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.FeatureContext.#ctor(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Feature context for targeted feature toggles.
+            </summary>
+        </member>
+    </members>
+</doc>

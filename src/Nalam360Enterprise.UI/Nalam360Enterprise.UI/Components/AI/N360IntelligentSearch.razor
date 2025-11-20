@@ -1,0 +1,75 @@
+@typeparam TItem
+@using Syncfusion.Blazor.DropDowns
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-intelligent-search @CssClass" style="@Style" @attributes="GetHtmlAttributes()">
+    <SfAutoComplete @ref="_autoComplete"
+                    TValue="string"
+                    TItem="SearchResultItem<TItem>"
+                    DataSource="@SearchResults"
+                    Placeholder="@Placeholder"
+                    ShowPopupButton="true"
+                    Highlight="true"
+                    FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                    IgnoreAccent="true"
+                    AllowFiltering="true"
+                    Filtering="@OnFilteringHandler"
+                    ValueChange="@OnValueChangeHandler">
+        <AutoCompleteFieldSettings Text="DisplayText" Value="DisplayText" />
+        <AutoCompleteTemplates TItem="SearchResultItem<TItem>">
+            <ItemTemplate Context="result">
+                <div class="n360-search-result">
+                    <span class="n360-search-result__icon">@GetTypeIcon(result.ResultType)</span>
+                    <div class="n360-search-result__content">
+                        <div class="n360-search-result__title">@result.DisplayText</div>
+                        @if (!string.IsNullOrEmpty(result.Description))
+                        {
+                            <div class="n360-search-result__desc">@result.Description</div>
+                        }
+                        @if (ShowRelevanceScore && result.RelevanceScore > 0)
+                        {
+                            <div class="n360-search-result__score">@result.RelevanceScore.ToString("P0")</div>
+                        }
+                    </div>
+                </div>
+            </ItemTemplate>
+            <NoRecordsTemplate>
+                <div class="n360-search-no-results">
+                    @if (EnableAISearch)
+                    {
+                        <p>🤖 AI Search: No results for "@CurrentQuery"</p>
+                        <p>Try alternative terms or check spelling</p>
+                    }
+                    else
+                    {
+                        <p>No results found</p>
+                    }
+                </div>
+            </NoRecordsTemplate>
+        </AutoCompleteTemplates>
+    </SfAutoComplete>
+
+    @if (ShowAdvancedOptions && _showAdvancedPanel)
+    {
+        <div class="n360-search-advanced">
+            <label><input type="checkbox" @bind="EnableSemanticSearch" /> Semantic Search</label>
+            <label><input type="checkbox" @bind="EnableFuzzyMatch" /> Fuzzy Match</label>
+            <label><input type="checkbox" @bind="SearchInContent" /> Search in content</label>
+        </div>
+    }
+
+    @if (ShowRecentSearches && RecentSearches?.Any() == true)
+    {
+        <div class="n360-search-recent">
+            <strong>Recent:</strong>
+            @foreach (var recent in RecentSearches.Take(5))
+            {
+                <button class="n360-chip" @onclick="() => ApplyRecentSearch(recent)">
+                    🕐 @recent
+                </button>
+            }
+        </div>
+    }
+</div>

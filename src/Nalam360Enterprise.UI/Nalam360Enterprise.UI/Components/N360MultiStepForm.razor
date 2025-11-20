@@ -1,0 +1,197 @@
+@using Nalam360Enterprise.UI.Models
+@using StepperOrientation = Nalam360Enterprise.UI.Models.StepperOrientation
+
+<div class="n360-multistep-form @CssClass @(Config?.Orientation == StepperOrientation.Vertical ? "vertical" : "horizontal")">
+    @if (Config?.ShowProgressBar == true)
+    {
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: @GetProgressPercentage()%"></div>
+        </div>
+    }
+
+    <div class="stepper-container">
+        <div class="stepper @(Config?.Orientation == StepperOrientation.Vertical ? "stepper-vertical" : "stepper-horizontal")">
+            @for (int i = 0; i < (Config?.Steps.Count ?? 0); i++)
+            {
+                var step = Config!.Steps[i];
+                var stepNumber = i + 1;
+                var isActive = i == _currentStepIndex;
+                var isCompleted = step.IsCompleted;
+                var isAccessible = i <= _currentStepIndex || Config.AllowStepSkipping;
+
+                <div class="step @(isActive ? "active" : "") @(isCompleted ? "completed" : "") @(isAccessible ? "accessible" : "")">
+                    <div class="step-indicator" @onclick="() => isAccessible ? JumpToStep(i) : Task.CompletedTask">
+                        @if (isCompleted)
+                        {
+                            <span class="step-icon">✓</span>
+                        }
+                        else if (Config?.ShowStepNumbers == true)
+                        {
+                            <span class="step-number">@stepNumber</span>
+                        }
+                        else if (!string.IsNullOrEmpty(step.Icon))
+                        {
+                            <span class="step-icon">@step.Icon</span>
+                        }
+                    </div>
+                    
+                    <div class="step-content">
+                        <div class="step-title">@step.Title</div>
+                        @if (!string.IsNullOrEmpty(step.Description))
+                        {
+                            <div class="step-description">@step.Description</div>
+                        }
+                    </div>
+
+                    @if (i < Config.Steps.Count - 1)
+                    {
+                        <div class="step-connector"></div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="form-content">
+        @if (_currentStepIndex >= 0 && _currentStepIndex < (Config?.Steps.Count ?? 0))
+        {
+            @StepContent?.Invoke(Config!.Steps[_currentStepIndex])
+        }
+
+        @if (Config?.Steps[_currentStepIndex].ValidationErrors.Any() == true)
+        {
+            <div class="validation-summary">
+                <div class="validation-title">Please correct the following errors:</div>
+                <ul class="validation-list">
+                    @foreach (var error in Config.Steps[_currentStepIndex].ValidationErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <div class="form-actions">
+        @if (_currentStepIndex > 0)
+        {
+            <button class="btn btn-secondary" @onclick="PreviousStep" disabled="@IsLoading">
+                ← Previous
+            </button>
+        }
+
+        @if (Config?.Steps[_currentStepIndex].IsOptional == true && _currentStepIndex < (Config?.Steps.Count ?? 0) - 1)
+        {
+            <button class="btn btn-secondary" @onclick="SkipStep" disabled="@IsLoading">
+                Skip
+            </button>
+        }
+
+        @if (_currentStepIndex < (Config?.Steps.Count ?? 0) - 1)
+        {
+            <button class="btn btn-primary" @onclick="NextStep" disabled="@IsLoading">
+                Next →
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-primary" @onclick="SubmitForm" disabled="@IsLoading">
+                @(SubmitButtonText ?? "Submit")
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MultiStepFormConfig? Config { get; set; }
+    [Parameter] public RenderFragment<FormStep>? StepContent { get; set; }
+    [Parameter] public string? SubmitButtonText { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public EventCallback<StepChangeEvent> OnStepChanged { get; set; }
+    [Parameter] public EventCallback<FormSubmissionData> OnSubmit { get; set; }
+
+    private int _currentStepIndex = 0;
+
+    private double GetProgressPercentage()
+    {
+        if (Config?.Steps == null || Config.Steps.Count == 0) return 0;
+        return ((double)(_currentStepIndex + 1) / Config.Steps.Count) * 100;
+    }
+
+    private async Task NextStep()
+    {
+        if (Config == null || _currentStepIndex >= Config.Steps.Count - 1) return;
+
+        var currentStep = Config.Steps[_currentStepIndex];
+        
+        if (Config.ValidateOnStepChange && !currentStep.IsValid)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        currentStep.IsCompleted = true;
+        await ChangeStep(_currentStepIndex + 1, NavigationDirection.Next);
+    }
+
+    private async Task PreviousStep()
+    {
+        if (_currentStepIndex <= 0) return;
+        await ChangeStep(_currentStepIndex - 1, NavigationDirection.Previous);
+    }
+
+    private async Task SkipStep()
+    {
+        if (Config == null) return;
+        
+        var currentStep = Config.Steps[_currentStepIndex];
+        if (currentStep.IsOptional)
+        {
+            currentStep.IsSkipped = true;
+            await NextStep();
+        }
+    }
+
+    private async Task JumpToStep(int index)
+    {
+        if (Config?.AllowStepSkipping != true && index > _currentStepIndex) return;
+        await ChangeStep(index, NavigationDirection.Jump);
+    }
+
+    private async Task ChangeStep(int newIndex, NavigationDirection direction)
+    {
+        var changeEvent = new StepChangeEvent
+        {
+            FromStep = _currentStepIndex,
+            ToStep = newIndex,
+            Direction = direction
+        };
+
+        await OnStepChanged.InvokeAsync(changeEvent);
+
+        if (!changeEvent.IsCancelled)
+        {
+            _currentStepIndex = newIndex;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitForm()
+    {
+        if (Config == null) return;
+
+        var submissionData = new FormSubmissionData
+        {
+            CompletedSteps = Config.Steps.Where(s => s.IsCompleted).Select(s => s.Id).ToList(),
+            SkippedSteps = Config.Steps.Where(s => s.IsSkipped).Select(s => s.Id).ToList()
+        };
+
+        foreach (var step in Config.Steps)
+        {
+            submissionData.StepData[step.Id] = step.Data;
+        }
+
+        await OnSubmit.InvokeAsync(submissionData);
+    }
+}

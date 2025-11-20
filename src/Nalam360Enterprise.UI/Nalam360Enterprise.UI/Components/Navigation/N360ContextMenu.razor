@@ -1,0 +1,140 @@
+@using Syncfusion.Blazor.Navigations
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-contextmenu @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfContextMenu TValue="MenuItem"
+                       Target="@Target"
+                       Items="@FilteredItems"
+                       Filter="@Filter"
+                       ShowItemOnClick="@ShowItemOnClick"
+                       CssClass="@GetInternalCssClass()"
+                       OnItemSelected="@OnItemSelectedHandler"
+                       OnOpen="@OnOpenHandler"
+                       OnClose="@OnCloseHandler">
+            <MenuFieldSettings Text="Text" 
+                               IconCss="IconCss" 
+                               Url="Url" 
+                               Children="Children" 
+                               Id="Id" 
+                               ParentId="ParentId"
+                               Separator="Separator" />
+            @if (ItemTemplate != null)
+            {
+                <MenuTemplates TValue="MenuItem">
+                    <Template>
+                        @ItemTemplate(context)
+                    </Template>
+                </MenuTemplates>
+            }
+        </SfContextMenu>
+        
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public string Target { get; set; } = "body";
+    [Parameter] public string? Filter { get; set; }
+    [Parameter] public List<MenuItem>? Items { get; set; }
+    [Parameter] public bool ShowItemOnClick { get; set; }
+    [Parameter] public RenderFragment<MenuItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool FilterByPermission { get; set; } = true;
+
+    // Events
+    [Parameter] public EventCallback<MenuItem> OnItemSelected { get; set; }
+    [Parameter] public EventCallback<BeforeOpenCloseMenuEventArgs<MenuItem>> OnOpen { get; set; }
+    [Parameter] public EventCallback<BeforeOpenCloseMenuEventArgs<MenuItem>> OnClose { get; set; }
+
+    private bool _hasPermission = true;
+    private List<MenuItem>? _filteredItems;
+
+    private List<MenuItem>? FilteredItems => _filteredItems ?? Items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (FilterByPermission && PermissionService != null && Items != null)
+        {
+            _filteredItems = await FilterItemsByPermissionAsync(Items);
+        }
+    }
+
+    private async Task<List<MenuItem>> FilterItemsByPermissionAsync(List<MenuItem> items)
+    {
+        var filtered = new List<MenuItem>();
+
+        foreach (var item in items)
+        {
+            if (string.IsNullOrEmpty(item.RequiredPermission) || 
+                await PermissionService!.HasPermissionAsync(item.RequiredPermission))
+            {
+                var filteredItem = new MenuItem
+                {
+                    Id = item.Id,
+                    Text = item.Text,
+                    IconCss = item.IconCss,
+                    Url = item.Url,
+                    Separator = item.Separator,
+                    RequiredPermission = item.RequiredPermission
+                };
+
+                if (item.Children?.Any() == true)
+                {
+                    filteredItem.Children = await FilterItemsByPermissionAsync(item.Children);
+                }
+
+                filtered.Add(filteredItem);
+            }
+        }
+
+        return filtered;
+    }
+
+    private async Task OnItemSelectedHandler(MenuEventArgs<MenuItem> args)
+    {
+        if (args.Item != null)
+        {
+            await OnItemSelected.InvokeAsync(args.Item);
+        }
+    }
+
+    private async Task OnOpenHandler(BeforeOpenCloseMenuEventArgs<MenuItem> args)
+    {
+        await OnOpen.InvokeAsync(args);
+    }
+
+    private async Task OnCloseHandler(BeforeOpenCloseMenuEventArgs<MenuItem> args)
+    {
+        await OnClose.InvokeAsync(args);
+    }
+
+    private string GetInternalCssClass()
+    {
+        var classes = new List<string> { "n360-contextmenu__control" };
+        
+        if (!string.IsNullOrEmpty(InternalCssClass))
+        {
+            classes.Add(InternalCssClass);
+        }
+
+        return string.Join(" ", classes);
+    }
+}

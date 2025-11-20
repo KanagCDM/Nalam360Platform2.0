@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Caching</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Caching.ICacheService">
+            <summary>
+            Cache service interface for storing and retrieving cached data.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.GetAsync``1(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a value from the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.SetAsync``1(System.String,``0,System.Nullable{System.TimeSpan},System.Threading.CancellationToken)">
+            <summary>
+            Sets a value in the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.GetOrSetAsync``1(System.String,System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{``0}},System.Nullable{System.TimeSpan},System.Threading.CancellationToken)">
+            <summary>
+            Gets a value from the cache or computes it if not found.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.RemoveAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes a value from the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.RemoveByPatternAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes all values matching a pattern.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a key exists in the cache.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Caching.MemoryCacheService">
+            <summary>
+            In-memory cache implementation.
+            </summary>
+        </member>
+    </members>
+</doc>

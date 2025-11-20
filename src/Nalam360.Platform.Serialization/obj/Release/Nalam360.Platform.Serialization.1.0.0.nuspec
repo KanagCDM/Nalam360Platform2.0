@@ -4,15 +4,18 @@
     <id>Nalam360.Platform.Serialization</id>
     <version>1.0.0</version>
     <authors>Nalam360</authors>
-    <description>Serialization abstractions for Nalam360 Enterprise Platform with JSON support.</description>
-    <tags>serialization json enterprise</tags>
-    <repository type="git" commit="0af7005af0816345e3fdc749459113bf3b840714" />
+    <description>Serialization abstractions for Nalam360 Enterprise Platform with JSON, XML, and Protobuf support.</description>
+    <tags>serialization json xml protobuf enterprise</tags>
+    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
     <dependencies>
-      <group targetFramework="net8.0" />
+      <group targetFramework="net8.0">
+        <dependency id="Google.Protobuf" version="3.25.2" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.1" exclude="Build,Analyzers" />
+      </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Serialization/bin/Release/net8.0/Nalam360.Platform.Serialization.dll" target="lib/net8.0/Nalam360.Platform.Serialization.dll" />
-    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Serialization/bin/Release/net8.0/Nalam360.Platform.Serialization.xml" target="lib/net8.0/Nalam360.Platform.Serialization.xml" />
+    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.dll" target="lib\net8.0\Nalam360.Platform.Serialization.dll" />
+    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.xml" target="lib\net8.0\Nalam360.Platform.Serialization.xml" />
   </files>
 </package>

@@ -4,6 +4,48 @@
         <name>Nalam360.Platform.Serialization</name>
     </assembly>
     <members>
+        <member name="T:Nalam360.Platform.Serialization.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering serialization services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.DependencyInjection.ServiceCollectionExtensions.AddJsonSerializer(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds JSON serializer to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.DependencyInjection.ServiceCollectionExtensions.AddXmlSerializer(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds XML serializer to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.DependencyInjection.ServiceCollectionExtensions.AddProtobufSerializer(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds Protobuf serializer to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.DependencyInjection.ServiceCollectionExtensions.AddSerializers(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds all serializers to the service collection.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Serialization.GoogleProtobufSerializer">
+            <summary>
+            Google Protobuf serializer implementation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.GoogleProtobufSerializer.Serialize``1(``0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.GoogleProtobufSerializer.Deserialize``1(System.Byte[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.GoogleProtobufSerializer.Serialize``1(``0,System.IO.Stream)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.GoogleProtobufSerializer.Deserialize``1(System.IO.Stream)">
+            <inheritdoc/>
+        </member>
         <member name="T:Nalam360.Platform.Serialization.IJsonSerializer">
             <summary>
             JSON serializer interface.
@@ -23,6 +65,73 @@
             <summary>
             System.Text.Json implementation.
             </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Serialization.IProtobufSerializer">
+            <summary>
+            Protobuf serializer interface.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IProtobufSerializer.Serialize``1(``0)">
+            <summary>
+            Serializes an object to protobuf byte array.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IProtobufSerializer.Deserialize``1(System.Byte[])">
+            <summary>
+            Deserializes a protobuf byte array to an object.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IProtobufSerializer.Serialize``1(``0,System.IO.Stream)">
+            <summary>
+            Serializes an object to protobuf stream.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IProtobufSerializer.Deserialize``1(System.IO.Stream)">
+            <summary>
+            Deserializes a protobuf stream to an object.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Serialization.IXmlSerializer">
+            <summary>
+            XML serializer interface.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IXmlSerializer.Serialize``1(``0)">
+            <summary>
+            Serializes an object to XML string.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IXmlSerializer.Deserialize``1(System.String)">
+            <summary>
+            Deserializes an XML string to an object.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IXmlSerializer.Serialize``1(``0,System.IO.Stream)">
+            <summary>
+            Serializes an object to XML stream.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.IXmlSerializer.Deserialize``1(System.IO.Stream)">
+            <summary>
+            Deserializes an XML stream to an object.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Serialization.SystemXmlSerializer">
+            <summary>
+            System.Xml.Serialization implementation of XML serializer.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.Serialize``1(``0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.Deserialize``1(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.Serialize``1(``0,System.IO.Stream)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.Deserialize``1(System.IO.Stream)">
+            <inheritdoc/>
         </member>
     </members>
 </doc>

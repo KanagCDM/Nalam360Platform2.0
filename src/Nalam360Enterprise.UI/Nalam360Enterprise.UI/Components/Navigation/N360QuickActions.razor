@@ -1,0 +1,267 @@
+@using Nalam360Enterprise.UI.Core
+@inherits N360ComponentBase
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-quick-actions @Position.ToString().ToLower() @(IsOpen ? "open" : "") @(IsDark ? "dark" : "")">
+    <!-- Main Button -->
+    <button 
+        class="quick-actions-button @Size.ToString().ToLower() @(IsLoading ? "loading" : "")"
+        @onclick="Toggle"
+        title="@Tooltip"
+        disabled="@IsDisabled">
+        @if (IsLoading)
+        {
+            <i class="fas fa-spinner fa-spin button-icon"></i>
+        }
+        else
+        {
+            <i class="@Icon button-icon"></i>
+        }
+        @if (ShowBadge && BadgeCount > 0)
+        {
+            <span class="button-badge">@(BadgeCount > 99 ? "99+" : BadgeCount.ToString())</span>
+        }
+    </button>
+
+    <!-- Actions Menu -->
+    @if (IsOpen)
+    {
+        <div class="actions-backdrop" @onclick="Close"></div>
+        <div class="actions-menu">
+            @if (ShowHeader && !string.IsNullOrEmpty(MenuTitle))
+            {
+                <div class="menu-header">
+                    <span class="menu-title">@MenuTitle</span>
+                    @if (ShowCloseButton)
+                    {
+                        <button class="menu-close" @onclick="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    }
+                </div>
+            }
+            
+            <div class="menu-content">
+                @foreach (var action in GetVisibleActions())
+                {
+                    <button 
+                        class="action-item @action.Variant.ToString().ToLower() @(action.IsDisabled ? "disabled" : "")"
+                        @onclick="() => ExecuteAction(action)"
+                        disabled="@action.IsDisabled"
+                        title="@action.Tooltip">
+                        <div class="action-icon-wrapper">
+                            <i class="@action.Icon action-icon"></i>
+                            @if (action.ShowBadge && action.BadgeCount > 0)
+                            {
+                                <span class="action-badge">@action.BadgeCount</span>
+                            }
+                        </div>
+                        <div class="action-info">
+                            <span class="action-label">@action.Label</span>
+                            @if (!string.IsNullOrEmpty(action.Description))
+                            {
+                                <span class="action-description">@action.Description</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(action.Shortcut))
+                        {
+                            <span class="action-shortcut">@action.Shortcut</span>
+                        }
+                    </button>
+                }
+
+                @if (!GetVisibleActions().Any())
+                {
+                    <div class="menu-empty">
+                        <i class="fas fa-inbox empty-icon"></i>
+                        <p class="empty-text">No actions available</p>
+                    </div>
+                }
+            </div>
+
+            @if (ShowFooter && !string.IsNullOrEmpty(FooterText))
+            {
+                <div class="menu-footer">
+                    @FooterText
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public List<QuickAction> Actions { get; set; } = new();
+    [Parameter] public string Icon { get; set; } = "fas fa-plus";
+    [Parameter] public string Tooltip { get; set; } = "Quick Actions";
+    [Parameter] public ActionPosition Position { get; set; } = ActionPosition.BottomRight;
+    [Parameter] public ActionSize Size { get; set; } = ActionSize.Large;
+    [Parameter] public bool ShowBadge { get; set; } = false;
+    [Parameter] public int BadgeCount { get; set; } = 0;
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public string MenuTitle { get; set; } = "Quick Actions";
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public bool ShowFooter { get; set; } = false;
+    [Parameter] public string? FooterText { get; set; }
+    [Parameter] public bool CloseOnAction { get; set; } = true;
+    [Parameter] public bool IsDisabled { get; set; } = false;
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<QuickAction> OnActionExecuted { get; set; }
+
+    // State
+    private bool IsOpen { get; set; } = false;
+
+    // Enums
+    public enum ActionPosition
+    {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight,
+        TopCenter,
+        BottomCenter
+    }
+
+    public enum ActionSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+
+    public enum ActionVariant
+    {
+        Default,
+        Primary,
+        Success,
+        Warning,
+        Danger,
+        Info
+    }
+
+    // Models
+    public class QuickAction
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Label { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string Icon { get; set; } = "fas fa-star";
+        public ActionVariant Variant { get; set; } = ActionVariant.Default;
+        public string? Tooltip { get; set; }
+        public string? Shortcut { get; set; }
+        public bool ShowBadge { get; set; } = false;
+        public int BadgeCount { get; set; } = 0;
+        public bool IsDisabled { get; set; } = false;
+        public string? RequiredPermission { get; set; }
+        public Func<Task>? OnExecute { get; set; }
+    }
+
+    // Methods
+    public void Open()
+    {
+        IsOpen = true;
+        StateHasChanged();
+        OnOpen.InvokeAsync();
+        LogAudit("QuickActionsOpened", "Opened quick actions menu");
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+        StateHasChanged();
+        OnClose.InvokeAsync();
+        LogAudit("QuickActionsClosed", "Closed quick actions menu");
+    }
+
+    public void Toggle()
+    {
+        if (IsOpen) Close();
+        else Open();
+    }
+
+    private List<QuickAction> GetVisibleActions()
+    {
+        return Actions.Where(a => !a.IsDisabled || ShowDisabledActions).ToList();
+    }
+
+    private bool ShowDisabledActions => true; // Show but disable
+
+    private async Task ExecuteAction(QuickAction action)
+    {
+        if (action.IsDisabled) return;
+
+        // Check permission
+        if (!string.IsNullOrEmpty(action.RequiredPermission) && PermissionService != null)
+        {
+            if (!await PermissionService.HasPermissionAsync(action.RequiredPermission))
+            {
+                return;
+            }
+        }
+
+        // Execute action
+        if (action.OnExecute != null)
+        {
+            await action.OnExecute.Invoke();
+        }
+
+        // Log audit
+        LogAudit("QuickActionExecuted", $"Executed action: {action.Label}");
+
+        // Notify parent
+        await OnActionExecuted.InvokeAsync(action);
+
+        // Close menu if configured
+        if (CloseOnAction)
+        {
+            Close();
+        }
+    }
+
+    private void LogAudit(string action, string details)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTime.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "QuickActions",
+                Action = action,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Details"] = details
+                }
+            });
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // Filter actions by permission
+        if (PermissionService != null)
+        {
+            var filteredActions = new List<QuickAction>();
+            foreach (var action in Actions)
+            {
+                if (string.IsNullOrEmpty(action.RequiredPermission) ||
+                    await PermissionService.HasPermissionAsync(action.RequiredPermission))
+                {
+                    filteredActions.Add(action);
+                }
+            }
+            Actions = filteredActions;
+        }
+    }
+}

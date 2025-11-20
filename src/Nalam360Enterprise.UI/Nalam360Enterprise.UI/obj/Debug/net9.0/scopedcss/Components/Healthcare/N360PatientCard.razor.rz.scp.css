@@ -1,0 +1,324 @@
+.n360-patient-card[b-cca3757a7v] {
+    background: var(--n360-card-background, #ffffff);
+    border: 1px solid var(--n360-border-color, #e0e0e0);
+    border-radius: var(--n360-border-radius, 8px);
+    padding: 20px;
+    box-shadow: var(--n360-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
+    transition: all 0.3s ease;
+}
+
+.n360-patient-card:hover[b-cca3757a7v] {
+    box-shadow: var(--n360-shadow-md, 0 4px 8px rgba(0,0,0,0.15));
+}
+
+.n360-patient-card--emergency[b-cca3757a7v] {
+    border-left: 4px solid #d32f2f;
+    background: linear-gradient(to right, #ffebee 0%, #ffffff 10%);
+}
+
+.n360-patient-card--has-allergies[b-cca3757a7v] {
+    border-left: 4px solid #ff9800;
+}
+
+.n360-patient-card__container[b-cca3757a7v] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.n360-patient-card__header[b-cca3757a7v] {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.n360-patient-card__avatar-section[b-cca3757a7v] {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.n360-patient-card__avatar[b-cca3757a7v] {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--n360-border-color, #e0e0e0);
+}
+
+.n360-patient-card__avatar--placeholder[b-cca3757a7v] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.n360-patient-card__initials[b-cca3757a7v] {
+    color: white;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.n360-patient-card__emergency-badge[b-cca3757a7v] {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #d32f2f;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    animation: pulse-b-cca3757a7v 2s infinite;
+}
+
+@keyframes pulse-b-cca3757a7v {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.n360-patient-card__info[b-cca3757a7v] {
+    flex: 1;
+    min-width: 0;
+}
+
+.n360-patient-card__name-section[b-cca3757a7v] {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.n360-patient-card__name[b-cca3757a7v] {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--n360-text-primary, #212121);
+}
+
+.n360-patient-card__preferred-name[b-cca3757a7v] {
+    font-size: 16px;
+    color: var(--n360-text-secondary, #757575);
+    font-style: italic;
+}
+
+.n360-patient-card__demographics[b-cca3757a7v] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--n360-text-secondary, #757575);
+}
+
+.n360-patient-card__mrn[b-cca3757a7v] {
+    font-weight: 600;
+    color: var(--n360-primary-color, #1976d2);
+}
+
+.n360-patient-card__actions[b-cca3757a7v] {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.n360-patient-card__critical-info[b-cca3757a7v] {
+    background: var(--n360-background-alt, #f5f5f5);
+    border-radius: 6px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.n360-patient-card__section[b-cca3757a7v] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.n360-patient-card__section-header[b-cca3757a7v] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--n360-text-primary, #212121);
+}
+
+.n360-patient-card__icon[b-cca3757a7v] {
+    font-size: 16px;
+}
+
+.n360-patient-card__timestamp[b-cca3757a7v] {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--n360-text-tertiary, #9e9e9e);
+    font-weight: normal;
+}
+
+.n360-patient-card__section-content[b-cca3757a7v] {
+    padding-left: 24px;
+}
+
+.n360-patient-card__allergies[b-cca3757a7v] {
+    border-left: 3px solid #ff9800;
+    padding-left: 12px;
+}
+
+.n360-patient-card__allergy-tag[b-cca3757a7v] {
+    display: inline-block;
+    background: #fff3e0;
+    color: #e65100;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-right: 8px;
+    margin-bottom: 4px;
+    border: 1px solid #ffb74d;
+}
+
+.n360-patient-card__medications[b-cca3757a7v] {
+    border-left: 3px solid #2196f3;
+    padding-left: 12px;
+}
+
+.n360-patient-card__medication-list[b-cca3757a7v] {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.n360-patient-card__medication-list li[b-cca3757a7v] {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--n360-text-primary, #424242);
+}
+
+.n360-patient-card__more-items[b-cca3757a7v] {
+    color: var(--n360-primary-color, #1976d2);
+    font-style: italic;
+    cursor: pointer;
+}
+
+.n360-patient-card__vitals[b-cca3757a7v] {
+    border-left: 3px solid #4caf50;
+    padding-left: 12px;
+}
+
+.n360-patient-card__vitals-grid[b-cca3757a7v] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.n360-patient-card__contact[b-cca3757a7v] {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-top: 1px solid var(--n360-border-color, #e0e0e0);
+}
+
+.n360-patient-card__contact-item[b-cca3757a7v] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.n360-patient-card__contact-item a[b-cca3757a7v] {
+    color: var(--n360-primary-color, #1976d2);
+    text-decoration: none;
+}
+
+.n360-patient-card__contact-item a:hover[b-cca3757a7v] {
+    text-decoration: underline;
+}
+
+.n360-patient-card__emergency-contact[b-cca3757a7v] {
+    background: #fff3e0;
+    border: 1px solid #ffb74d;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.n360-patient-card__custom-content[b-cca3757a7v] {
+    padding-top: 16px;
+    border-top: 1px solid var(--n360-border-color, #e0e0e0);
+}
+
+.n360-patient-card__no-permission[b-cca3757a7v] {
+    padding: 20px;
+    text-align: center;
+    color: var(--n360-error-color, #d32f2f);
+    font-weight: 500;
+}
+
+/* RTL Support */
+[dir="rtl"] .n360-patient-card__emergency-badge[b-cca3757a7v] {
+    right: auto;
+    left: -4px;
+}
+
+[dir="rtl"] .n360-patient-card__section-content[b-cca3757a7v] {
+    padding-left: 0;
+    padding-right: 24px;
+}
+
+[dir="rtl"] .n360-patient-card__allergies[b-cca3757a7v],
+[dir="rtl"] .n360-patient-card__medications[b-cca3757a7v],
+[dir="rtl"] .n360-patient-card__vitals[b-cca3757a7v] {
+    border-left: none;
+    border-right: 3px solid;
+    padding-left: 0;
+    padding-right: 12px;
+}
+
+[dir="rtl"] .n360-patient-card__medication-list[b-cca3757a7v] {
+    padding-left: 0;
+    padding-right: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .n360-patient-card__header[b-cca3757a7v] {
+        flex-direction: column;
+    }
+    
+    .n360-patient-card__avatar[b-cca3757a7v] {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .n360-patient-card__demographics[b-cca3757a7v] {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .n360-patient-card__vitals-grid[b-cca3757a7v] {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .n360-patient-card[b-cca3757a7v] {
+        background: var(--n360-card-background, #1e1e1e);
+        border-color: var(--n360-border-color, #424242);
+    }
+    
+    .n360-patient-card--emergency[b-cca3757a7v] {
+        background: linear-gradient(to right, #3a1616 0%, #1e1e1e 10%);
+    }
+    
+    .n360-patient-card__critical-info[b-cca3757a7v] {
+        background: var(--n360-background-alt, #2a2a2a);
+    }
+    
+    .n360-patient-card__name[b-cca3757a7v] {
+        color: var(--n360-text-primary, #f5f5f5);
+    }
+}

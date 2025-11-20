@@ -1,0 +1,107 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-divider @GetDividerClass()" style="@GetDividerStyle()" @attributes="GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(Text) || ChildContent != null)
+        {
+            <span class="n360-divider__text">
+                @if (ChildContent != null)
+                {
+                    @ChildContent
+                }
+                else
+                {
+                    @Text
+                }
+            </span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public DividerOrientation Orientation { get; set; } = DividerOrientation.Horizontal;
+    [Parameter] public DividerTextAlignment TextAlignment { get; set; } = DividerTextAlignment.Center;
+    [Parameter] public bool Dashed { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Margin { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetDividerClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-divider",
+            $"n360-divider--{Orientation.ToString().ToLower()}"
+        };
+
+        if (!string.IsNullOrEmpty(Text) || ChildContent != null)
+        {
+            classes.Add($"n360-divider--{TextAlignment.ToString().ToLower()}");
+        }
+
+        if (Dashed)
+        {
+            classes.Add("n360-divider--dashed");
+        }
+
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetDividerStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(Color))
+        {
+            styles.Add($"border-color: {Color}");
+        }
+
+        if (!string.IsNullOrEmpty(Margin))
+        {
+            styles.Add($"margin: {Margin}");
+        }
+
+        return styles.Any() ? string.Join("; ", styles) : string.Empty;
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        attributes["role"] = "separator";
+
+        return attributes;
+    }
+}

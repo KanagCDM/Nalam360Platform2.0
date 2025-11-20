@@ -1,0 +1,393 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-transfer @CssClass" style="@Style" @attributes="GetHtmlAttributes()">
+        @* Source List *@
+        <div class="n360-transfer__list n360-transfer__list--source">
+            <div class="n360-transfer__list-header">
+                <label class="n360-transfer__checkbox">
+                    <input type="checkbox" 
+                           @bind="_sourceSelectAll" 
+                           @bind:after="HandleSourceSelectAllAsync"
+                           disabled="@(!_filteredSourceItems.Any())" />
+                    <span>@SourceTitle (@_selectedSourceItems.Count/@_filteredSourceItems.Count)</span>
+                </label>
+            </div>
+            
+            @if (ShowSearch)
+            {
+                <div class="n360-transfer__search">
+                    <input type="text" 
+                           placeholder="@SearchPlaceholder"
+                           @bind="_sourceSearchText"
+                           @bind:event="oninput"
+                           @bind:after="FilterSourceItemsAsync"
+                           class="n360-transfer__search-input" />
+                </div>
+            }
+            
+            <div class="n360-transfer__list-body">
+                @if (!_filteredSourceItems.Any())
+                {
+                    <div class="n360-transfer__empty">
+                        @if (EmptyContent != null)
+                        {
+                            @EmptyContent
+                        }
+                        else
+                        {
+                            <span>No items</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in _filteredSourceItems)
+                    {
+                        var isSelected = _selectedSourceItems.Contains(item);
+                        var isDisabled = DisabledKeys?.Contains(KeySelector(item)) ?? false;
+                        
+                        <label class="n360-transfer__item @(isSelected ? "n360-transfer__item--selected" : "") @(isDisabled ? "n360-transfer__item--disabled" : "")">
+                            <input type="checkbox" 
+                                   @bind:get="isSelected"
+                                   @bind:set="(val) => HandleSourceItemSelectAsync(item, val)"
+                                   disabled="@isDisabled" />
+                            @if (ItemTemplate != null)
+                            {
+                                @ItemTemplate(item)
+                            }
+                            else
+                            {
+                                <span>@TitleSelector(item)</span>
+                            }
+                        </label>
+                    }
+                }
+            </div>
+        </div>
+        
+        @* Transfer Actions *@
+        <div class="n360-transfer__actions">
+            <button type="button" 
+                    class="n360-transfer__button"
+                    @onclick="TransferToTargetAsync"
+                    disabled="@(!_selectedSourceItems.Any())">
+                @if (ToTargetIcon != null)
+                {
+                    @ToTargetIcon
+                }
+                else
+                {
+                    <span>→</span>
+                }
+            </button>
+            <button type="button" 
+                    class="n360-transfer__button"
+                    @onclick="TransferToSourceAsync"
+                    disabled="@(!_selectedTargetItems.Any())">
+                @if (ToSourceIcon != null)
+                {
+                    @ToSourceIcon
+                }
+                else
+                {
+                    <span>←</span>
+                }
+            </button>
+        </div>
+        
+        @* Target List *@
+        <div class="n360-transfer__list n360-transfer__list--target">
+            <div class="n360-transfer__list-header">
+                <label class="n360-transfer__checkbox">
+                    <input type="checkbox" 
+                           @bind="_targetSelectAll"
+                           @bind:after="HandleTargetSelectAllAsync"
+                           disabled="@(!_filteredTargetItems.Any())" />
+                    <span>@TargetTitle (@_selectedTargetItems.Count/@_filteredTargetItems.Count)</span>
+                </label>
+            </div>
+            
+            @if (ShowSearch)
+            {
+                <div class="n360-transfer__search">
+                    <input type="text" 
+                           placeholder="@SearchPlaceholder"
+                           @bind="_targetSearchText"
+                           @bind:event="oninput"
+                           @bind:after="FilterTargetItemsAsync"
+                           class="n360-transfer__search-input" />
+                </div>
+            }
+            
+            <div class="n360-transfer__list-body">
+                @if (!_filteredTargetItems.Any())
+                {
+                    <div class="n360-transfer__empty">
+                        @if (EmptyContent != null)
+                        {
+                            @EmptyContent
+                        }
+                        else
+                        {
+                            <span>No items</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in _filteredTargetItems)
+                    {
+                        var isSelected = _selectedTargetItems.Contains(item);
+                        var isDisabled = DisabledKeys?.Contains(KeySelector(item)) ?? false;
+                        
+                        <label class="n360-transfer__item @(isSelected ? "n360-transfer__item--selected" : "") @(isDisabled ? "n360-transfer__item--disabled" : "")">
+                            <input type="checkbox" 
+                                   @bind:get="isSelected"
+                                   @bind:set="(val) => HandleTargetItemSelectAsync(item, val)"
+                                   disabled="@isDisabled" />
+                            @if (ItemTemplate != null)
+                            {
+                                @ItemTemplate(item)
+                            }
+                            else
+                            {
+                                <span>@TitleSelector(item)</span>
+                            }
+                        </label>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public List<TItem> DataSource { get; set; } = new();
+    [Parameter] public List<object> TargetKeys { get; set; } = new();
+    [Parameter] public EventCallback<List<object>> TargetKeysChanged { get; set; }
+    [Parameter] public Func<TItem, object> KeySelector { get; set; } = item => item!;
+    [Parameter] public Func<TItem, string> TitleSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<TItem, string, bool>? FilterPredicate { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? EmptyContent { get; set; }
+    [Parameter] public RenderFragment? ToTargetIcon { get; set; }
+    [Parameter] public RenderFragment? ToSourceIcon { get; set; }
+    [Parameter] public string SourceTitle { get; set; } = "Source";
+    [Parameter] public string TargetTitle { get; set; } = "Target";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public List<object>? DisabledKeys { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TransferChangeEventArgs<TItem>> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private List<TItem> _sourceItems = new();
+    private List<TItem> _targetItems = new();
+    private List<TItem> _filteredSourceItems = new();
+    private List<TItem> _filteredTargetItems = new();
+    private HashSet<TItem> _selectedSourceItems = new();
+    private HashSet<TItem> _selectedTargetItems = new();
+    private bool _sourceSelectAll;
+    private bool _targetSelectAll;
+    private string _sourceSearchText = string.Empty;
+    private string _targetSearchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        UpdateLists();
+    }
+
+    protected override void OnParametersSet()
+    {
+        UpdateLists();
+    }
+
+    private void UpdateLists()
+    {
+        _targetItems = DataSource.Where(item => TargetKeys.Contains(KeySelector(item))).ToList();
+        _sourceItems = DataSource.Except(_targetItems).ToList();
+        _filteredSourceItems = _sourceItems;
+        _filteredTargetItems = _targetItems;
+    }
+
+    private Task FilterSourceItemsAsync()
+    {
+        _filteredSourceItems = string.IsNullOrWhiteSpace(_sourceSearchText)
+            ? _sourceItems
+            : _sourceItems.Where(item => 
+                FilterPredicate?.Invoke(item, _sourceSearchText) ?? 
+                TitleSelector(item).Contains(_sourceSearchText, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        
+        return Task.CompletedTask;
+    }
+
+    private Task FilterTargetItemsAsync()
+    {
+        _filteredTargetItems = string.IsNullOrWhiteSpace(_targetSearchText)
+            ? _targetItems
+            : _targetItems.Where(item => 
+                FilterPredicate?.Invoke(item, _targetSearchText) ?? 
+                TitleSelector(item).Contains(_targetSearchText, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandleSourceSelectAllAsync()
+    {
+        if (_sourceSelectAll)
+        {
+            _selectedSourceItems = _filteredSourceItems
+                .Where(item => !(DisabledKeys?.Contains(KeySelector(item)) ?? false))
+                .ToHashSet();
+        }
+        else
+        {
+            _selectedSourceItems.Clear();
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandleTargetSelectAllAsync()
+    {
+        if (_targetSelectAll)
+        {
+            _selectedTargetItems = _filteredTargetItems
+                .Where(item => !(DisabledKeys?.Contains(KeySelector(item)) ?? false))
+                .ToHashSet();
+        }
+        else
+        {
+            _selectedTargetItems.Clear();
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandleSourceItemSelectAsync(TItem item, bool selected)
+    {
+        if (selected)
+        {
+            _selectedSourceItems.Add(item);
+        }
+        else
+        {
+            _selectedSourceItems.Remove(item);
+            _sourceSelectAll = false;
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandleTargetItemSelectAsync(TItem item, bool selected)
+    {
+        if (selected)
+        {
+            _selectedTargetItems.Add(item);
+        }
+        else
+        {
+            _selectedTargetItems.Remove(item);
+            _targetSelectAll = false;
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private async Task TransferToTargetAsync()
+    {
+        var movedItems = _selectedSourceItems.ToList();
+        foreach (var item in movedItems)
+        {
+            var key = KeySelector(item);
+            if (!TargetKeys.Contains(key))
+            {
+                TargetKeys.Add(key);
+            }
+        }
+        
+        await LogTransferAsync("ToTarget", movedItems);
+        
+        _selectedSourceItems.Clear();
+        _sourceSelectAll = false;
+        UpdateLists();
+        
+        await TargetKeysChanged.InvokeAsync(TargetKeys);
+        await OnChange.InvokeAsync(new TransferChangeEventArgs<TItem>(movedItems, TransferDirection.ToTarget, TargetKeys));
+    }
+
+    private async Task TransferToSourceAsync()
+    {
+        var movedItems = _selectedTargetItems.ToList();
+        foreach (var item in movedItems)
+        {
+            TargetKeys.Remove(KeySelector(item));
+        }
+        
+        await LogTransferAsync("ToSource", movedItems);
+        
+        _selectedTargetItems.Clear();
+        _targetSelectAll = false;
+        UpdateLists();
+        
+        await TargetKeysChanged.InvokeAsync(TargetKeys);
+        await OnChange.InvokeAsync(new TransferChangeEventArgs<TItem>(movedItems, TransferDirection.ToSource, TargetKeys));
+    }
+
+    private async Task LogTransferAsync(string direction, List<TItem> items)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Transfer",
+                Resource = AuditResource ?? "Transfer",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Direction", direction },
+                    { "ItemCount", items.Count },
+                    { "ItemKeys", items.Select(KeySelector).ToList() }
+                }
+            });
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

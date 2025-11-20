@@ -1,0 +1,916 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Notifications
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-clinical-decision-support">
+    @if (!HasPermission)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> You do not have permission to access Clinical Decision Support.
+        </div>
+        return;
+    }
+
+    <div class="cds-header">
+        <h3>
+            <i class="fas fa-stethoscope"></i> Clinical Decision Support
+            @if (UseRealAI)
+            {
+                <span class="badge bg-success ms-2">🤖 Real AI</span>
+            }
+        </h3>
+        <p class="cds-subtitle">AI-powered evidence-based recommendations and alerts</p>
+    </div>
+
+    <SfTab CssClass="cds-tabs">
+        <TabItems>
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Patient Analysis"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cds-patient-panel">
+                        <div class="patient-input-section">
+                            <div class="form-group">
+                                <label>Patient ID</label>
+                                <SfTextBox @bind-Value="@PatientId" Placeholder="Enter Patient ID" CssClass="cds-input"></SfTextBox>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Chief Complaint</label>
+                                <SfTextBox @bind-Value="@ChiefComplaint" Placeholder="e.g., Chest pain" CssClass="cds-input"></SfTextBox>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Clinical Context</label>
+                                <SfTextBox @bind-Value="@ClinicalContext" Multiline="true" Placeholder="Brief patient history, vitals, medications..." CssClass="cds-textarea"></SfTextBox>
+                            </div>
+
+                            <SfButton CssClass="e-primary cds-analyze-btn" OnClick="AnalyzePatient" Disabled="@IsAnalyzing">
+                                <i class="fas fa-brain"></i> @(IsAnalyzing ? "Analyzing..." : "Analyze & Get Recommendations")
+                            </SfButton>
+                        </div>
+
+                        @if (CurrentAnalysis != null)
+                        {
+                            <div class="analysis-results">
+                                <div class="result-summary">
+                                    <div class="summary-card alert-high">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <div>
+                                            <div class="summary-label">Critical Alerts</div>
+                                            <div class="summary-value">@CurrentAnalysis.CriticalAlerts.Count</div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-card alert-medium">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <div>
+                                            <div class="summary-label">Warnings</div>
+                                            <div class="summary-value">@CurrentAnalysis.Warnings.Count</div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-card recommendations">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <div>
+                                            <div class="summary-label">Recommendations</div>
+                                            <div class="summary-value">@CurrentAnalysis.Recommendations.Count</div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-card confidence">
+                                        <i class="fas fa-chart-line"></i>
+                                        <div>
+                                            <div class="summary-label">Confidence</div>
+                                            <div class="summary-value">@($"{CurrentAnalysis.OverallConfidence:F1}%")</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (CurrentAnalysis.CriticalAlerts.Any())
+                                {
+                                    <div class="alerts-section critical">
+                                        <h4><i class="fas fa-exclamation-circle"></i> Critical Alerts</h4>
+                                        @foreach (var alert in CurrentAnalysis.CriticalAlerts)
+                                        {
+                                            <div class="alert-card critical-alert">
+                                                <div class="alert-header">
+                                                    <span class="alert-title">@alert.Title</span>
+                                                    <span class="alert-severity">@alert.Severity</span>
+                                                </div>
+                                                <div class="alert-description">@alert.Description</div>
+                                                <div class="alert-action">
+                                                    <strong>Action Required:</strong> @alert.RecommendedAction
+                                                </div>
+                                                <div class="alert-footer">
+                                                    <span class="alert-source">Source: @alert.EvidenceSource</span>
+                                                    <span class="alert-confidence">@($"{alert.Confidence:F0}%")</span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (CurrentAnalysis.Warnings.Any())
+                                {
+                                    <div class="alerts-section warning">
+                                        <h4><i class="fas fa-exclamation-triangle"></i> Warnings</h4>
+                                        @foreach (var warning in CurrentAnalysis.Warnings)
+                                        {
+                                            <div class="alert-card warning-alert">
+                                                <div class="alert-header">
+                                                    <span class="alert-title">@warning.Title</span>
+                                                    <span class="alert-severity">@warning.Severity</span>
+                                                </div>
+                                                <div class="alert-description">@warning.Description</div>
+                                                <div class="alert-action">
+                                                    <strong>Recommendation:</strong> @warning.RecommendedAction
+                                                </div>
+                                                <div class="alert-footer">
+                                                    <span class="alert-source">Source: @warning.EvidenceSource</span>
+                                                    <span class="alert-confidence">@($"{warning.Confidence:F0}%")</span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Recommendations"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cds-recommendations-panel">
+                        @if (CurrentAnalysis?.Recommendations.Any() == true)
+                        {
+                            <div class="recommendations-grid">
+                                @foreach (var rec in CurrentAnalysis.Recommendations.OrderByDescending(r => r.Priority))
+                                {
+                                    <div class="recommendation-card priority-@rec.Priority.ToLower()">
+                                        <div class="rec-header">
+                                            <div>
+                                                <span class="rec-category">@rec.Category</span>
+                                                <h4 class="rec-title">@rec.Title</h4>
+                                            </div>
+                                            <span class="rec-priority">@rec.Priority</span>
+                                        </div>
+                                        <div class="rec-description">@rec.Description</div>
+                                        <div class="rec-rationale">
+                                            <strong>Clinical Rationale:</strong> @rec.ClinicalRationale
+                                        </div>
+                                        <div class="rec-evidence">
+                                            <i class="fas fa-book-medical"></i> @rec.EvidenceLevel - @rec.GuidelineReference
+                                        </div>
+                                        <div class="rec-footer">
+                                            <span class="rec-confidence">
+                                                <i class="fas fa-check-circle"></i> @($"{rec.Confidence:F1}%") confidence
+                                            </span>
+                                            <SfButton CssClass="e-small e-outline" IconCss="fas fa-info-circle">View Details</SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p>No recommendations available. Analyze a patient to see clinical recommendations.</p>
+                            </div>
+                        }
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Drug Interactions"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cds-interactions-panel">
+                        @if (CurrentAnalysis?.DrugInteractions.Any() == true)
+                        {
+                            <SfGrid DataSource="@CurrentAnalysis.DrugInteractions" AllowSorting="true" AllowFiltering="true">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(DrugInteraction.Drug1)" HeaderText="Drug 1" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(DrugInteraction.Drug2)" HeaderText="Drug 2" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(DrugInteraction.Severity)" HeaderText="Severity" Width="120">
+                                        <Template>
+                                            @{
+                                                var interaction = (context as DrugInteraction)!;
+                                                <span class="severity-badge severity-@interaction.Severity.ToLower()">@interaction.Severity</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(DrugInteraction.Description)" HeaderText="Interaction" Width="250"></GridColumn>
+                                    <GridColumn Field="@nameof(DrugInteraction.ClinicalEffect)" HeaderText="Clinical Effect" Width="200"></GridColumn>
+                                    <GridColumn Field="@nameof(DrugInteraction.Management)" HeaderText="Management" Width="200"></GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <i class="fas fa-pills"></i>
+                                <p>No drug interactions detected. Analyze a patient with medications to check for interactions.</p>
+                            </div>
+                        }
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Guidelines"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cds-guidelines-panel">
+                        @if (CurrentAnalysis?.GuidelineCompliance.Any() == true)
+                        {
+                            <div class="guidelines-list">
+                                @foreach (var guideline in CurrentAnalysis.GuidelineCompliance)
+                                {
+                                    <div class="guideline-card compliance-@guideline.ComplianceStatus.ToLower()">
+                                        <div class="guideline-header">
+                                            <div>
+                                                <h4>@guideline.GuidelineName</h4>
+                                                <span class="guideline-org">@guideline.Organization</span>
+                                            </div>
+                                            <span class="compliance-badge status-@guideline.ComplianceStatus.ToLower()">
+                                                @guideline.ComplianceStatus
+                                            </span>
+                                        </div>
+                                        <div class="guideline-criteria">
+                                            <strong>Criteria:</strong> @guideline.Criteria
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(guideline.Gap))
+                                        {
+                                            <div class="guideline-gap">
+                                                <i class="fas fa-exclamation-triangle"></i> <strong>Gap:</strong> @guideline.Gap
+                                            </div>
+                                        }
+                                        <div class="guideline-recommendation">
+                                            <strong>Recommendation:</strong> @guideline.Recommendation
+                                        </div>
+                                        <div class="guideline-footer">
+                                            <span class="guideline-year">Updated: @guideline.Year</span>
+                                            <span class="guideline-evidence">Evidence: @guideline.EvidenceLevel</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <i class="fas fa-file-medical-alt"></i>
+                                <p>No guideline compliance data available. Analyze a patient to check guideline adherence.</p>
+                            </div>
+                        }
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Risk Scores"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cds-risk-scores-panel">
+                        @if (CurrentAnalysis?.RiskScores.Any() == true)
+                        {
+                            <div class="risk-scores-grid">
+                                @foreach (var score in CurrentAnalysis.RiskScores)
+                                {
+                                    <div class="risk-score-card risk-@score.RiskLevel.ToLower()">
+                                        <div class="score-header">
+                                            <h4>@score.ScoreName</h4>
+                                            <span class="risk-level">@score.RiskLevel Risk</span>
+                                        </div>
+                                        <div class="score-value-section">
+                                            <div class="score-value">@score.Value</div>
+                                            <div class="score-interpretation">@score.Interpretation</div>
+                                        </div>
+                                        <div class="score-components">
+                                            <strong>Components:</strong>
+                                            <ul>
+                                                @foreach (var component in score.Components)
+                                                {
+                                                    <li>@component</li>
+                                                }
+                                            </ul>
+                                        </div>
+                                        <div class="score-recommendation">
+                                            <i class="fas fa-clipboard-check"></i> @score.ClinicalRecommendation
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <i class="fas fa-calculator"></i>
+                                <p>No risk scores calculated. Analyze a patient to see relevant clinical risk scores.</p>
+                            </div>
+                        }
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+        </TabItems>
+    </SfTab>
+</div>
+
+<style>
+    .n360-clinical-decision-support {
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .cds-header {
+        margin-bottom: 30px;
+    }
+
+    .cds-header h3 {
+        color: #2c3e50;
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .cds-header h3 i {
+        color: #3498db;
+        margin-right: 10px;
+    }
+
+    .cds-subtitle {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .cds-tabs {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .cds-patient-panel {
+        padding: 20px;
+    }
+
+    .patient-input-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .cds-input, .cds-textarea {
+        width: 100%;
+    }
+
+    .cds-textarea {
+        min-height: 100px;
+    }
+
+    .cds-analyze-btn {
+        width: 100%;
+        margin-top: 10px;
+        height: 42px;
+        font-size: 15px;
+    }
+
+    .analysis-results {
+        margin-top: 20px;
+    }
+
+    .result-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-card {
+        padding: 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: white;
+    }
+
+    .summary-card i {
+        font-size: 32px;
+    }
+
+    .summary-card.alert-high {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .summary-card.alert-medium {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+    }
+
+    .summary-card.recommendations {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .summary-card.confidence {
+        background: linear-gradient(135deg, #27ae60, #229954);
+    }
+
+    .summary-label {
+        font-size: 12px;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .summary-value {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .alerts-section {
+        margin-bottom: 25px;
+    }
+
+    .alerts-section h4 {
+        margin-bottom: 15px;
+        font-size: 18px;
+    }
+
+    .alerts-section.critical h4 {
+        color: #e74c3c;
+    }
+
+    .alerts-section.warning h4 {
+        color: #f39c12;
+    }
+
+    .alert-card {
+        background: white;
+        border-left: 4px solid;
+        padding: 15px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .alert-card.critical-alert {
+        border-color: #e74c3c;
+        background: #ffebee;
+    }
+
+    .alert-card.warning-alert {
+        border-color: #f39c12;
+        background: #fff8e1;
+    }
+
+    .alert-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #2c3e50;
+    }
+
+    .alert-severity {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(0,0,0,0.1);
+    }
+
+    .alert-description {
+        margin-bottom: 10px;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .alert-action {
+        margin-bottom: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .alert-footer {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-top: 10px;
+    }
+
+    .alert-confidence {
+        font-weight: 600;
+    }
+
+    .cds-recommendations-panel {
+        padding: 20px;
+    }
+
+    .recommendations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+
+    .recommendation-card {
+        background: white;
+        border: 2px solid;
+        border-radius: 8px;
+        padding: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .recommendation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .recommendation-card.priority-high {
+        border-color: #e74c3c;
+    }
+
+    .recommendation-card.priority-medium {
+        border-color: #f39c12;
+    }
+
+    .recommendation-card.priority-low {
+        border-color: #3498db;
+    }
+
+    .rec-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .rec-category {
+        display: inline-block;
+        padding: 3px 8px;
+        background: #ecf0f1;
+        border-radius: 4px;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+    }
+
+    .rec-title {
+        font-size: 16px;
+        color: #2c3e50;
+        margin: 5px 0;
+    }
+
+    .rec-priority {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .priority-high .rec-priority {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .priority-medium .rec-priority {
+        background: #f39c12;
+        color: white;
+    }
+
+    .priority-low .rec-priority {
+        background: #3498db;
+        color: white;
+    }
+
+    .rec-description {
+        margin-bottom: 12px;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .rec-rationale {
+        margin-bottom: 12px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .rec-evidence {
+        margin-bottom: 12px;
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .rec-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #ecf0f1;
+    }
+
+    .rec-confidence {
+        color: #27ae60;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .cds-interactions-panel {
+        padding: 20px;
+    }
+
+    .severity-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .severity-badge.severity-major {
+        background: #e74c3c;
+    }
+
+    .severity-badge.severity-moderate {
+        background: #f39c12;
+    }
+
+    .severity-badge.severity-minor {
+        background: #3498db;
+    }
+
+    .cds-guidelines-panel {
+        padding: 20px;
+    }
+
+    .guidelines-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .guideline-card {
+        background: white;
+        border: 2px solid;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .guideline-card.compliance-compliant {
+        border-color: #27ae60;
+        background: #eafaf1;
+    }
+
+    .guideline-card.compliance-partial {
+        border-color: #f39c12;
+        background: #fef9e7;
+    }
+
+    .guideline-card.compliance-non-compliant {
+        border-color: #e74c3c;
+        background: #fadbd8;
+    }
+
+    .guideline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .guideline-header h4 {
+        margin: 0 0 5px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .guideline-org {
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .compliance-badge {
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .compliance-badge.status-compliant {
+        background: #27ae60;
+    }
+
+    .compliance-badge.status-partial {
+        background: #f39c12;
+    }
+
+    .compliance-badge.status-non-compliant {
+        background: #e74c3c;
+    }
+
+    .guideline-criteria {
+        margin-bottom: 10px;
+        color: #555;
+    }
+
+    .guideline-gap {
+        margin-bottom: 10px;
+        padding: 10px;
+        background: rgba(231, 76, 60, 0.1);
+        border-radius: 4px;
+        color: #c0392b;
+    }
+
+    .guideline-recommendation {
+        margin-bottom: 10px;
+        padding: 10px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 4px;
+    }
+
+    .guideline-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        font-size: 12px;
+        color: #7f8c8d;
+    }
+
+    .cds-risk-scores-panel {
+        padding: 20px;
+    }
+
+    .risk-scores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .risk-score-card {
+        background: white;
+        border: 2px solid;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .risk-score-card.risk-high {
+        border-color: #e74c3c;
+        background: linear-gradient(to bottom, white, #ffebee);
+    }
+
+    .risk-score-card.risk-moderate {
+        border-color: #f39c12;
+        background: linear-gradient(to bottom, white, #fff8e1);
+    }
+
+    .risk-score-card.risk-low {
+        border-color: #27ae60;
+        background: linear-gradient(to bottom, white, #eafaf1);
+    }
+
+    .score-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .score-header h4 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .risk-level {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .risk-high .risk-level {
+        background: #e74c3c;
+    }
+
+    .risk-moderate .risk-level {
+        background: #f39c12;
+    }
+
+    .risk-low .risk-level {
+        background: #27ae60;
+    }
+
+    .score-value-section {
+        text-align: center;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 8px;
+    }
+
+    .score-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .score-interpretation {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .score-components {
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .score-components ul {
+        margin: 5px 0;
+        padding-left: 20px;
+    }
+
+    .score-components li {
+        margin: 3px 0;
+        color: #555;
+    }
+
+    .score-recommendation {
+        padding: 10px;
+        background: rgba(52, 152, 219, 0.1);
+        border-radius: 4px;
+        font-size: 13px;
+        color: #2980b9;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #95a5a6;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+    }
+
+    .alert i {
+        margin-right: 8px;
+    }
+</style>

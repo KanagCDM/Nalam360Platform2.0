@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Messaging abstractions for Nalam360 Enterprise Platform with event bus and integr" +
     "ation events."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0af7005af0816345e3fdc749459113bf3b840714")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+edd3982f1a38baeeb42aa78fcc49d92c1dd57152")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

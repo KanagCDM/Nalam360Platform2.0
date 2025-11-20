@@ -1,0 +1,168 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetBarcodeClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(_barcodeDataUrl))
+        {
+            <img src="@_barcodeDataUrl" 
+                 alt="Barcode"
+                 width="@Width"
+                 height="@Height"
+                 class="n360-barcode__image" />
+        }
+        else
+        {
+            <div class="n360-barcode__placeholder" style="width: @(Width)px; height: @(Height)px;">
+                <span>Barcode</span>
+            </div>
+        }
+        
+        @if (ShowText)
+        {
+            <div class="n360-barcode__text">@Value</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public BarcodeType Type { get; set; } = BarcodeType.Code128;
+    [Parameter] public int Width { get; set; } = 200;
+    [Parameter] public int Height { get; set; } = 80;
+    [Parameter] public string ForegroundColor { get; set; } = "#000000";
+    [Parameter] public string BackgroundColor { get; set; } = "#FFFFFF";
+    [Parameter] public bool ShowText { get; set; } = true;
+    [Parameter] public int Margin { get; set; } = 10;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+    private string? _barcodeDataUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        await GenerateBarcodeAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GenerateBarcodeAsync();
+    }
+
+    private async Task GenerateBarcodeAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Value))
+            {
+                _barcodeDataUrl = null;
+                return;
+            }
+            
+            await Task.Run(() =>
+            {
+                var writer = new ZXing.BarcodeWriterPixelData
+                {
+                    Format = MapBarcodeFormat(Type),
+                    Options = new ZXing.Common.EncodingOptions
+                    {
+                        Width = Width,
+                        Height = Height,
+                        Margin = Margin
+                    }
+                };
+                
+                var pixelData = writer.Write(Value);
+                
+                // Convert pixel data to PNG
+                using var bitmap = new System.Drawing.Bitmap(pixelData.Width, pixelData.Height, 
+                    System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                using var ms = new MemoryStream();
+                
+                var bitmapData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, 
+                    pixelData.Width, pixelData.Height),
+                    System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                    System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                
+                try
+                {
+                    System.Runtime.InteropServices.Marshal.Copy(pixelData.Pixels, 0, 
+                        bitmapData.Scan0, pixelData.Pixels.Length);
+                }
+                finally
+                {
+                    bitmap.UnlockBits(bitmapData);
+                }
+                
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                _barcodeDataUrl = $"data:image/png;base64,{Convert.ToBase64String(ms.ToArray())}";
+            });
+        }
+        catch (Exception ex)
+        {
+            // Fallback to placeholder on error
+            Console.WriteLine($"Barcode generation error: {ex.Message}");
+            _barcodeDataUrl = null;
+        }
+    }
+    
+    private ZXing.BarcodeFormat MapBarcodeFormat(BarcodeType type)
+    {
+        return type switch
+        {
+            BarcodeType.Code128 => ZXing.BarcodeFormat.CODE_128,
+            BarcodeType.Code39 => ZXing.BarcodeFormat.CODE_39,
+            BarcodeType.EAN13 => ZXing.BarcodeFormat.EAN_13,
+            BarcodeType.EAN8 => ZXing.BarcodeFormat.EAN_8,
+            BarcodeType.UPC_A => ZXing.BarcodeFormat.UPC_A,
+            BarcodeType.UPC_E => ZXing.BarcodeFormat.UPC_E,
+            BarcodeType.ITF => ZXing.BarcodeFormat.ITF,
+            BarcodeType.Codabar => ZXing.BarcodeFormat.CODABAR,
+            BarcodeType.Code93 => ZXing.BarcodeFormat.CODE_93,
+            BarcodeType.MSI => ZXing.BarcodeFormat.MSI,
+            _ => ZXing.BarcodeFormat.CODE_128
+        };
+    }
+
+    private string GetBarcodeClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-barcode"
+        };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

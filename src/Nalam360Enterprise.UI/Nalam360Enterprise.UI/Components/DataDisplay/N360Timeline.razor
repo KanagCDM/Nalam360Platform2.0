@@ -1,0 +1,144 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetTimelineClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @foreach (var item in Items)
+        {
+            var index = Items.IndexOf(item);
+            
+            <div class="n360-timeline__item @(item.Color != null ? $"n360-timeline__item--{item.Color.ToLower()}" : "")">
+                <div class="n360-timeline__tail"></div>
+                
+                <div class="n360-timeline__head @(item.Dot != null ? "n360-timeline__head--custom" : "")">
+                    @if (item.Dot != null)
+                    {
+                        @item.Dot
+                    }
+                    else if (item.Icon != null)
+                    {
+                        <div class="n360-timeline__icon">
+                            @item.Icon
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="n360-timeline__dot"></div>
+                    }
+                </div>
+                
+                <div class="n360-timeline__content">
+                    @if (!string.IsNullOrEmpty(item.Label))
+                    {
+                        <div class="n360-timeline__label">@item.Label</div>
+                    }
+                    
+                    @if (item.Content != null)
+                    {
+                        <div class="n360-timeline__body">
+                            @item.Content
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(item.Description))
+                    {
+                        <div class="n360-timeline__body">@item.Description</div>
+                    }
+                    
+                    @if (item.Timestamp != null)
+                    {
+                        <div class="n360-timeline__time">@item.Timestamp.Value.ToString(TimeFormat)</div>
+                    }
+                </div>
+            </div>
+        }
+        
+        @if (ShowPending)
+        {
+            <div class="n360-timeline__item n360-timeline__item--pending">
+                <div class="n360-timeline__tail"></div>
+                <div class="n360-timeline__head">
+                    @if (PendingDot != null)
+                    {
+                        @PendingDot
+                    }
+                    else
+                    {
+                        <div class="n360-timeline__dot n360-timeline__dot--pending"></div>
+                    }
+                </div>
+                <div class="n360-timeline__content">
+                    <div class="n360-timeline__body">@PendingText</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<TimelineItem> Items { get; set; } = new();
+    [Parameter] public TimelineMode Mode { get; set; } = TimelineMode.Left;
+    [Parameter] public bool Reverse { get; set; }
+    [Parameter] public bool ShowPending { get; set; }
+    [Parameter] public string PendingText { get; set; } = "Loading...";
+    [Parameter] public RenderFragment? PendingDot { get; set; }
+    [Parameter] public string TimeFormat { get; set; } = "yyyy-MM-dd HH:mm:ss";
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        if (Reverse)
+        {
+            Items = Items.AsEnumerable().Reverse().ToList();
+        }
+    }
+
+    private string GetTimelineClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-timeline",
+            $"n360-timeline--{Mode.ToString().ToLower()}"
+        };
+        
+        if (Reverse)
+        {
+            classes.Add("n360-timeline--reverse");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

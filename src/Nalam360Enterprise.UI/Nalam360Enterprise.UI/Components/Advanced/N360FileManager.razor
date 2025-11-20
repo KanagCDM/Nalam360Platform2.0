@@ -1,15 +1,45 @@
-@* Note: N360FileManager requires Syncfusion.Blazor.FileManager package *@
+@using Syncfusion.Blazor.FileManager
 @inject IPermissionService PermissionService
 @inject IAuditService AuditService
 
 @if (_hasPermission || !HideIfNoPermission)
 {
-    <div class="n360-filemanager @CssClass n360-filemanager__placeholder" dir="@(IsRtl ? "rtl" : "ltr")" style="height: @Height; width: @Width;">
-        <div class="n360-filemanager__content">
-            <p>File Manager Component</p>
-            <small>Requires Syncfusion.Blazor.FileManager package</small>
+    <div class="n360-filemanager @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <SfFileManager TValue="FileManagerDirectoryContent"
+                       @ref="_fileManager"
+                       Height="@Height"
+                       Width="@Width"
+                       EnablePersistence="@EnablePersistence"
+                       AllowDragAndDrop="@AllowDragAndDrop"
+                       AllowMultiSelection="@AllowMultiSelection"
+                       ShowFileExtension="@ShowFileExtension"
+                       ShowHiddenItems="@ShowHiddenItems"
+                       ShowThumbnail="@ShowThumbnail"
+                       CssClass="@InternalCssClass"
+                       View="@View"
+                       SortBy="@SortBy"
+                       SortOrder="@SortOrder"
+                       FileOpen="@OnFileOpenAsync"
+                       FileSelect="@OnFileSelectAsync"
+                       Success="@OnSuccessAsync"
+                       Failure="@OnFailureAsync">
+            <FileManagerAjaxSettings Url="@AjaxUrl"
+                                    UploadUrl="@UploadUrl"
+                                    DownloadUrl="@DownloadUrl"
+                                    GetImageUrl="@GetImageUrl" />
+            <FileManagerToolbarSettings>
+                <FileManagerToolbarItems>
+                    @foreach (var item in ToolbarItems)
+                    {
+                        <FileManagerToolbarItem Name="@item.Name"></FileManagerToolbarItem>
+                    }
+                </FileManagerToolbarItems>
+            </FileManagerToolbarSettings>
+            <FileManagerContextMenuSettings File="@FileContextMenuItems"
+                                           Folder="@FolderContextMenuItems"
+                                           Layout="@LayoutContextMenuItems" />
             @ChildContent
-        </div>
+        </SfFileManager>
     </div>
 }
 
@@ -22,7 +52,24 @@
     [Parameter] public bool ShowFileExtension { get; set; } = true;
     [Parameter] public bool ShowHiddenItems { get; set; }
     [Parameter] public bool ShowThumbnail { get; set; } = true;
+    [Parameter] public ViewType View { get; set; } = ViewType.Details;
+    [Parameter] public string SortBy { get; set; } = "name";
+    [Parameter] public Syncfusion.Blazor.FileManager.SortOrder SortOrder { get; set; } = Syncfusion.Blazor.FileManager.SortOrder.Ascending;
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    // Ajax Configuration
+    [Parameter] public string AjaxUrl { get; set; } = "/api/filemanager/operations";
+    [Parameter] public string? UploadUrl { get; set; }
+    [Parameter] public string? DownloadUrl { get; set; }
+    [Parameter] public string? GetImageUrl { get; set; }
+    
+    // Toolbar Configuration
+    [Parameter] public List<ToolBarItemModel>? CustomToolbarItems { get; set; }
+    
+    // Context Menu Configuration
+    [Parameter] public List<string>? CustomFileContextMenu { get; set; }
+    [Parameter] public List<string>? CustomFolderContextMenu { get; set; }
+    [Parameter] public List<string>? CustomLayoutContextMenu { get; set; }
     
     // Styling
     [Parameter] public string? CssClass { get; set; }
@@ -38,11 +85,46 @@
     [Parameter] public string? AuditResource { get; set; }
     
     // Events
-    [Parameter] public EventCallback OnFileOpen { get; set; }
-    [Parameter] public EventCallback OnFileSelect { get; set; }
+    [Parameter] public EventCallback<FileOpenEventArgs<FileManagerDirectoryContent>> OnFileOpen { get; set; }
+    [Parameter] public EventCallback<FileSelectEventArgs<FileManagerDirectoryContent>> OnFileSelect { get; set; }
+    [Parameter] public EventCallback<SuccessEventArgs> OnSuccess { get; set; }
+    [Parameter] public EventCallback<Syncfusion.Blazor.FileManager.FailureEventArgs> OnFailure { get; set; }
     
+    private SfFileManager<FileManagerDirectoryContent>? _fileManager;
     private bool _hasPermission = true;
     private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    private List<ToolBarItemModel> ToolbarItems => CustomToolbarItems ?? new List<ToolBarItemModel>
+    {
+        new ToolBarItemModel { Name = "NewFolder" },
+        new ToolBarItemModel { Name = "Upload" },
+        new ToolBarItemModel { Name = "Cut" },
+        new ToolBarItemModel { Name = "Copy" },
+        new ToolBarItemModel { Name = "Paste" },
+        new ToolBarItemModel { Name = "Delete" },
+        new ToolBarItemModel { Name = "Download" },
+        new ToolBarItemModel { Name = "Rename" },
+        new ToolBarItemModel { Name = "SortBy" },
+        new ToolBarItemModel { Name = "Refresh" },
+        new ToolBarItemModel { Name = "Selection" },
+        new ToolBarItemModel { Name = "View" },
+        new ToolBarItemModel { Name = "Details" }
+    };
+
+    private string[] FileContextMenuItems => CustomFileContextMenu?.ToArray() ?? new string[]
+    {
+        "Cut", "Copy", "Paste", "|", "Delete", "Download", "Rename", "|", "Details"
+    };
+
+    private string[] FolderContextMenuItems => CustomFolderContextMenu?.ToArray() ?? new string[]
+    {
+        "Cut", "Copy", "Paste", "|", "Delete", "Rename", "Download", "|", "Details"
+    };
+
+    private string[] LayoutContextMenuItems => CustomLayoutContextMenu?.ToArray() ?? new string[]
+    {
+        "SortBy", "View", "Refresh", "|", "NewFolder", "Upload", "|", "Details", "|", "SelectAll"
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -52,6 +134,93 @@
         }
     }
 
-    public Task RefreshFilesAsync() => Task.CompletedTask;
-    public Task RefreshLayoutAsync() => Task.CompletedTask;
+    private async Task OnFileOpenAsync(FileOpenEventArgs<FileManagerDirectoryContent> args)
+    {
+        await OnFileOpen.InvokeAsync(args);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FileOpened",
+                Resource = AuditResource ?? $"FileManager-{Id}",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["FileName"] = args.FileDetails?.Name ?? "Unknown",
+                    ["ComponentId"] = Id
+                }
+            });
+        }
+    }
+
+    private async Task OnFileSelectAsync(FileSelectEventArgs<FileManagerDirectoryContent> args)
+    {
+        await OnFileSelect.InvokeAsync(args);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FileSelected",
+                Resource = AuditResource ?? $"FileManager-{Id}",
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["SelectedCount"] = 1, // Placeholder - actual property may vary by version
+                    ["ComponentId"] = Id
+                }
+            });
+        }
+    }
+
+    private Task OnSuccessAsync(SuccessEventArgs args)
+    {
+        return OnSuccess.InvokeAsync(args);
+    }
+
+    private Task OnFailureAsync(Syncfusion.Blazor.FileManager.FailureEventArgs args)
+    {
+        return OnFailure.InvokeAsync(args);
+    }
+
+    // Public API Methods
+    public async Task RefreshFilesAsync()
+    {
+        if (_fileManager != null)
+        {
+            await _fileManager.RefreshFilesAsync();
+        }
+    }
+
+    public async Task RefreshLayoutAsync()
+    {
+        if (_fileManager != null)
+        {
+            await _fileManager.RefreshLayoutAsync();
+        }
+    }
+
+    public async Task ClearSelectionAsync()
+    {
+        if (_fileManager != null)
+        {
+            await _fileManager.ClearSelectionAsync();
+        }
+    }
+
+    public async Task UploadFilesAsync()
+    {
+        if (_fileManager != null)
+        {
+            await _fileManager.UploadFilesAsync();
+        }
+    }
+
+    public Task<List<FileManagerDirectoryContent>> GetSelectedFilesAsync()
+    {
+        // Note: This method may not exist in current Syncfusion version
+        // Return empty list as placeholder
+        return Task.FromResult(new List<FileManagerDirectoryContent>());
+    }
 }

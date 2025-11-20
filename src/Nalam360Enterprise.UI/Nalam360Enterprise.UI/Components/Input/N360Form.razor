@@ -1,0 +1,320 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <EditForm Model="@Model" 
+              OnValidSubmit="@HandleValidSubmitAsync" 
+              OnInvalidSubmit="@HandleInvalidSubmitAsync"
+              class="@GetFormClass()"
+              style="@Style"
+              @attributes="@GetHtmlAttributes()">
+        @if (ValidationRules != null)
+        {
+            <DataAnnotationsValidator />
+        }
+        
+        @if (ShowValidationSummary)
+        {
+            <ValidationSummary />
+        }
+        
+        <CascadingValue Value="this" IsFixed="false">
+            @ChildContent
+        </CascadingValue>
+        
+        @if (ShowButtons)
+        {
+            <div class="n360-form__actions @GetActionsAlignmentClass()">
+                @if (ActionsContent != null)
+                {
+                    @ActionsContent
+                }
+                else
+                {
+                    @if (ShowSubmitButton)
+                    {
+                        <button type="submit" 
+                                class="n360-form__submit @SubmitButtonClass"
+                                disabled="@(_isSubmitting || Disabled)">
+                            @if (_isSubmitting && ShowLoadingOnSubmit)
+                            {
+                                <span class="n360-form__loading-icon"></span>
+                            }
+                            @SubmitButtonText
+                        </button>
+                    }
+                    
+                    @if (ShowResetButton)
+                    {
+                        <button type="button" 
+                                class="n360-form__reset @ResetButtonClass"
+                                @onclick="HandleResetAsync"
+                                disabled="@(_isSubmitting || Disabled)">
+                            @ResetButtonText
+                        </button>
+                    }
+                    
+                    @if (ShowCancelButton)
+                    {
+                        <button type="button" 
+                                class="n360-form__cancel @CancelButtonClass"
+                                @onclick="HandleCancelAsync"
+                                disabled="@_isSubmitting">
+                            @CancelButtonText
+                        </button>
+                    }
+                }
+            </div>
+        }
+    </EditForm>
+}
+
+@code {
+    [Parameter] public object? Model { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? ActionsContent { get; set; }
+    [Parameter] public FormLayout Layout { get; set; } = FormLayout.Vertical;
+    [Parameter] public FormLabelAlign LabelAlign { get; set; } = FormLabelAlign.Right;
+    [Parameter] public int? LabelColSpan { get; set; }
+    [Parameter] public int? WrapperColSpan { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowValidationSummary { get; set; }
+    [Parameter] public object? ValidationRules { get; set; }
+    
+    // Button Configuration
+    [Parameter] public bool ShowButtons { get; set; } = true;
+    [Parameter] public bool ShowSubmitButton { get; set; } = true;
+    [Parameter] public bool ShowResetButton { get; set; }
+    [Parameter] public bool ShowCancelButton { get; set; }
+    [Parameter] public string SubmitButtonText { get; set; } = "Submit";
+    [Parameter] public string ResetButtonText { get; set; } = "Reset";
+    [Parameter] public string CancelButtonText { get; set; } = "Cancel";
+    [Parameter] public string SubmitButtonClass { get; set; } = "n360-btn n360-btn--primary";
+    [Parameter] public string ResetButtonClass { get; set; } = "n360-btn n360-btn--default";
+    [Parameter] public string CancelButtonClass { get; set; } = "n360-btn n360-btn--default";
+    [Parameter] public FormActionsAlignment ActionsAlignment { get; set; } = FormActionsAlignment.Left;
+    [Parameter] public bool ShowLoadingOnSubmit { get; set; } = true;
+    
+    // Events
+    [Parameter] public EventCallback<EditContext> OnValidSubmit { get; set; }
+    [Parameter] public EventCallback<EditContext> OnInvalidSubmit { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<Dictionary<string, object>> OnValuesChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isSubmitting;
+    private Dictionary<string, object> _initialValues = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        // Capture initial values for reset
+        if (Model != null)
+        {
+            CaptureModelValues();
+        }
+    }
+
+    private async Task HandleValidSubmitAsync(EditContext context)
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+        
+        try
+        {
+            if (EnableAudit && AuditService != null)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FormSubmit",
+                Resource = AuditResource ?? "Form",
+                AdditionalData = new Dictionary<string, object> {
+                        { "IsValid", true },
+                        { "ModelType", Model?.GetType().Name ?? "Unknown" }
+                    }
+            });
+            }
+            
+            await OnValidSubmit.InvokeAsync(context);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleInvalidSubmitAsync(EditContext context)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            var errors = context.GetValidationMessages().ToList();
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FormSubmit",
+                Resource = AuditResource ?? "Form",
+                AdditionalData = new Dictionary<string, object> {
+                        { "IsValid", true },
+                        { "ModelType", Model?.GetType().Name ?? "Unknown" }
+                    }
+            });
+        }
+        
+        await OnInvalidSubmit.InvokeAsync(context);
+    }
+
+    private async Task HandleResetAsync()
+    {
+        if (Model != null)
+        {
+            RestoreModelValues();
+        }
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FormReset",
+                Resource = AuditResource ?? "Form",
+                AdditionalData = new Dictionary<string, object>()
+            });
+        }
+        
+        await OnReset.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task HandleCancelAsync()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    private void CaptureModelValues()
+    {
+        if (Model == null) return;
+        
+        var properties = Model.GetType().GetProperties();
+        foreach (var prop in properties)
+        {
+            if (prop.CanRead)
+            {
+                var value = prop.GetValue(Model);
+                if (value != null)
+                {
+                    _initialValues[prop.Name] = value;
+                }
+            }
+        }
+    }
+
+    private void RestoreModelValues()
+    {
+        if (Model == null) return;
+        
+        var properties = Model.GetType().GetProperties();
+        foreach (var prop in properties)
+        {
+            if (prop.CanWrite && _initialValues.ContainsKey(prop.Name))
+            {
+                prop.SetValue(Model, _initialValues[prop.Name]);
+            }
+        }
+    }
+
+    private string GetFormClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-form",
+            $"n360-form--{Layout.ToString().ToLower()}",
+            $"n360-form--label-{LabelAlign.ToString().ToLower()}"
+        };
+        
+        if (Disabled)
+        {
+            classes.Add("n360-form--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetActionsAlignmentClass()
+    {
+        return ActionsAlignment switch
+        {
+            FormActionsAlignment.Left => "n360-form__actions--left",
+            FormActionsAlignment.Center => "n360-form__actions--center",
+            FormActionsAlignment.Right => "n360-form__actions--right",
+            _ => "n360-form__actions--left"
+        };
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "novalidate", true }
+        };
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+
+    public void SetFieldValue(string fieldName, object value)
+    {
+        if (Model == null) return;
+        
+        var property = Model.GetType().GetProperty(fieldName);
+        if (property != null && property.CanWrite)
+        {
+            property.SetValue(Model, value);
+            StateHasChanged();
+        }
+    }
+
+    public object? GetFieldValue(string fieldName)
+    {
+        if (Model == null) return null;
+        
+        var property = Model.GetType().GetProperty(fieldName);
+        return property?.CanRead == true ? property.GetValue(Model) : null;
+    }
+
+    public async Task SubmitAsync()
+    {
+        // Programmatic submission - trigger form validation and submission
+        await HandleValidSubmitAsync(new EditContext(Model!));
+    }
+}

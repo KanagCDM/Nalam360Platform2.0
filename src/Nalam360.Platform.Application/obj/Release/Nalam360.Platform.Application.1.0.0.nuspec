@@ -6,19 +6,21 @@
     <authors>Nalam360</authors>
     <description>Application layer for Nalam360 Enterprise Platform with CQRS, Mediator pattern, and pipeline behaviors.</description>
     <tags>cqrs mediator clean-architecture ddd enterprise</tags>
-    <repository type="git" commit="0af7005af0816345e3fdc749459113bf3b840714" />
+    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
     <dependencies>
       <group targetFramework="net8.0">
         <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
         <dependency id="FluentValidation" version="11.9.0" exclude="Build,Analyzers" />
+        <dependency id="MediatR" version="12.4.1" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
         <dependency id="Scrutor" version="4.2.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="9.0.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Application/bin/Release/net8.0/Nalam360.Platform.Application.dll" target="lib/net8.0/Nalam360.Platform.Application.dll" />
-    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Application/bin/Release/net8.0/Nalam360.Platform.Application.xml" target="lib/net8.0/Nalam360.Platform.Application.xml" />
+    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.dll" target="lib\net8.0\Nalam360.Platform.Application.dll" />
+    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.xml" target="lib\net8.0\Nalam360.Platform.Application.xml" />
   </files>
 </package>

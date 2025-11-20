@@ -1,0 +1,392 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TValue
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetTreeSelectClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        <div class="n360-treeselect__selector" @onclick="ToggleDropdownAsync">
+            <div class="n360-treeselect__selection">
+                @if (_selectedItems.Any())
+                {
+                    @if (Multiple)
+                    {
+                        <div class="n360-treeselect__tags">
+                            @foreach (var item in _selectedItems)
+                            {
+                                <span class="n360-treeselect__tag">
+                                    @LabelSelector(item)
+                                    @if (!Disabled)
+                                    {
+                                        <span class="n360-treeselect__tag-close" @onclick="() => RemoveItemAsync(item)" @onclick:stopPropagation="true">×</span>
+                                    }
+                                </span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="n360-treeselect__value">@LabelSelector(_selectedItems.First())</span>
+                    }
+                }
+                else
+                {
+                    <span class="n360-treeselect__placeholder">@Placeholder</span>
+                }
+            </div>
+            <span class="n360-treeselect__arrow @(_isOpen ? "n360-treeselect__arrow--open" : "")"></span>
+            @if (AllowClear && _selectedItems.Any())
+            {
+                <span class="n360-treeselect__clear" @onclick="HandleClearAsync" @onclick:stopPropagation="true">×</span>
+            }
+        </div>
+        
+        @if (_isOpen)
+        {
+            <div class="n360-treeselect__dropdown">
+                @if (ShowSearch)
+                {
+                    <div class="n360-treeselect__search">
+                        <input type="text" 
+                               placeholder="@SearchPlaceholder"
+                               @bind="_searchText"
+                               @bind:event="oninput"
+                               @bind:after="FilterNodesAsync"
+                               class="n360-treeselect__search-input" />
+                    </div>
+                }
+                
+                <div class="n360-treeselect__tree">
+                    @RenderTreeNodes(TreeData, 0)
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private RenderFragment RenderTreeNodes(List<TItem> nodes, int level) => builder =>
+    {
+        foreach (var node in nodes)
+        {
+            var isExpanded = _expandedNodes.Contains(node);
+            var isSelected = _selectedItems.Contains(node);
+            var hasChildren = ChildrenSelector(node)?.Any() ?? false;
+            var isDisabled = DisabledPredicate?.Invoke(node) ?? false;
+            
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", $"n360-treeselect__node n360-treeselect__node--level-{level}");
+            
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "class", $"n360-treeselect__node-content {(isSelected ? "n360-treeselect__node--selected" : "")} {(isDisabled ? "n360-treeselect__node--disabled" : "")}");
+            
+            if (hasChildren)
+            {
+                builder.OpenElement(4, "span");
+                builder.AddAttribute(5, "class", $"n360-treeselect__expand-icon {(isExpanded ? "n360-treeselect__expand-icon--open" : "")}");
+                builder.AddAttribute(6, "onclick", EventCallback.Factory.Create(this, () => ToggleNodeAsync(node)));
+                builder.AddContent(7, "▶");
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(8, "span");
+                builder.AddAttribute(9, "class", "n360-treeselect__expand-icon n360-treeselect__expand-icon--empty");
+                builder.CloseElement();
+            }
+            
+            builder.OpenElement(10, "span");
+            builder.AddAttribute(11, "class", "n360-treeselect__node-label");
+            builder.AddAttribute(12, "onclick", EventCallback.Factory.Create(this, () => HandleNodeClickAsync(node)));
+            
+            if (NodeTemplate != null)
+            {
+                builder.AddContent(13, NodeTemplate(node));
+            }
+            else
+            {
+                builder.AddContent(14, LabelSelector(node));
+            }
+            
+            builder.CloseElement();
+            builder.CloseElement();
+            
+            if (hasChildren && isExpanded)
+            {
+                builder.AddContent(15, RenderTreeNodes(ChildrenSelector(node)!.ToList(), level + 1));
+            }
+            
+            builder.CloseElement();
+        }
+    };
+
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public List<TValue>? Values { get; set; }
+    [Parameter] public EventCallback<List<TValue>> ValuesChanged { get; set; }
+    [Parameter] public List<TItem> TreeData { get; set; } = new();
+    [Parameter] public Func<TItem, string> LabelSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<TItem, TValue> ValueSelector { get; set; } = item => (TValue)(object)item!;
+    [Parameter] public Func<TItem, IEnumerable<TItem>?> ChildrenSelector { get; set; } = item => null;
+    [Parameter] public Func<TItem, bool>? DisabledPredicate { get; set; }
+    [Parameter] public RenderFragment<TItem>? NodeTemplate { get; set; }
+    [Parameter] public bool Multiple { get; set; }
+    [Parameter] public bool ShowSearch { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Please select";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public bool AllowClear { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool TreeCheckable { get; set; }
+    [Parameter] public bool TreeDefaultExpandAll { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TreeSelectChangeEventArgs<TValue, TItem>> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isOpen;
+    private List<TItem> _selectedItems = new();
+    private HashSet<TItem> _expandedNodes = new();
+    private string _searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        if (TreeDefaultExpandAll)
+        {
+            ExpandAllNodes(TreeData);
+        }
+        
+        LoadSelectedItems();
+    }
+
+    private void LoadSelectedItems()
+    {
+        _selectedItems.Clear();
+        
+        if (Multiple && Values != null)
+        {
+            FindItemsByValues(TreeData, Values);
+        }
+        else if (!Multiple && Value != null)
+        {
+            var item = FindItemByValue(TreeData, Value);
+            if (item != null)
+            {
+                _selectedItems.Add(item);
+            }
+        }
+    }
+
+    private TItem? FindItemByValue(List<TItem> items, TValue targetValue)
+    {
+        foreach (var item in items)
+        {
+            if (EqualityComparer<TValue>.Default.Equals(ValueSelector(item), targetValue))
+            {
+                return item;
+            }
+            
+            var children = ChildrenSelector(item);
+            if (children != null)
+            {
+                var found = FindItemByValue(children.ToList(), targetValue);
+                if (found != null) return found;
+            }
+        }
+        return default;
+    }
+
+    private void FindItemsByValues(List<TItem> items, List<TValue> targetValues)
+    {
+        foreach (var item in items)
+        {
+            if (targetValues.Contains(ValueSelector(item)))
+            {
+                _selectedItems.Add(item);
+            }
+            
+            var children = ChildrenSelector(item);
+            if (children != null)
+            {
+                FindItemsByValues(children.ToList(), targetValues);
+            }
+        }
+    }
+
+    private void ExpandAllNodes(List<TItem> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            _expandedNodes.Add(node);
+            var children = ChildrenSelector(node);
+            if (children != null)
+            {
+                ExpandAllNodes(children.ToList());
+            }
+        }
+    }
+
+    private Task ToggleDropdownAsync()
+    {
+        if (Disabled) return Task.CompletedTask;
+        _isOpen = !_isOpen;
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleNodeAsync(TItem node)
+    {
+        if (_expandedNodes.Contains(node))
+        {
+            _expandedNodes.Remove(node);
+        }
+        else
+        {
+            _expandedNodes.Add(node);
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleNodeClickAsync(TItem item)
+    {
+        if (DisabledPredicate?.Invoke(item) ?? false) return;
+        
+        if (Multiple)
+        {
+            if (_selectedItems.Contains(item))
+            {
+                _selectedItems.Remove(item);
+            }
+            else
+            {
+                _selectedItems.Add(item);
+            }
+            
+            var selectedValues = _selectedItems.Select(ValueSelector).ToList();
+            Values = selectedValues;
+            await ValuesChanged.InvokeAsync(selectedValues);
+            await OnChange.InvokeAsync(new TreeSelectChangeEventArgs<TValue, TItem>(default!, selectedValues, _selectedItems));
+        }
+        else
+        {
+            _selectedItems.Clear();
+            _selectedItems.Add(item);
+            
+            var newValue = ValueSelector(item);
+            Value = newValue;
+            await ValueChanged.InvokeAsync(newValue);
+            await OnChange.InvokeAsync(new TreeSelectChangeEventArgs<TValue, TItem>(newValue, null, _selectedItems));
+            
+            _isOpen = false;
+        }
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "TreeSelectChange",
+                Resource = AuditResource ?? "TreeSelect",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Value", Value?.ToString() ?? string.Empty },
+                    { "Label", LabelSelector(item) },
+                    { "Multiple", Multiple }
+                }
+            });
+        }
+    }
+
+    private async Task RemoveItemAsync(TItem item)
+    {
+        _selectedItems.Remove(item);
+        var selectedValues = _selectedItems.Select(ValueSelector).ToList();
+        Values = selectedValues;
+        await ValuesChanged.InvokeAsync(selectedValues);
+        await OnChange.InvokeAsync(new TreeSelectChangeEventArgs<TValue, TItem>(default!, selectedValues, _selectedItems));
+    }
+
+    private async Task HandleClearAsync()
+    {
+        _selectedItems.Clear();
+        
+        if (Multiple)
+        {
+            Values = new List<TValue>();
+            await ValuesChanged.InvokeAsync(Values);
+            await OnChange.InvokeAsync(new TreeSelectChangeEventArgs<TValue, TItem>(default!, Values, _selectedItems));
+        }
+        else
+        {
+            Value = default;
+            await ValueChanged.InvokeAsync(default!);
+            await OnChange.InvokeAsync(new TreeSelectChangeEventArgs<TValue, TItem>(default!, null, _selectedItems));
+        }
+    }
+
+    private Task FilterNodesAsync()
+    {
+        // Filtering implementation would expand matching nodes
+        return Task.CompletedTask;
+    }
+
+    private string GetTreeSelectClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-treeselect"
+        };
+        
+        if (_isOpen)
+        {
+            classes.Add("n360-treeselect--open");
+        }
+        
+        if (Multiple)
+        {
+            classes.Add("n360-treeselect--multiple");
+        }
+        
+        if (Disabled)
+        {
+            classes.Add("n360-treeselect--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

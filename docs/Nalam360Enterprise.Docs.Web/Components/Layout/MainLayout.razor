@@ -1,0 +1,258 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-container">
+    <div class="sidebar-wrapper">
+        <NavMenu />
+    </div>
+
+    <div class="main-content-wrapper">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" onclick="document.querySelector('.sidebar-wrapper').classList.toggle('open')">
+                        <span class="menu-icon">☰</span>
+                    </button>
+                    <div class="breadcrumb">
+                        <span class="breadcrumb-item">Nalam360</span>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item">Enterprise UI</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="https://github.com/KanagCDM/Nalam360EnterprisePlatform" target="_blank" class="header-link">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="https://nalam360.com" target="_blank" class="header-link">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Website</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <article class="content-area">
+                @Body
+            </article>
+        </main>
+
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>&copy; 2024 Nalam360 Enterprise Platform. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="/privacy">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="/terms">Terms of Service</a>
+                    <span>•</span>
+                    <a href="/support">Support</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<div id="blazor-error-ui" class="blazor-error-boundary" data-nosnippet>
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">✕</span>
+</div>
+
+<style>
+    .app-container {
+        display: flex;
+        min-height: 100vh;
+        background: var(--neutral-50);
+    }
+
+    .sidebar-wrapper {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 280px;
+        background: white;
+        border-right: 1px solid var(--neutral-200);
+        overflow-y: auto;
+        z-index: 1000;
+        transition: transform var(--transition-base);
+    }
+
+    .main-content-wrapper {
+        margin-left: 280px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: white;
+        border-bottom: 1px solid var(--neutral-200);
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md) var(--spacing-xl);
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--neutral-700);
+        padding: var(--spacing-sm);
+    }
+
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: 0.875rem;
+        color: var(--neutral-600);
+    }
+
+    .breadcrumb-item {
+        font-weight: 500;
+    }
+
+    .breadcrumb-separator {
+        color: var(--neutral-400);
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .header-link {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        color: var(--neutral-700);
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        text-decoration: none;
+    }
+
+    .header-link:hover {
+        background: var(--neutral-100);
+        color: var(--primary-600);
+        text-decoration: none;
+    }
+
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .content-area {
+        flex: 1;
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        padding: var(--spacing-2xl);
+    }
+
+    .app-footer {
+        background: white;
+        border-top: 1px solid var(--neutral-200);
+        padding: var(--spacing-xl);
+        margin-top: auto;
+    }
+
+    .footer-content {
+        max-width: 1600px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .footer-content p {
+        color: var(--neutral-600);
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .footer-links {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        font-size: 0.875rem;
+    }
+
+    .footer-links a {
+        color: var(--neutral-600);
+        transition: color var(--transition-fast);
+    }
+
+    .footer-links a:hover {
+        color: var(--primary-600);
+        text-decoration: none;
+    }
+
+    .footer-links span {
+        color: var(--neutral-400);
+    }
+
+    /* Mobile Responsive */
+    @@media (max-width: 768px) {
+        .sidebar-wrapper {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-wrapper.open {
+            transform: translateX(0);
+        }
+
+        .main-content-wrapper {
+            margin-left: 0;
+        }
+
+        .mobile-menu-toggle {
+            display: block;
+        }
+
+        .content-area {
+            padding: var(--spacing-lg);
+        }
+
+        .footer-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .breadcrumb {
+            display: none;
+        }
+    }
+</style>

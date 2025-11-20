@@ -1,26 +1,34 @@
 {
   "format": 1,
   "restore": {
-    "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj": {}
+    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Messaging\\Nalam360.Platform.Messaging.csproj": {}
   },
   "projects": {
-    "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj": {
+    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj",
+        "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj",
         "projectName": "Nalam360.Platform.Core",
-        "projectPath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj",
-        "packagesPath": "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/",
-        "outputPath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/obj/",
+        "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj",
+        "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
+        "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
         "configFilePaths": [
-          "/Users/kanagasubramaniankrishnamurthi/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\mmc2878\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "/usr/local/share/dotnet/library-packs": {},
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "D:\\Pandiyaraj\\Syncfusion\\Blazor\\29.1.33\\nuget": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -39,7 +47,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -61,50 +69,48 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj": {
+    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Messaging\\Nalam360.Platform.Messaging.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj",
+        "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Messaging\\Nalam360.Platform.Messaging.csproj",
         "projectName": "Nalam360.Platform.Messaging",
-        "projectPath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj",
-        "packagesPath": "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/",
-        "outputPath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Messaging/obj/",
+        "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Messaging\\Nalam360.Platform.Messaging.csproj",
+        "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
+        "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Messaging\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
         "configFilePaths": [
-          "/Users/kanagasubramaniankrishnamurthi/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\mmc2878\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "/usr/local/share/dotnet/library-packs": {},
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "D:\\Pandiyaraj\\Syncfusion\\Blazor\\29.1.33\\nuget": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj": {
-                "projectPath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj"
+              "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
+                "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
               }
             }
           }
@@ -119,11 +125,49 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Azure.Messaging.ServiceBus": {
+              "target": "Package",
+              "version": "[7.17.5, )"
+            },
+            "Confluent.Kafka": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Binder": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            },
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
+            "Microsoft.Extensions.Hosting.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
+            "Microsoft.Extensions.Options": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            },
+            "RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[6.8.1, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -135,22 +179,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

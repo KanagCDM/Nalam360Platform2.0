@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Application</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Application.Behaviors.IPipelineBehavior`2">
+            <summary>
+            Pipeline behavior that wraps request handling
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Behaviors.RequestHandlerDelegate`1">
+            <summary>
+            Delegate representing the next action in the pipeline
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Behaviors.LoggingBehavior`2">
+            <summary>
+            Logs the execution time and details of requests
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Behaviors.ValidationBehavior`2">
+            <summary>
+            Validates requests using FluentValidation
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering application services
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Application.DependencyInjection.ServiceCollectionExtensions.AddPlatformApplication(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Reflection.Assembly)">
+            <summary>
+            Registers application layer services including mediator and handlers
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Application.DependencyInjection.ServiceCollectionExtensions.AddValidators(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Reflection.Assembly)">
+            <summary>
+            Adds FluentValidation validators from the specified assembly
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.ICommand">
+            <summary>
+            Marker interface for commands
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.ICommand`1">
+            <summary>
+            Marker interface for commands with result
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.IMediator">
+            <summary>
+            Sends requests to their handlers
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.IQuery`1">
+            <summary>
+            Marker interface for queries
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.IRequest`1">
+            <summary>
+            Base interface for all requests
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.IRequestHandler`2">
+            <summary>
+            Handles a request
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Application.Messaging.Mediator">
+            <summary>
+            Default mediator implementation
+            </summary>
+        </member>
+    </members>
+</doc>

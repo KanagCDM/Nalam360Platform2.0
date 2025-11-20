@@ -1,0 +1,1472 @@
+@using Nalam360Enterprise.UI.Components.Enterprise.Models
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-form-builder @CssClass" @attributes="GetHtmlAttributes()">
+    @if (!_hasPermission && HideIfNoPermission)
+    {
+        return;
+    }
+
+    @if (!_hasPermission)
+    {
+        <div class="form-builder-no-permission">
+            <div class="no-permission-icon">🔒</div>
+            <p>You don't have permission to access the form builder</p>
+        </div>
+        return;
+    }
+
+    @if (_isLoading)
+    {
+        <div class="form-builder-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading form builder...</p>
+        </div>
+        return;
+    }
+
+    <!-- Header -->
+    <div class="form-builder-header">
+        <div class="header-left">
+            <h2 class="header-title">@Title</h2>
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <p class="header-subtitle">@Subtitle</p>
+            }
+        </div>
+        <div class="header-actions">
+            @if (ShowPreview)
+            {
+                <button class="btn btn-secondary" @onclick="OnTogglePreviewAsync" title="Preview Form">
+                    <span class="btn-icon">👁️</span>
+                    Preview
+                </button>
+            }
+            @if (ShowVersionHistory)
+            {
+                <button class="btn btn-secondary" @onclick="OnToggleVersionHistoryAsync" title="Version History">
+                    <span class="btn-icon">📜</span>
+                    History
+                </button>
+            }
+            @if (ShowTemplates)
+            {
+                <button class="btn btn-secondary" @onclick="OnToggleTemplatesAsync" title="Templates">
+                    <span class="btn-icon">📋</span>
+                    Templates
+                </button>
+            }
+            @if (ShowSettings)
+            {
+                <button class="btn btn-secondary" @onclick="OnToggleSettingsAsync" title="Form Settings">
+                    <span class="btn-icon">⚙️</span>
+                    Settings
+                </button>
+            }
+            @if (AllowSave)
+            {
+                <button class="btn btn-primary" @onclick="OnSaveFormAsync" disabled="@_isSaving" title="Save Form">
+                    <span class="btn-icon">💾</span>
+                    @(_isSaving ? "Saving..." : "Save")
+                </button>
+            }
+            @if (AllowPublish && _currentForm.Status == FormStatus.Draft)
+            {
+                <button class="btn btn-success" @onclick="OnPublishFormAsync" disabled="@_isPublishing" title="Publish Form">
+                    <span class="btn-icon">🚀</span>
+                    @(_isPublishing ? "Publishing..." : "Publish")
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="form-builder-content">
+        <!-- Left Sidebar - Field Palette -->
+        <div class="field-palette">
+            <div class="palette-header">
+                <h3>Field Types</h3>
+                <input type="text" class="palette-search" placeholder="Search fields..." @bind="_fieldSearchQuery" @bind:event="oninput" />
+            </div>
+            <div class="palette-content">
+                @foreach (var category in GetGroupedFieldTypes())
+                {
+                    <div class="palette-category">
+                        <div class="category-header" @onclick="() => ToggleCategory(category.Key)">
+                            <span class="category-icon">@(IsCategoryExpanded(category.Key) ? "▼" : "▶")</span>
+                            <span class="category-name">@category.Key</span>
+                        </div>
+                        @if (IsCategoryExpanded(category.Key))
+                        {
+                            <div class="category-fields">
+                                @foreach (var fieldType in category.Value)
+                                {
+                                    <div class="field-type-item" draggable="true" @onclick="() => OnAddFieldAsync(fieldType)" title="@fieldType.Description">
+                                        <span class="field-icon">@fieldType.Icon</span>
+                                        <span class="field-name">@fieldType.Name</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Center - Form Designer Canvas -->
+        <div class="form-designer-canvas">
+            <div class="canvas-toolbar">
+                <button class="btn btn-sm" @onclick="OnAddSectionAsync" title="Add Section">
+                    <span class="btn-icon">➕</span>
+                    Add Section
+                </button>
+                <div class="canvas-toolbar-right">
+                    <span class="canvas-info">@_currentForm.Sections.Count section(s), @GetTotalFieldCount() field(s)</span>
+                </div>
+            </div>
+
+            <div class="canvas-content">
+                @if (_currentForm.Sections.Count == 0)
+                {
+                    <div class="canvas-empty">
+                        <div class="empty-icon">📝</div>
+                        <h3>Start Building Your Form</h3>
+                        <p>Add sections and fields from the left panel to design your form</p>
+                        <button class="btn btn-primary" @onclick="OnAddSectionAsync">
+                            Add First Section
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var section in _currentForm.Sections.OrderBy(s => s.Order))
+                    {
+                        <div class="form-section @(section.Id == _selectedSectionId ? "selected" : "")" @onclick="() => OnSelectSectionAsync(section.Id)">
+                            <div class="section-header">
+                                <div class="section-header-left">
+                                    @if (section.IsCollapsible)
+                                    {
+                                        <button class="section-toggle" @onclick="() => ToggleSection(section.Id)" @onclick:stopPropagation="true">
+                                            @(section.IsCollapsed ? "▶" : "▼")
+                                        </button>
+                                    }
+                                    <input type="text" class="section-title-input" placeholder="Section Title" @bind="section.Title" @onclick:stopPropagation="true" />
+                                </div>
+                                <div class="section-header-actions">
+                                    <button class="btn-icon-only" @onclick="() => OnMoveSectionUpAsync(section.Id)" @onclick:stopPropagation="true" title="Move Up" disabled="@(section.Order == 0)">
+                                        ⬆️
+                                    </button>
+                                    <button class="btn-icon-only" @onclick="() => OnMoveSectionDownAsync(section.Id)" @onclick:stopPropagation="true" title="Move Down" disabled="@(section.Order == _currentForm.Sections.Count - 1)">
+                                        ⬇️
+                                    </button>
+                                    <button class="btn-icon-only" @onclick="() => OnDuplicateSectionAsync(section.Id)" @onclick:stopPropagation="true" title="Duplicate">
+                                        📋
+                                    </button>
+                                    <button class="btn-icon-only" @onclick="() => OnDeleteSectionAsync(section.Id)" @onclick:stopPropagation="true" title="Delete">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (!section.IsCollapsed)
+                            {
+                                <div class="section-content">
+                                    @if (!string.IsNullOrEmpty(section.Description))
+                                    {
+                                        <p class="section-description">@(section.Description)</p>
+                                    }
+
+                                    @if (section.Fields.Count == 0)
+                                    {
+                                        <div class="section-empty">
+                                            <p>No fields yet. Click on field types in the left panel to add fields to this section.</p>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="section-fields" style="grid-template-columns: repeat(@(section.ColumnsCount), 1fr);">
+                                            @foreach (var field in section.Fields.OrderBy(f => f.Order))
+                                            {
+                                                <div class="form-field @(field.Id == _selectedFieldId ? "selected" : "")" 
+                                                     style="grid-column: span @field.ColumnSpan;" 
+                                                     @onclick="() => OnSelectFieldAsync(field.Id)" 
+                                                     @onclick:stopPropagation="true">
+                                                    <div class="field-header">
+                                                        <div class="field-header-left">
+                                                            <span class="field-type-icon">@GetFieldTypeIcon(field.Type)</span>
+                                                            <span class="field-label">@field.Label</span>
+                                                            @if (field.IsRequired)
+                                                            {
+                                                                <span class="field-required">*</span>
+                                                            }
+                                                        </div>
+                                                        <div class="field-header-actions">
+                                                            <button class="btn-icon-tiny" @onclick="() => OnEditFieldAsync(field.Id)" @onclick:stopPropagation="true" title="Edit">
+                                                                ✏️
+                                                            </button>
+                                                            <button class="btn-icon-tiny" @onclick="() => OnDuplicateFieldAsync(section.Id, field.Id)" @onclick:stopPropagation="true" title="Duplicate">
+                                                                📋
+                                                            </button>
+                                                            <button class="btn-icon-tiny" @onclick="() => OnDeleteFieldAsync(section.Id, field.Id)" @onclick:stopPropagation="true" title="Delete">
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="field-preview">
+                                                        @RenderFieldPreview(field)
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Right Sidebar - Properties Panel -->
+        <div class="properties-panel">
+            <div class="properties-header">
+                <h3>Properties</h3>
+            </div>
+            <div class="properties-content">
+                @if (_selectedFieldId != null)
+                {
+                    var field = GetFieldById(_selectedFieldId.Value);
+                    if (field != null)
+                    {
+                        <div class="properties-group">
+                            <h4>Field Properties</h4>
+                            
+                            <div class="property-item">
+                                <label>Field Name</label>
+                                <input type="text" class="property-input" @bind="field.Name" placeholder="fieldName" />
+                            </div>
+
+                            <div class="property-item">
+                                <label>Label</label>
+                                <input type="text" class="property-input" @bind="field.Label" placeholder="Field Label" />
+                            </div>
+
+                            <div class="property-item">
+                                <label>Placeholder</label>
+                                <input type="text" class="property-input" @bind="field.Placeholder" placeholder="Enter placeholder..." />
+                            </div>
+
+                            <div class="property-item">
+                                <label>Help Text</label>
+                                <input type="text" class="property-input" @bind="field.HelpText" placeholder="Help text..." />
+                            </div>
+
+                            <div class="property-item">
+                                <label>
+                                    <input type="checkbox" @bind="field.IsRequired" />
+                                    Required
+                                </label>
+                            </div>
+
+                            <div class="property-item">
+                                <label>
+                                    <input type="checkbox" @bind="field.IsReadOnly" />
+                                    Read Only
+                                </label>
+                            </div>
+
+                            <div class="property-item">
+                                <label>Column Span</label>
+                                <input type="number" class="property-input" @bind="field.ColumnSpan" min="1" max="4" />
+                            </div>
+
+                            @if (SupportsOptions(field.Type))
+                            {
+                                <div class="property-item">
+                                    <label>Options</label>
+                                    <div class="field-options">
+                                        @foreach (var option in field.Options)
+                                        {
+                                            <div class="option-item">
+                                                <input type="text" class="option-input" @bind="option.Label" placeholder="Label" />
+                                                <input type="text" class="option-input" @bind="option.Value" placeholder="Value" />
+                                                <button class="btn-icon-tiny" @onclick="() => RemoveOption(field, option.Id)">🗑️</button>
+                                            </div>
+                                        }
+                                        <button class="btn btn-sm" @onclick="() => AddOption(field)">+ Add Option</button>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="properties-group">
+                                <h4>Validation</h4>
+                                
+                                @if (field.Type == FormFieldType.Text || field.Type == FormFieldType.TextArea)
+                                {
+                                    <div class="property-item">
+                                        <label>Min Length</label>
+                                        <input type="number" class="property-input" @bind="field.Validation.MinLength" />
+                                    </div>
+                                    <div class="property-item">
+                                        <label>Max Length</label>
+                                        <input type="number" class="property-input" @bind="field.Validation.MaxLength" />
+                                    </div>
+                                }
+
+                                @if (field.Type == FormFieldType.Number)
+                                {
+                                    <div class="property-item">
+                                        <label>Min Value</label>
+                                        <input type="number" class="property-input" @bind="field.Validation.MinValue" />
+                                    </div>
+                                    <div class="property-item">
+                                        <label>Max Value</label>
+                                        <input type="number" class="property-input" @bind="field.Validation.MaxValue" />
+                                    </div>
+                                }
+
+                                <div class="property-item">
+                                    <label>Error Message</label>
+                                    <input type="text" class="property-input" @bind="field.Validation.ErrorMessage" placeholder="Custom error message" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else if (_selectedSectionId != null)
+                {
+                    var section = GetSectionById(_selectedSectionId.Value);
+                    if (section != null)
+                    {
+                        <div class="properties-group">
+                            <h4>Section Properties</h4>
+                            
+                            <div class="property-item">
+                                <label>Description</label>
+                                <textarea class="property-input" @bind="section.Description" rows="3" placeholder="Section description..."></textarea>
+                            </div>
+
+                            <div class="property-item">
+                                <label>Columns</label>
+                                <input type="number" class="property-input" @bind="section.ColumnsCount" min="1" max="4" />
+                            </div>
+
+                            <div class="property-item">
+                                <label>
+                                    <input type="checkbox" @bind="section.IsCollapsible" />
+                                    Collapsible
+                                </label>
+                            </div>
+
+                            <div class="property-item">
+                                <label>
+                                    <input type="checkbox" @bind="section.IsVisible" />
+                                    Visible
+                                </label>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="properties-empty">
+                        <p>Select a section or field to view and edit its properties</p>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- AI Assistant Panel -->
+        @if (EnableAIAssistant)
+        {
+            <div class="ai-assistant-panel @(_showAIAssistant ? "expanded" : "collapsed")">
+                <div class="ai-assistant-header" @onclick="() => _showAIAssistant = !_showAIAssistant">
+                    <span class="ai-icon">🤖</span>
+                    <h3>AI Assistant</h3>
+                    <button class="toggle-btn">@(_showAIAssistant ? "−" : "+")</button>
+                </div>
+                
+                @if (_showAIAssistant)
+                {
+                    <div class="ai-assistant-content">
+                        <div class="ai-context-input">
+                            <label>Describe your form purpose:</label>
+                            <textarea class="ai-textarea" 
+                                      @bind="_aiContextInput"
+                                      @bind:event="oninput"
+                                      placeholder="e.g., 'Patient registration form' or 'Employee onboarding survey'"
+                                      rows="3"></textarea>
+                        </div>
+                        
+                        @if (_fieldSuggestions.Any())
+                        {
+                            <div class="ai-suggestions">
+                                <div class="suggestions-header">
+                                    <span class="suggestions-title">💡 Suggested Fields</span>
+                                    <span class="suggestions-count">@_fieldSuggestions.Count</span>
+                                </div>
+                                
+                                @foreach (var suggestion in _fieldSuggestions)
+                                {
+                                    <div class="suggestion-item" @onclick="() => OnApplyFieldSuggestion(suggestion)">
+                                        <div class="suggestion-header">
+                                            <span class="suggestion-icon">@GetFieldIcon(suggestion.FieldType)</span>
+                                            <span class="suggestion-name">@suggestion.FieldName</span>
+                                            <span class="confidence-badge confidence-@GetConfidenceClass(suggestion.Confidence)">
+                                                @($"{suggestion.Confidence:F0}%")
+                                            </span>
+                                        </div>
+                                        <p class="suggestion-description">@suggestion.Description</p>
+                                        @if (!string.IsNullOrEmpty(suggestion.ValidationRule))
+                                        {
+                                            <div class="suggestion-validation">
+                                                <span class="validation-icon">✓</span>
+                                                <span class="validation-text">@suggestion.ValidationRule</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_aiContextInput))
+                        {
+                            <div class="ai-empty-state">
+                                <span class="empty-icon">🔍</span>
+                                <p>No suggestions yet. Keep typing...</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="ai-empty-state">
+                                <span class="empty-icon">💭</span>
+                                <p>Describe your form to get AI-powered field suggestions</p>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Preview Modal -->
+    @if (_showPreview)
+    {
+        <div class="modal-overlay" @onclick="OnTogglePreviewAsync">
+            <div class="modal-content modal-large" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Form Preview</h3>
+                    <button class="modal-close" @onclick="OnTogglePreviewAsync">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-preview">
+                        @foreach (var section in _currentForm.Sections.OrderBy(s => s.Order))
+                        {
+                            @if (section.IsVisible)
+                            {
+                                <div class="preview-section">
+                                    <h3>@(section.Title)</h3>
+                                    @if (!string.IsNullOrEmpty(section.Description))
+                                    {
+                                        <p class="preview-section-description">@(section.Description)</p>
+                                    }
+                                    <div class="preview-fields" style="grid-template-columns: repeat(@(section.ColumnsCount), 1fr);">
+                                        @foreach (var field in section.Fields.OrderBy(f => f.Order))
+                                        {
+                                            @if (field.IsVisible)
+                                            {
+                                                <div class="preview-field" style="grid-column: span @field.ColumnSpan;">
+                                                    <label class="preview-label">
+                                                        @field.Label
+                                                        @if (field.IsRequired)
+                                                        {
+                                                            <span class="preview-required">*</span>
+                                                        }
+                                                    </label>
+                                                    @if (!string.IsNullOrEmpty(field.HelpText))
+                                                    {
+                                                        <p class="preview-help">@field.HelpText</p>
+                                                    }
+                                                    @RenderFieldPreview(field)
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        <div class="preview-actions">
+                            <button class="btn btn-primary">@_currentForm.Settings.SubmitButtonText</button>
+                            @if (_currentForm.Settings.AllowSaveAsDraft)
+                            {
+                                <button class="btn btn-secondary">@_currentForm.Settings.SaveDraftButtonText</button>
+                            }
+                            <button class="btn btn-secondary">@_currentForm.Settings.CancelButtonText</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Settings Modal -->
+    @if (_showSettings)
+    {
+        <div class="modal-overlay" @onclick="OnToggleSettingsAsync">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Form Settings</h3>
+                    <button class="modal-close" @onclick="OnToggleSettingsAsync">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <h4>Display</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" @bind="_currentForm.Settings.ShowProgressBar" />
+                                Show Progress Bar
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" @bind="_currentForm.Settings.ShowFieldNumbers" />
+                                Show Field Numbers
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" @bind="_currentForm.Settings.ShowRequiredIndicator" />
+                                Show Required Indicator
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4>Behavior</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" @bind="_currentForm.Settings.AllowSaveAsDraft" />
+                                Allow Save as Draft
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" @bind="_currentForm.Settings.EnableAutoSave" />
+                                Enable Auto-save
+                            </label>
+                        </div>
+                        @if (_currentForm.Settings.EnableAutoSave)
+                        {
+                            <div class="setting-item">
+                                <label>Auto-save Interval (seconds)</label>
+                                <input type="number" @bind="_currentForm.Settings.AutoSaveInterval" min="10" max="300" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="settings-group">
+                        <h4>Button Labels</h4>
+                        <div class="setting-item">
+                            <label>Submit Button</label>
+                            <input type="text" @bind="_currentForm.Settings.SubmitButtonText" />
+                        </div>
+                        <div class="setting-item">
+                            <label>Cancel Button</label>
+                            <input type="text" @bind="_currentForm.Settings.CancelButtonText" />
+                        </div>
+                        <div class="setting-item">
+                            <label>Save Draft Button</label>
+                            <input type="text" @bind="_currentForm.Settings.SaveDraftButtonText" />
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4>Messages</h4>
+                        <div class="setting-item">
+                            <label>Success Message</label>
+                            <input type="text" @bind="_currentForm.Settings.SuccessMessage" />
+                        </div>
+                        <div class="setting-item">
+                            <label>Success Redirect URL</label>
+                            <input type="text" @bind="_currentForm.Settings.SuccessRedirectUrl" placeholder="https://..." />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="OnSaveSettingsAsync">Save Settings</button>
+                    <button class="btn btn-secondary" @onclick="OnToggleSettingsAsync">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Templates Modal -->
+    @if (_showTemplates && Templates != null)
+    {
+        <div class="modal-overlay" @onclick="OnToggleTemplatesAsync">
+            <div class="modal-content modal-large" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Form Templates</h3>
+                    <button class="modal-close" @onclick="OnToggleTemplatesAsync">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="templates-grid">
+                        @foreach (var template in Templates)
+                        {
+                            <div class="template-card" @onclick="() => OnLoadTemplateAsync(template.Id)">
+                                @if (!string.IsNullOrEmpty(template.PreviewImageUrl))
+                                {
+                                    <img src="@template.PreviewImageUrl" alt="@template.Name" class="template-preview" />
+                                }
+                                <div class="template-info">
+                                    <h4>@template.Name</h4>
+                                    <p>@template.Description</p>
+                                    <span class="template-category">@template.Category</span>
+                                    <span class="template-usage">Used @template.UsageCount times</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Version History Modal -->
+    @if (_showVersionHistory)
+    {
+        <div class="modal-overlay" @onclick="OnToggleVersionHistoryAsync">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Version History</h3>
+                    <button class="modal-close" @onclick="OnToggleVersionHistoryAsync">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="version-list">
+                        @foreach (var version in _currentForm.VersionHistory.OrderByDescending(v => v.CreatedAt))
+                        {
+                            <div class="version-item">
+                                <div class="version-header">
+                                    <span class="version-number">v@version.Version</span>
+                                    <span class="version-date">@version.CreatedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                </div>
+                                <div class="version-details">
+                                    <p class="version-author">By @version.CreatedBy</p>
+                                    @if (!string.IsNullOrEmpty(version.ChangeNotes))
+                                    {
+                                        <p class="version-notes">@version.ChangeNotes</p>
+                                    }
+                                </div>
+                                <button class="btn btn-sm" @onclick="() => OnRestoreVersionAsync(version.Version)">Restore</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Form Builder";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public FormDefinition? InitialForm { get; set; }
+    [Parameter] public List<FormTemplate>? Templates { get; set; }
+    
+    [Parameter] public EventCallback<FormDefinition> OnFormSaved { get; set; }
+    [Parameter] public EventCallback<FormDefinition> OnFormPublished { get; set; }
+    [Parameter] public EventCallback<FormDefinition> OnFormChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnTemplateLoaded { get; set; }
+
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public bool ShowTemplates { get; set; } = true;
+    [Parameter] public bool ShowVersionHistory { get; set; } = true;
+    [Parameter] public bool ShowSettings { get; set; } = true;
+    [Parameter] public bool AllowSave { get; set; } = true;
+    [Parameter] public bool AllowPublish { get; set; } = true;
+    [Parameter] public bool AutoSave { get; set; } = true;
+    [Parameter] public int AutoSaveInterval { get; set; } = 30;
+    
+    // AI Features
+    [Parameter] public bool EnableAIAssistant { get; set; } = true;
+    [Parameter] public bool ShowFieldSuggestions { get; set; } = true;
+    [Parameter] public double AIConfidenceThreshold { get; set; } = 75.0;
+
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; } = false;
+
+    private FormDefinition _currentForm = new();
+    private bool _hasPermission = true;
+    private bool _isLoading = false;
+    private bool _isSaving = false;
+    private bool _isPublishing = false;
+    private bool _showPreview = false;
+    private bool _showSettings = false;
+    private bool _showTemplates = false;
+    private bool _showVersionHistory = false;
+    private Guid? _selectedSectionId = null;
+    private Guid? _selectedFieldId = null;
+    private string _fieldSearchQuery = string.Empty;
+    private HashSet<string> _expandedCategories = new() { "Basic", "Advanced", "Specialized" };
+    
+    // AI Assistant State
+    private bool _showAIAssistant = true;
+    private List<FieldSuggestion> _fieldSuggestions = new();
+    private string _aiContextInput = string.Empty;
+    private Timer? _aiDebounceTimer;
+
+    private List<FieldTypeMetadata> _fieldTypes = new()
+    {
+        new() { Type = FormFieldType.Text, Name = "Text", Icon = "📝", Category = "Basic", Description = "Single-line text input" },
+        new() { Type = FormFieldType.TextArea, Name = "Text Area", Icon = "📄", Category = "Basic", Description = "Multi-line text input" },
+        new() { Type = FormFieldType.Number, Name = "Number", Icon = "🔢", Category = "Basic", Description = "Numeric input" },
+        new() { Type = FormFieldType.Email, Name = "Email", Icon = "📧", Category = "Basic", Description = "Email address input" },
+        new() { Type = FormFieldType.Phone, Name = "Phone", Icon = "📞", Category = "Basic", Description = "Phone number input" },
+        new() { Type = FormFieldType.Url, Name = "URL", Icon = "🔗", Category = "Basic", Description = "URL input" },
+        new() { Type = FormFieldType.Date, Name = "Date", Icon = "📅", Category = "Basic", Description = "Date picker" },
+        new() { Type = FormFieldType.DateTime, Name = "Date Time", Icon = "🕐", Category = "Basic", Description = "Date and time picker" },
+        new() { Type = FormFieldType.Time, Name = "Time", Icon = "⏰", Category = "Basic", Description = "Time picker" },
+        new() { Type = FormFieldType.Checkbox, Name = "Checkbox", Icon = "☑️", Category = "Basic", Description = "Single checkbox" },
+        new() { Type = FormFieldType.Radio, Name = "Radio", Icon = "🔘", Category = "Basic", Description = "Radio button group" },
+        new() { Type = FormFieldType.Dropdown, Name = "Dropdown", Icon = "📋", Category = "Basic", Description = "Dropdown list" },
+        new() { Type = FormFieldType.MultiSelect, Name = "Multi Select", Icon = "☑️", Category = "Advanced", Description = "Multiple selection dropdown" },
+        new() { Type = FormFieldType.FileUpload, Name = "File Upload", Icon = "📎", Category = "Advanced", Description = "File upload" },
+        new() { Type = FormFieldType.Signature, Name = "Signature", Icon = "✍️", Category = "Advanced", Description = "Digital signature" },
+        new() { Type = FormFieldType.Rating, Name = "Rating", Icon = "⭐", Category = "Advanced", Description = "Star rating" },
+        new() { Type = FormFieldType.Slider, Name = "Slider", Icon = "🎚️", Category = "Advanced", Description = "Range slider" },
+        new() { Type = FormFieldType.ColorPicker, Name = "Color", Icon = "🎨", Category = "Advanced", Description = "Color picker" },
+        new() { Type = FormFieldType.RichText, Name = "Rich Text", Icon = "📝", Category = "Advanced", Description = "Rich text editor" },
+        new() { Type = FormFieldType.Address, Name = "Address", Icon = "🏠", Category = "Specialized", Description = "Address input" },
+        new() { Type = FormFieldType.Currency, Name = "Currency", Icon = "💰", Category = "Specialized", Description = "Currency input" },
+        new() { Type = FormFieldType.Barcode, Name = "Barcode", Icon = "📊", Category = "Specialized", Description = "Barcode scanner" },
+        new() { Type = FormFieldType.QRCode, Name = "QR Code", Icon = "🔲", Category = "Specialized", Description = "QR code scanner" },
+        new() { Type = FormFieldType.Location, Name = "Location", Icon = "📍", Category = "Specialized", Description = "Location picker" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (_hasPermission && InitialForm != null)
+        {
+            _currentForm = InitialForm;
+        }
+    }
+
+    private Dictionary<string, List<FieldTypeMetadata>> GetGroupedFieldTypes()
+    {
+        var filtered = string.IsNullOrEmpty(_fieldSearchQuery) 
+            ? _fieldTypes 
+            : _fieldTypes.Where(f => f.Name.Contains(_fieldSearchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        return filtered.GroupBy(f => f.Category)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private bool IsCategoryExpanded(string category) => _expandedCategories.Contains(category);
+
+    private void ToggleCategory(string category)
+    {
+        if (_expandedCategories.Contains(category))
+            _expandedCategories.Remove(category);
+        else
+            _expandedCategories.Add(category);
+    }
+
+    private async Task OnAddSectionAsync()
+    {
+        var section = new FormSection
+        {
+            Title = $"Section {_currentForm.Sections.Count + 1}",
+            Order = _currentForm.Sections.Count
+        };
+        _currentForm.Sections.Add(section);
+        _selectedSectionId = section.Id;
+        _selectedFieldId = null;
+        await OnFormChanged.InvokeAsync(_currentForm);
+    }
+
+    private async Task OnDeleteSectionAsync(Guid sectionId)
+    {
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section != null)
+        {
+            _currentForm.Sections.Remove(section);
+            if (_selectedSectionId == sectionId)
+            {
+                _selectedSectionId = null;
+            }
+            await OnFormChanged.InvokeAsync(_currentForm);
+        }
+    }
+
+    private async Task OnDuplicateSectionAsync(Guid sectionId)
+    {
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section != null)
+        {
+            var newSection = new FormSection
+            {
+                Title = $"{section.Title} (Copy)",
+                Description = section.Description,
+                Order = _currentForm.Sections.Count,
+                IsCollapsible = section.IsCollapsible,
+                IsCollapsed = section.IsCollapsed,
+                IsVisible = section.IsVisible,
+                ColumnsCount = section.ColumnsCount,
+                Fields = section.Fields.Select(f => new FormField
+                {
+                    Name = f.Name,
+                    Label = f.Label,
+                    Type = f.Type,
+                    IsRequired = f.IsRequired,
+                    Order = f.Order,
+                    Options = f.Options.Select(o => new FormFieldOption { Label = o.Label, Value = o.Value }).ToList()
+                }).ToList()
+            };
+            _currentForm.Sections.Add(newSection);
+            await OnFormChanged.InvokeAsync(_currentForm);
+        }
+    }
+
+    private async Task OnMoveSectionUpAsync(Guid sectionId)
+    {
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section != null && section.Order > 0)
+        {
+            var prevSection = _currentForm.Sections.FirstOrDefault(s => s.Order == section.Order - 1);
+            if (prevSection != null)
+            {
+                prevSection.Order++;
+                section.Order--;
+                await OnFormChanged.InvokeAsync(_currentForm);
+            }
+        }
+    }
+
+    private async Task OnMoveSectionDownAsync(Guid sectionId)
+    {
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section != null && section.Order < _currentForm.Sections.Count - 1)
+        {
+            var nextSection = _currentForm.Sections.FirstOrDefault(s => s.Order == section.Order + 1);
+            if (nextSection != null)
+            {
+                nextSection.Order--;
+                section.Order++;
+                await OnFormChanged.InvokeAsync(_currentForm);
+            }
+        }
+    }
+
+    private void ToggleSection(Guid sectionId)
+    {
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section != null)
+        {
+            section.IsCollapsed = !section.IsCollapsed;
+        }
+    }
+
+    private async Task OnSelectSectionAsync(Guid sectionId)
+    {
+        _selectedSectionId = sectionId;
+        _selectedFieldId = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnAddFieldAsync(FieldTypeMetadata fieldType)
+    {
+        if (_selectedSectionId == null)
+        {
+            await OnAddSectionAsync();
+        }
+
+        var section = GetSectionById(_selectedSectionId!.Value);
+        if (section != null)
+        {
+            var field = new FormField
+            {
+                Name = $"field_{section.Fields.Count + 1}",
+                Label = fieldType.Name,
+                Type = fieldType.Type,
+                Order = section.Fields.Count
+            };
+            section.Fields.Add(field);
+            _selectedFieldId = field.Id;
+            await OnFormChanged.InvokeAsync(_currentForm);
+        }
+    }
+
+    private async Task OnSelectFieldAsync(Guid fieldId)
+    {
+        _selectedFieldId = fieldId;
+        _selectedSectionId = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnEditFieldAsync(Guid fieldId)
+    {
+        _selectedFieldId = fieldId;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDeleteFieldAsync(Guid sectionId, Guid fieldId)
+    {
+        var section = GetSectionById(sectionId);
+        if (section != null)
+        {
+            var field = section.Fields.FirstOrDefault(f => f.Id == fieldId);
+            if (field != null)
+            {
+                section.Fields.Remove(field);
+                if (_selectedFieldId == fieldId)
+                {
+                    _selectedFieldId = null;
+                }
+                await OnFormChanged.InvokeAsync(_currentForm);
+            }
+        }
+    }
+
+    private async Task OnDuplicateFieldAsync(Guid sectionId, Guid fieldId)
+    {
+        var section = GetSectionById(sectionId);
+        if (section != null)
+        {
+            var field = section.Fields.FirstOrDefault(f => f.Id == fieldId);
+            if (field != null)
+            {
+                var newField = new FormField
+                {
+                    Name = $"{field.Name}_copy",
+                    Label = $"{field.Label} (Copy)",
+                    Type = field.Type,
+                    IsRequired = field.IsRequired,
+                    Order = section.Fields.Count,
+                    Options = field.Options.Select(o => new FormFieldOption { Label = o.Label, Value = o.Value }).ToList()
+                };
+                section.Fields.Add(newField);
+                await OnFormChanged.InvokeAsync(_currentForm);
+            }
+        }
+    }
+
+    private async Task OnTogglePreviewAsync()
+    {
+        _showPreview = !_showPreview;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnToggleSettingsAsync()
+    {
+        _showSettings = !_showSettings;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnToggleTemplatesAsync()
+    {
+        _showTemplates = !_showTemplates;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnToggleVersionHistoryAsync()
+    {
+        _showVersionHistory = !_showVersionHistory;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnSaveFormAsync()
+    {
+        _isSaving = true;
+        _currentForm.ModifiedAt = DateTime.UtcNow;
+        await OnFormSaved.InvokeAsync(_currentForm);
+        _isSaving = false;
+    }
+
+    private async Task OnPublishFormAsync()
+    {
+        _isPublishing = true;
+        _currentForm.Status = FormStatus.Published;
+        _currentForm.ModifiedAt = DateTime.UtcNow;
+        
+        var version = new FormVersion
+        {
+            Version = _currentForm.Version,
+            CreatedAt = DateTime.UtcNow,
+            ChangeNotes = "Published"
+        };
+        _currentForm.VersionHistory.Add(version);
+        
+        await OnFormPublished.InvokeAsync(_currentForm);
+        _isPublishing = false;
+    }
+
+    private async Task OnSaveSettingsAsync()
+    {
+        _showSettings = false;
+        await OnFormChanged.InvokeAsync(_currentForm);
+    }
+
+    private async Task OnLoadTemplateAsync(Guid templateId)
+    {
+        await OnTemplateLoaded.InvokeAsync(templateId);
+        _showTemplates = false;
+    }
+
+    private async Task OnRestoreVersionAsync(string version)
+    {
+        await Task.CompletedTask;
+    }
+
+    private FormSection? GetSectionById(Guid id) => _currentForm.Sections.FirstOrDefault(s => s.Id == id);
+
+    private FormField? GetFieldById(Guid id)
+    {
+        foreach (var section in _currentForm.Sections)
+        {
+            var field = section.Fields.FirstOrDefault(f => f.Id == id);
+            if (field != null) return field;
+        }
+        return null;
+    }
+
+    private int GetTotalFieldCount() => _currentForm.Sections.Sum(s => s.Fields.Count);
+
+    private string GetFieldTypeIcon(FormFieldType type)
+    {
+        var metadata = _fieldTypes.FirstOrDefault(f => f.Type == type);
+        return metadata?.Icon ?? "📝";
+    }
+
+    private bool SupportsOptions(FormFieldType type) =>
+        type == FormFieldType.Radio || type == FormFieldType.Dropdown || type == FormFieldType.MultiSelect;
+
+    private void AddOption(FormField field)
+    {
+        field.Options.Add(new FormFieldOption
+        {
+            Label = $"Option {field.Options.Count + 1}",
+            Value = $"option{field.Options.Count + 1}",
+            Order = field.Options.Count
+        });
+    }
+
+    private void RemoveOption(FormField field, Guid optionId)
+    {
+        var option = field.Options.FirstOrDefault(o => o.Id == optionId);
+        if (option != null)
+        {
+            field.Options.Remove(option);
+        }
+    }
+
+    private RenderFragment RenderFieldPreview(FormField field) => builder =>
+    {
+        switch (field.Type)
+        {
+            case FormFieldType.Text:
+            case FormFieldType.Email:
+            case FormFieldType.Phone:
+            case FormFieldType.Url:
+            case FormFieldType.Number:
+            case FormFieldType.Currency:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "text");
+                builder.AddAttribute(2, "class", "preview-input");
+                builder.AddAttribute(3, "placeholder", field.Placeholder ?? field.Label);
+                builder.AddAttribute(4, "disabled", true);
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.TextArea:
+            case FormFieldType.RichText:
+                builder.OpenElement(0, "textarea");
+                builder.AddAttribute(1, "class", "preview-textarea");
+                builder.AddAttribute(2, "placeholder", field.Placeholder ?? field.Label);
+                builder.AddAttribute(3, "disabled", true);
+                builder.AddAttribute(4, "rows", 3);
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.Checkbox:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "checkbox");
+                builder.AddAttribute(2, "disabled", true);
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.Radio:
+            case FormFieldType.Dropdown:
+            case FormFieldType.MultiSelect:
+                builder.OpenElement(0, "select");
+                builder.AddAttribute(1, "class", "preview-select");
+                builder.AddAttribute(2, "disabled", true);
+                builder.OpenElement(3, "option");
+                builder.AddContent(4, "Select an option");
+                builder.CloseElement();
+                foreach (var option in field.Options)
+                {
+                    builder.OpenElement(5, "option");
+                    builder.AddContent(6, option.Label);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.Date:
+            case FormFieldType.DateTime:
+            case FormFieldType.Time:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "date");
+                builder.AddAttribute(2, "class", "preview-input");
+                builder.AddAttribute(3, "disabled", true);
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.FileUpload:
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "preview-file-upload");
+                builder.AddContent(2, "📎 Choose file...");
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.Rating:
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "preview-rating");
+                builder.AddContent(2, "⭐⭐⭐⭐⭐");
+                builder.CloseElement();
+                break;
+
+            case FormFieldType.Slider:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "range");
+                builder.AddAttribute(2, "class", "preview-slider");
+                builder.AddAttribute(3, "disabled", true);
+                builder.CloseElement();
+                break;
+
+            default:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "text");
+                builder.AddAttribute(2, "class", "preview-input");
+                builder.AddAttribute(3, "disabled", true);
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>
+        {
+            ["role"] = "region",
+            ["aria-label"] = "Form Builder"
+        };
+        if (IsRtl) attrs["dir"] = "rtl";
+        return attrs;
+    }
+    
+    // AI Assistant Methods
+    private async Task OnAIContextInput(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _aiContextInput = e.Value?.ToString() ?? string.Empty;
+        
+        _aiDebounceTimer?.Dispose();
+        _aiDebounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                if (!string.IsNullOrWhiteSpace(_aiContextInput))
+                {
+                    await GenerateFieldSuggestions(_aiContextInput);
+                    StateHasChanged();
+                }
+            });
+        }, null, 1000, Timeout.Infinite);
+        
+        await Task.CompletedTask;
+    }
+    
+    private async Task GenerateFieldSuggestions(string context)
+    {
+        _fieldSuggestions.Clear();
+        var contextLower = context.ToLower();
+        
+        // Healthcare/Patient Context
+        if (contextLower.Contains("patient") || contextLower.Contains("medical") || contextLower.Contains("health"))
+        {
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "patientName",
+                FieldType = FormFieldType.Text,
+                Description = "Full name of the patient",
+                Confidence = 96.5,
+                ValidationRule = "Required field, min 2 characters"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "dateOfBirth",
+                FieldType = FormFieldType.Date,
+                Description = "Patient's date of birth",
+                Confidence = 94.2,
+                ValidationRule = "Must be past date"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "insuranceNumber",
+                FieldType = FormFieldType.Text,
+                Description = "Health insurance policy number",
+                Confidence = 89.3,
+                ValidationRule = "Alphanumeric, required"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "emergencyContact",
+                FieldType = FormFieldType.Phone,
+                Description = "Emergency contact phone number",
+                Confidence = 91.7,
+                ValidationRule = "Valid phone format"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "medicalHistory",
+                FieldType = FormFieldType.TextArea,
+                Description = "Brief medical history and conditions",
+                Confidence = 87.5,
+                ValidationRule = "Optional, max 500 chars"
+            });
+        }
+        
+        // Employee/HR Context
+        if (contextLower.Contains("employee") || contextLower.Contains("staff") || contextLower.Contains("onboarding"))
+        {
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "employeeName",
+                FieldType = FormFieldType.Text,
+                Description = "Full name of employee",
+                Confidence = 97.1,
+                ValidationRule = "Required"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "department",
+                FieldType = FormFieldType.Dropdown,
+                Description = "Department assignment",
+                Confidence = 93.8,
+                ValidationRule = "Select from list"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "startDate",
+                FieldType = FormFieldType.Date,
+                Description = "Employment start date",
+                Confidence = 91.5,
+                ValidationRule = "Required, future or today"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "workEmail",
+                FieldType = FormFieldType.Email,
+                Description = "Company email address",
+                Confidence = 95.2,
+                ValidationRule = "Valid email format"
+            });
+        }
+        
+        // Registration Context
+        if (contextLower.Contains("registration") || contextLower.Contains("signup") || contextLower.Contains("register"))
+        {
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "fullName",
+                FieldType = FormFieldType.Text,
+                Description = "User's full name",
+                Confidence = 96.8,
+                ValidationRule = "Required"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "email",
+                FieldType = FormFieldType.Email,
+                Description = "Email address for account",
+                Confidence = 98.2,
+                ValidationRule = "Valid email, unique"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "password",
+                FieldType = FormFieldType.Text,
+                Description = "Account password",
+                Confidence = 97.5,
+                ValidationRule = "Min 8 chars, alphanumeric"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "phoneNumber",
+                FieldType = FormFieldType.Phone,
+                Description = "Contact phone number",
+                Confidence = 89.4,
+                ValidationRule = "Valid phone format"
+            });
+        }
+        
+        // Survey/Feedback Context
+        if (contextLower.Contains("survey") || contextLower.Contains("feedback") || contextLower.Contains("questionnaire"))
+        {
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "overallRating",
+                FieldType = FormFieldType.Rating,
+                Description = "Overall satisfaction rating",
+                Confidence = 94.3,
+                ValidationRule = "1-5 stars required"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "comments",
+                FieldType = FormFieldType.TextArea,
+                Description = "Additional comments or feedback",
+                Confidence = 91.7,
+                ValidationRule = "Optional, max 1000 chars"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "recommendToOthers",
+                FieldType = FormFieldType.Radio,
+                Description = "Would recommend to others?",
+                Confidence = 88.5,
+                ValidationRule = "Yes/No required"
+            });
+        }
+        
+        // Generic Contact Fields
+        if (contextLower.Contains("contact") || contextLower.Contains("form") && _fieldSuggestions.Count < 3)
+        {
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "name",
+                FieldType = FormFieldType.Text,
+                Description = "Contact name",
+                Confidence = 90.0,
+                ValidationRule = "Required"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "email",
+                FieldType = FormFieldType.Email,
+                Description = "Email address",
+                Confidence = 92.5,
+                ValidationRule = "Valid email format"
+            });
+            
+            _fieldSuggestions.Add(new FieldSuggestion
+            {
+                FieldName = "message",
+                FieldType = FormFieldType.TextArea,
+                Description = "Message or inquiry",
+                Confidence = 85.3,
+                ValidationRule = "Required, min 10 chars"
+            });
+        }
+        
+        // Filter by confidence threshold
+        _fieldSuggestions = _fieldSuggestions
+            .Where(s => s.Confidence >= AIConfidenceThreshold)
+            .OrderByDescending(s => s.Confidence)
+            .ToList();
+        
+        await Task.CompletedTask;
+    }
+    
+    private async Task OnApplyFieldSuggestion(FieldSuggestion suggestion)
+    {
+        if (_selectedSectionId == null)
+        {
+            // Create a new section if none selected
+            await OnAddSectionAsync();
+        }
+        
+        var section = _currentForm.Sections.FirstOrDefault(s => s.Id == _selectedSectionId);
+        if (section != null)
+        {
+            var newField = new FormField
+            {
+                Id = Guid.NewGuid(),
+                Name = suggestion.FieldName,
+                Label = FormatLabelFromFieldName(suggestion.FieldName),
+                Type = suggestion.FieldType,
+                IsRequired = suggestion.ValidationRule?.Contains("required", StringComparison.OrdinalIgnoreCase) == true,
+                HelpText = suggestion.Description,
+                Order = section.Fields.Count,
+                SectionId = section.Id
+            };
+            
+            section.Fields.Add(newField);
+            _selectedFieldId = newField.Id;
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "AIFieldSuggestionApplied",
+                    Resource = AuditResource ?? "FormBuilder",
+                    Timestamp = DateTime.UtcNow,
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["FieldName"] = suggestion.FieldName,
+                        ["FieldType"] = suggestion.FieldType.ToString(),
+                        ["Confidence"] = suggestion.Confidence,
+                        ["Context"] = _aiContextInput
+                    }
+                });
+            }
+            
+            await OnFormChanged.InvokeAsync(_currentForm);
+        }
+    }
+    
+    private string FormatLabelFromFieldName(string fieldName)
+    {
+        // Convert camelCase to Title Case
+        var result = System.Text.RegularExpressions.Regex.Replace(fieldName, "(\\B[A-Z])", " $1");
+        return char.ToUpper(result[0]) + result.Substring(1);
+    }
+    
+    private string GetFieldIcon(FormFieldType type)
+    {
+        var fieldType = _fieldTypes.FirstOrDefault(ft => ft.Type == type);
+        return fieldType?.Icon ?? "📝";
+    }
+    
+    private string GetConfidenceClass(double confidence)
+    {
+        return confidence >= 90 ? "high" : confidence >= 80 ? "medium" : "low";
+    }
+    
+    public void Dispose()
+    {
+        _aiDebounceTimer?.Dispose();
+    }
+}

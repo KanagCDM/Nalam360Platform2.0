@@ -1,0 +1,1573 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.ProgressBar
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-operational-efficiency">
+    @if (!HasPermission)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> You do not have permission to access Operational Efficiency.
+        </div>
+        return;
+    }
+
+    <div class="operations-header">
+        <h3>
+            <i class="fas fa-cogs"></i> Operational Efficiency & Analytics
+            @if (UseRealAI)
+            {
+                <span class="badge bg-success ms-2">🤖 Real AI</span>
+            }
+        </h3>
+        <p class="operations-subtitle">AI-powered workflow optimization and predictive capacity planning</p>
+    </div>
+
+    <SfTab CssClass="operations-tabs">
+        <TabItems>
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Dashboard"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="dashboard-panel">
+                        <div class="kpi-overview">
+                            <h4><i class="fas fa-tachometer-alt"></i> Key Performance Indicators</h4>
+                            <div class="kpi-grid">
+                                <div class="kpi-card capacity">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-hospital"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Bed Occupancy</div>
+                                        <div class="kpi-value">@($"{OperationalMetrics.BedOccupancyRate:F1}%")</div>
+                                        <div class="kpi-trend trend-up">
+                                            <i class="fas fa-arrow-up"></i> 2.3% vs last week
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@OperationalMetrics.BedOccupancyRate" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#e74c3c">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kpi-card efficiency">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-user-clock"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Avg Wait Time</div>
+                                        <div class="kpi-value">@OperationalMetrics.AvgWaitTime min</div>
+                                        <div class="kpi-trend trend-down">
+                                            <i class="fas fa-arrow-down"></i> 12% improvement
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@((180 - OperationalMetrics.AvgWaitTime) / 180 * 100)" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#27ae60">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kpi-card throughput">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-procedures"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Patient Throughput</div>
+                                        <div class="kpi-value">@OperationalMetrics.PatientThroughput / day</div>
+                                        <div class="kpi-trend trend-up">
+                                            <i class="fas fa-arrow-up"></i> 8.5% vs target
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@((double)OperationalMetrics.PatientThroughput / 450 * 100)" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#3498db">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kpi-card financial">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Revenue Per Patient</div>
+                                        <div class="kpi-value">$@($"{OperationalMetrics.RevenuePerPatient:N0}")</div>
+                                        <div class="kpi-trend trend-up">
+                                            <i class="fas fa-arrow-up"></i> 5.2% increase
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@(OperationalMetrics.RevenuePerPatient / 5000 * 100)" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#f39c12">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kpi-card staff">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-user-md"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Staff Utilization</div>
+                                        <div class="kpi-value">@($"{OperationalMetrics.StaffUtilization:F1}%")</div>
+                                        <div class="kpi-trend trend-neutral">
+                                            <i class="fas fa-minus"></i> Optimal range
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@OperationalMetrics.StaffUtilization" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#9b59b6">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="kpi-card quality">
+                                    <div class="kpi-icon">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Quality Score</div>
+                                        <div class="kpi-value">@($"{OperationalMetrics.QualityScore:F1}")/100</div>
+                                        <div class="kpi-trend trend-up">
+                                            <i class="fas fa-arrow-up"></i> Above benchmark
+                                        </div>
+                                        <div class="kpi-progress">
+                                            <SfProgressBar Type="ProgressType.Linear" Value="@OperationalMetrics.QualityScore" 
+                                                         Height="6" TrackColor="#e0e0e0" ProgressColor="#16a085">
+                                            </SfProgressBar>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="realtime-alerts">
+                            <h4><i class="fas fa-exclamation-circle"></i> Real-Time Alerts</h4>
+                            <div class="alerts-list">
+                                @foreach (var alert in RealtimeAlerts)
+                                {
+                                    <div class="alert-item severity-@alert.Severity.ToLower()">
+                                        <div class="alert-icon">
+                                            <i class="@GetAlertIcon(alert.Severity)"></i>
+                                        </div>
+                                        <div class="alert-content">
+                                            <div class="alert-title">@alert.Title</div>
+                                            <div class="alert-message">@alert.Message</div>
+                                            <div class="alert-time">@alert.Timestamp.ToString("h:mm tt")</div>
+                                        </div>
+                                        <div class="alert-actions">
+                                            <SfButton CssClass="e-small e-primary" IconCss="fas fa-check">Resolve</SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Capacity Planning"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="capacity-panel">
+                        <div class="capacity-forecast">
+                            <h4><i class="fas fa-chart-line"></i> AI-Powered Capacity Forecast</h4>
+                            <div class="forecast-controls">
+                                <SfDropDownList @bind-Value="@SelectedForecastPeriod" DataSource="@ForecastPeriods" 
+                                              Placeholder="Select Period" CssClass="operations-input">
+                                </SfDropDownList>
+                                <SfButton CssClass="e-success" IconCss="fas fa-robot" OnClick="GenerateForecast">
+                                    Generate AI Forecast
+                                </SfButton>
+                            </div>
+
+                            <div class="forecast-chart">
+                                <SfChart Title="Predicted vs Actual Capacity">
+                                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                    <ChartPrimaryYAxis Title="Bed Occupancy (%)"></ChartPrimaryYAxis>
+                                    <ChartSeriesCollection>
+                                        <ChartSeries DataSource="@CapacityForecast" XName="Date" YName="Actual" 
+                                                   Name="Actual" Type="ChartSeriesType.Line" Fill="#3498db">
+                                            <ChartMarker Visible="true"></ChartMarker>
+                                        </ChartSeries>
+                                        <ChartSeries DataSource="@CapacityForecast" XName="Date" YName="Predicted" 
+                                                   Name="Predicted" Type="ChartSeriesType.Line" Fill="#e74c3c" DashArray="5,5">
+                                            <ChartMarker Visible="true"></ChartMarker>
+                                        </ChartSeries>
+                                        <ChartSeries DataSource="@CapacityForecast" XName="Date" YName="Capacity" 
+                                                   Name="Max Capacity" Type="ChartSeriesType.Line" Fill="#95a5a6">
+                                        </ChartSeries>
+                                    </ChartSeriesCollection>
+                                </SfChart>
+                            </div>
+
+                            <div class="forecast-insights">
+                                <h5><i class="fas fa-lightbulb"></i> AI Insights</h5>
+                                <div class="insights-grid">
+                                    @foreach (var insight in CapacityInsights)
+                                    {
+                                        <div class="insight-card priority-@insight.Priority.ToLower()">
+                                            <div class="insight-header">
+                                                <i class="@insight.Icon"></i>
+                                                <span class="insight-title">@insight.Title</span>
+                                            </div>
+                                            <div class="insight-description">@insight.Description</div>
+                                            <div class="insight-recommendation">
+                                                <strong>Recommendation:</strong> @insight.Recommendation
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="resource-allocation">
+                            <h4><i class="fas fa-users-cog"></i> Resource Allocation Optimization</h4>
+                            <SfGrid DataSource="@ResourceAllocation" AllowSorting="true">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ResourceAllocationData.Department)" HeaderText="Department" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(ResourceAllocationData.CurrentStaff)" HeaderText="Current Staff" Width="130"></GridColumn>
+                                    <GridColumn Field="@nameof(ResourceAllocationData.OptimalStaff)" HeaderText="Optimal Staff" Width="130"></GridColumn>
+                                    <GridColumn Field="@nameof(ResourceAllocationData.Utilization)" HeaderText="Utilization" Width="120">
+                                        <Template>
+                                            @{
+                                                var resource = (context as ResourceAllocationData)!;
+                                                <span class="utilization-@GetUtilizationLevel(resource.Utilization)">
+                                                    @($"{resource.Utilization:F1}%")
+                                                </span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(ResourceAllocationData.Efficiency)" HeaderText="Efficiency" Width="120">
+                                        <Template>
+                                            @{
+                                                var resource = (context as ResourceAllocationData)!;
+                                                <span class="efficiency-badge">@($"{resource.Efficiency:F1}%")</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn HeaderText="Status" Width="140">
+                                        <Template>
+                                            @{
+                                                var resource = (context as ResourceAllocationData)!;
+                                                var status = GetResourceStatus(resource);
+                                                <span class="resource-status status-@status.ToLower()">@status</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn HeaderText="Action" Width="120">
+                                        <Template>
+                                            <SfButton CssClass="e-small e-info" IconCss="fas fa-cog">Optimize</SfButton>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Workflow Analysis"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="workflow-panel">
+                        <div class="workflow-metrics">
+                            <h4><i class="fas fa-project-diagram"></i> Workflow Performance Metrics</h4>
+                            <div class="metrics-cards">
+                                <div class="metric-card">
+                                    <div class="metric-icon"><i class="fas fa-clock"></i></div>
+                                    <div class="metric-details">
+                                        <div class="metric-label">Avg Patient Cycle Time</div>
+                                        <div class="metric-value">@WorkflowMetrics.AvgCycleTime min</div>
+                                        <div class="metric-comparison">Target: 180 min</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-icon"><i class="fas fa-running"></i></div>
+                                    <div class="metric-details">
+                                        <div class="metric-label">Door-to-Provider Time</div>
+                                        <div class="metric-value">@WorkflowMetrics.DoorToProviderTime min</div>
+                                        <div class="metric-comparison">Benchmark: 30 min</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-icon"><i class="fas fa-flask"></i></div>
+                                    <div class="metric-details">
+                                        <div class="metric-label">Lab Turnaround Time</div>
+                                        <div class="metric-value">@WorkflowMetrics.LabTurnaround min</div>
+                                        <div class="metric-comparison">Target: 60 min</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-icon"><i class="fas fa-x-ray"></i></div>
+                                    <div class="metric-details">
+                                        <div class="metric-label">Imaging Turnaround</div>
+                                        <div class="metric-value">@WorkflowMetrics.ImagingTurnaround min</div>
+                                        <div class="metric-comparison">Target: 90 min</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bottleneck-analysis">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Identified Bottlenecks</h5>
+                            <div class="bottlenecks-list">
+                                @foreach (var bottleneck in Bottlenecks)
+                                {
+                                    <div class="bottleneck-card impact-@bottleneck.Impact.ToLower()">
+                                        <div class="bottleneck-header">
+                                            <div class="bottleneck-title">
+                                                <i class="fas fa-circle"></i>
+                                                @bottleneck.Process
+                                            </div>
+                                            <span class="impact-badge impact-@bottleneck.Impact.ToLower()">@bottleneck.Impact Impact</span>
+                                        </div>
+                                        <div class="bottleneck-stats">
+                                            <div class="stat-item">
+                                                <label>Avg Delay:</label>
+                                                <span>@bottleneck.AvgDelay min</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <label>Frequency:</label>
+                                                <span>@bottleneck.Frequency times/day</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <label>Cost Impact:</label>
+                                                <span>$@($"{bottleneck.CostImpact:N0}")/day</span>
+                                            </div>
+                                        </div>
+                                        <div class="bottleneck-solution">
+                                            <strong>AI Recommendation:</strong>
+                                            <p>@bottleneck.Recommendation</p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="process-flow-chart">
+                            <h5><i class="fas fa-sitemap"></i> Patient Flow Distribution</h5>
+                            <SfChart>
+                                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                <ChartSeriesCollection>
+                                    <ChartSeries DataSource="@PatientFlowData" XName="Stage" YName="AverageTime" 
+                                               Type="ChartSeriesType.Bar" Fill="#3498db">
+                                    </ChartSeries>
+                                </ChartSeriesCollection>
+                            </SfChart>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Cost Optimization"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="cost-panel">
+                        <div class="cost-overview">
+                            <h4><i class="fas fa-money-bill-wave"></i> Cost Analysis & Optimization</h4>
+                            <div class="cost-summary">
+                                <div class="cost-card total">
+                                    <i class="fas fa-calculator"></i>
+                                    <div>
+                                        <div class="cost-label">Total Operating Cost</div>
+                                        <div class="cost-value">$@($"{CostMetrics.TotalOperatingCost:N0}")</div>
+                                        <div class="cost-period">Per Month</div>
+                                    </div>
+                                </div>
+                                <div class="cost-card perpatient">
+                                    <i class="fas fa-user-tag"></i>
+                                    <div>
+                                        <div class="cost-label">Cost Per Patient</div>
+                                        <div class="cost-value">$@($"{CostMetrics.CostPerPatient:N0}")</div>
+                                        <div class="cost-period">Average</div>
+                                    </div>
+                                </div>
+                                <div class="cost-card savings">
+                                    <i class="fas fa-piggy-bank"></i>
+                                    <div>
+                                        <div class="cost-label">Potential Savings</div>
+                                        <div class="cost-value">$@($"{CostMetrics.PotentialSavings:N0}")</div>
+                                        <div class="cost-period">Identified by AI</div>
+                                    </div>
+                                </div>
+                                <div class="cost-card efficiency">
+                                    <i class="fas fa-chart-line"></i>
+                                    <div>
+                                        <div class="cost-label">Cost Efficiency</div>
+                                        <div class="cost-value">@($"{CostMetrics.CostEfficiency:F1}%")</div>
+                                        <div class="cost-period">vs Benchmark</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cost-breakdown">
+                            <h5><i class="fas fa-chart-pie"></i> Cost Distribution</h5>
+                            <div class="breakdown-container">
+                                <div class="breakdown-chart">
+                                    <SfAccumulationChart>
+                                        <AccumulationChartSeriesCollection>
+                                            <AccumulationChartSeries DataSource="@CostBreakdown"
+                                                                    XName="Category"
+                                                                    YName="Amount"
+                                                                    Type="AccumulationType.Pie">
+                                                <AccumulationDataLabelSettings Visible="true" Name="Category" Position="AccumulationLabelPosition.Outside">
+                                                </AccumulationDataLabelSettings>
+                                            </AccumulationChartSeries>
+                                        </AccumulationChartSeriesCollection>
+                                    </SfAccumulationChart>
+                                </div>
+                                <div class="breakdown-details">
+                                    @foreach (var cost in CostBreakdown)
+                                    {
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-category">@cost.Category</div>
+                                            <div class="breakdown-amount">$@($"{cost.Amount:N0}")</div>
+                                            <div class="breakdown-percent">@($"{cost.Percentage:F1}%")</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="optimization-opportunities">
+                            <h5><i class="fas fa-lightbulb"></i> AI-Identified Cost Optimization Opportunities</h5>
+                            <div class="opportunities-list">
+                                @foreach (var opportunity in OptimizationOpportunities)
+                                {
+                                    <div class="opportunity-card">
+                                        <div class="opportunity-header">
+                                            <div class="opportunity-title">
+                                                <i class="fas fa-bullseye"></i>
+                                                @opportunity.Title
+                                            </div>
+                                            <div class="opportunity-savings">
+                                                <span class="savings-label">Potential Savings</span>
+                                                <span class="savings-amount">$@($"{opportunity.PotentialSavings:N0}")/year</span>
+                                            </div>
+                                        </div>
+                                        <div class="opportunity-description">@opportunity.Description</div>
+                                        <div class="opportunity-details">
+                                            <div class="detail-item">
+                                                <label>Implementation Time:</label>
+                                                <span>@opportunity.ImplementationTime</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>ROI:</label>
+                                                <span class="roi-value">@($"{opportunity.ROI:F0}%")</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Difficulty:</label>
+                                                <span class="difficulty-@opportunity.Difficulty.ToLower()">@opportunity.Difficulty</span>
+                                            </div>
+                                        </div>
+                                        <div class="opportunity-actions">
+                                            <SfButton CssClass="e-success e-small" IconCss="fas fa-play">Implement</SfButton>
+                                            <SfButton CssClass="e-info e-small" IconCss="fas fa-info-circle">Details</SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+
+            <TabItem>
+                <ChildContent>
+                    <TabHeader Text="Predictive Analytics"></TabHeader>
+                </ChildContent>
+                <ContentTemplate>
+                    <div class="predictive-panel">
+                        <div class="predictions-overview">
+                            <h4><i class="fas fa-crystal-ball"></i> Predictive Operational Analytics</h4>
+                            <p>Machine learning models trained on 5 years of historical operational data</p>
+                        </div>
+
+                        <div class="predictions-grid">
+                            <div class="prediction-card">
+                                <div class="prediction-header">
+                                    <i class="fas fa-calendar-week"></i>
+                                    <h5>7-Day Volume Forecast</h5>
+                                </div>
+                                <div class="prediction-chart">
+                                    <SfChart>
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartSeriesCollection>
+                                            <ChartSeries DataSource="@VolumeForecast" XName="Day" YName="PredictedVolume" 
+                                                       Type="ChartSeriesType.Column" Fill="#3498db">
+                                            </ChartSeries>
+                                        </ChartSeriesCollection>
+                                    </SfChart>
+                                </div>
+                                <div class="prediction-accuracy">
+                                    <i class="fas fa-bullseye"></i> Model Accuracy: <strong>94.3%</strong>
+                                </div>
+                            </div>
+
+                            <div class="prediction-card">
+                                <div class="prediction-header">
+                                    <i class="fas fa-hospital-user"></i>
+                                    <h5>Admission Rate Prediction</h5>
+                                </div>
+                                <div class="prediction-stats">
+                                    <div class="stat-box">
+                                        <div class="stat-label">Today</div>
+                                        <div class="stat-number">@Predictions.TodayAdmissions</div>
+                                        <div class="stat-subtext">expected admissions</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <div class="stat-label">Tomorrow</div>
+                                        <div class="stat-number">@Predictions.TomorrowAdmissions</div>
+                                        <div class="stat-subtext">expected admissions</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <div class="stat-label">7-Day Avg</div>
+                                        <div class="stat-number">@Predictions.WeekAvgAdmissions</div>
+                                        <div class="stat-subtext">daily average</div>
+                                    </div>
+                                </div>
+                                <div class="prediction-accuracy">
+                                    <i class="fas fa-bullseye"></i> Model Accuracy: <strong>91.7%</strong>
+                                </div>
+                            </div>
+
+                            <div class="prediction-card">
+                                <div class="prediction-header">
+                                    <i class="fas fa-user-clock"></i>
+                                    <h5>Staffing Requirements</h5>
+                                </div>
+                                <SfGrid DataSource="@StaffingPredictions" AllowSorting="true">
+                                    <GridColumns>
+                                        <GridColumn Field="@nameof(StaffingPrediction.Shift)" HeaderText="Shift" Width="100"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffingPrediction.Department)" HeaderText="Department" Width="130"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffingPrediction.RequiredStaff)" HeaderText="Required" Width="90"></GridColumn>
+                                        <GridColumn Field="@nameof(StaffingPrediction.CurrentStaff)" HeaderText="Current" Width="90"></GridColumn>
+                                        <GridColumn HeaderText="Status" Width="100">
+                                            <Template>
+                                                @{
+                                                    var staffing = (context as StaffingPrediction)!;
+                                                    var diff = staffing.RequiredStaff - staffing.CurrentStaff;
+                                                    <span class="staffing-status status-@(diff > 0 ? "understaffed" : diff < 0 ? "overstaffed" : "optimal")">
+                                                        @(diff > 0 ? $"-{diff}" : diff < 0 ? $"+{Math.Abs(diff)}" : "Optimal")
+                                                    </span>
+                                                }
+                                            </Template>
+                                        </GridColumn>
+                                    </GridColumns>
+                                </SfGrid>
+                                <div class="prediction-accuracy">
+                                    <i class="fas fa-bullseye"></i> Model Accuracy: <strong>89.2%</strong>
+                                </div>
+                            </div>
+
+                            <div class="prediction-card">
+                                <div class="prediction-header">
+                                    <i class="fas fa-bed"></i>
+                                    <h5>Discharge Readiness</h5>
+                                </div>
+                                <div class="discharge-predictions">
+                                    <div class="discharge-item">
+                                        <div class="discharge-label">Predicted Discharges Today</div>
+                                        <div class="discharge-value">@Predictions.TodayDischarges patients</div>
+                                    </div>
+                                    <div class="discharge-item">
+                                        <div class="discharge-label">Patients Ready for Discharge</div>
+                                        <div class="discharge-value">@Predictions.ReadyForDischarge patients</div>
+                                    </div>
+                                    <div class="discharge-item">
+                                        <div class="discharge-label">Avg Length of Stay</div>
+                                        <div class="discharge-value">@Predictions.AvgLengthOfStay days</div>
+                                    </div>
+                                </div>
+                                <div class="prediction-accuracy">
+                                    <i class="fas fa-bullseye"></i> Model Accuracy: <strong>87.8%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="model-performance">
+                            <h5><i class="fas fa-brain"></i> ML Model Performance</h5>
+                            <SfGrid DataSource="@MLModels" AllowSorting="true">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(MLModelPerformance.ModelName)" HeaderText="Model" Width="200"></GridColumn>
+                                    <GridColumn Field="@nameof(MLModelPerformance.Algorithm)" HeaderText="Algorithm" Width="150"></GridColumn>
+                                    <GridColumn Field="@nameof(MLModelPerformance.Accuracy)" HeaderText="Accuracy" Width="110">
+                                        <Template>
+                                            @{
+                                                var model = (context as MLModelPerformance)!;
+                                                <span class="accuracy-value">@($"{model.Accuracy:F1}%")</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(MLModelPerformance.TrainingData)" HeaderText="Training Data" Width="130"></GridColumn>
+                                    <GridColumn Field="@nameof(MLModelPerformance.LastUpdated)" HeaderText="Last Updated" Width="130" Format="d"></GridColumn>
+                                    <GridColumn HeaderText="Actions" Width="100">
+                                        <Template>
+                                            <SfButton CssClass="e-small e-info" IconCss="fas fa-sync">Retrain</SfButton>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </div>
+                </ContentTemplate>
+            </TabItem>
+        </TabItems>
+    </SfTab>
+</div>
+
+<style>
+    .n360-operational-efficiency {
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .operations-header {
+        margin-bottom: 30px;
+    }
+
+    .operations-header h3 {
+        color: #2c3e50;
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .operations-header h3 i {
+        color: #34495e;
+        margin-right: 10px;
+    }
+
+    .operations-subtitle {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .operations-tabs {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-panel, .capacity-panel, .workflow-panel, .cost-panel, .predictive-panel {
+        padding: 20px;
+    }
+
+    .kpi-overview {
+        margin-bottom: 30px;
+    }
+
+    .kpi-overview h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .kpi-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        gap: 15px;
+    }
+
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: white;
+    }
+
+    .kpi-card.capacity .kpi-icon {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .kpi-card.efficiency .kpi-icon {
+        background: linear-gradient(135deg, #27ae60, #229954);
+    }
+
+    .kpi-card.throughput .kpi-icon {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .kpi-card.financial .kpi-icon {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+    }
+
+    .kpi-card.staff .kpi-icon {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    }
+
+    .kpi-card.quality .kpi-icon {
+        background: linear-gradient(135deg, #16a085, #138d75);
+    }
+
+    .kpi-content {
+        flex: 1;
+    }
+
+    .kpi-label {
+        font-size: 13px;
+        color: #7f8c8d;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .kpi-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+
+    .kpi-trend {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .kpi-trend i {
+        margin-right: 4px;
+    }
+
+    .kpi-trend.trend-up {
+        color: #27ae60;
+    }
+
+    .kpi-trend.trend-down {
+        color: #e74c3c;
+    }
+
+    .kpi-trend.trend-neutral {
+        color: #7f8c8d;
+    }
+
+    .kpi-progress {
+        margin-top: 12px;
+    }
+
+    .realtime-alerts {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 12px;
+    }
+
+    .realtime-alerts h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .alerts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .alert-item {
+        background: white;
+        border-left: 4px solid;
+        border-radius: 8px;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .alert-item.severity-critical {
+        border-left-color: #e74c3c;
+        background: #ffebee;
+    }
+
+    .alert-item.severity-warning {
+        border-left-color: #f39c12;
+        background: #fff8e1;
+    }
+
+    .alert-item.severity-info {
+        border-left-color: #3498db;
+        background: #e3f2fd;
+    }
+
+    .alert-icon {
+        font-size: 24px;
+    }
+
+    .alert-item.severity-critical .alert-icon {
+        color: #e74c3c;
+    }
+
+    .alert-item.severity-warning .alert-icon {
+        color: #f39c12;
+    }
+
+    .alert-item.severity-info .alert-icon {
+        color: #3498db;
+    }
+
+    .alert-content {
+        flex: 1;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .alert-message {
+        font-size: 14px;
+        color: #34495e;
+        margin-bottom: 5px;
+    }
+
+    .alert-time {
+        font-size: 12px;
+        color: #95a5a6;
+    }
+
+    .capacity-forecast {
+        margin-bottom: 40px;
+    }
+
+    .capacity-forecast h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .forecast-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .forecast-chart {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .forecast-insights {
+        margin-top: 30px;
+    }
+
+    .forecast-insights h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .insight-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-left-width: 4px;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .insight-card.priority-high {
+        border-left-color: #e74c3c;
+    }
+
+    .insight-card.priority-medium {
+        border-left-color: #f39c12;
+    }
+
+    .insight-card.priority-low {
+        border-left-color: #3498db;
+    }
+
+    .insight-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .insight-header i {
+        color: #3498db;
+        font-size: 18px;
+    }
+
+    .insight-title {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 15px;
+    }
+
+    .insight-description {
+        color: #34495e;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .insight-recommendation {
+        padding: 12px;
+        background: #e3f2fd;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #2c3e50;
+    }
+
+    .resource-allocation {
+        margin-top: 40px;
+    }
+
+    .resource-allocation h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .utilization-high {
+        color: #e74c3c;
+        font-weight: 600;
+    }
+
+    .utilization-optimal {
+        color: #27ae60;
+        font-weight: 600;
+    }
+
+    .utilization-low {
+        color: #f39c12;
+        font-weight: 600;
+    }
+
+    .efficiency-badge {
+        font-weight: 600;
+        color: #3498db;
+    }
+
+    .resource-status {
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .resource-status.status-optimal {
+        background: #27ae60;
+    }
+
+    .resource-status.status-overstaffed {
+        background: #f39c12;
+    }
+
+    .resource-status.status-understaffed {
+        background: #e74c3c;
+    }
+
+    .workflow-metrics {
+        margin-bottom: 30px;
+    }
+
+    .workflow-metrics h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .metrics-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+    }
+
+    .metric-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        gap: 15px;
+    }
+
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 28px;
+    }
+
+    .metric-details {
+        flex: 1;
+    }
+
+    .metric-label {
+        font-size: 13px;
+        color: #7f8c8d;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .metric-comparison {
+        font-size: 12px;
+        color: #95a5a6;
+    }
+
+    .bottleneck-analysis {
+        margin-bottom: 30px;
+    }
+
+    .bottleneck-analysis h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .bottlenecks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .bottleneck-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-left-width: 4px;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .bottleneck-card.impact-high {
+        border-left-color: #e74c3c;
+    }
+
+    .bottleneck-card.impact-medium {
+        border-left-color: #f39c12;
+    }
+
+    .bottleneck-card.impact-low {
+        border-left-color: #3498db;
+    }
+
+    .bottleneck-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .bottleneck-title {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .bottleneck-title i {
+        color: #e74c3c;
+        margin-right: 8px;
+        font-size: 12px;
+    }
+
+    .impact-badge {
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .impact-badge.impact-high {
+        background: #e74c3c;
+    }
+
+    .impact-badge.impact-medium {
+        background: #f39c12;
+    }
+
+    .impact-badge.impact-low {
+        background: #3498db;
+    }
+
+    .bottleneck-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .stat-item label {
+        font-size: 12px;
+        color: #7f8c8d;
+        font-weight: 600;
+    }
+
+    .stat-item span {
+        font-size: 16px;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .bottleneck-solution {
+        padding: 15px;
+        background: #e8f5e9;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .bottleneck-solution p {
+        margin: 5px 0 0 0;
+        line-height: 1.6;
+    }
+
+    .process-flow-chart {
+        margin-top: 30px;
+    }
+
+    .process-flow-chart h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .cost-overview {
+        margin-bottom: 30px;
+    }
+
+    .cost-overview h4 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .cost-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+    }
+
+    .cost-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .cost-card i {
+        font-size: 36px;
+    }
+
+    .cost-label {
+        font-size: 14px;
+        opacity: 0.95;
+        margin-bottom: 8px;
+    }
+
+    .cost-value {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .cost-period {
+        font-size: 12px;
+        opacity: 0.85;
+    }
+
+    .cost-breakdown {
+        margin-bottom: 40px;
+    }
+
+    .cost-breakdown h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .breakdown-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .breakdown-chart {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .breakdown-details {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .breakdown-item {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .breakdown-category {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .breakdown-amount {
+        font-size: 18px;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    .breakdown-percent {
+        font-size: 14px;
+        color: #7f8c8d;
+    }
+
+    .optimization-opportunities {
+        margin-top: 30px;
+    }
+
+    .optimization-opportunities h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .opportunities-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .opportunity-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .opportunity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .opportunity-title {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .opportunity-title i {
+        color: #3498db;
+        margin-right: 8px;
+    }
+
+    .opportunity-savings {
+        text-align: right;
+    }
+
+    .savings-label {
+        display: block;
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+    }
+
+    .savings-amount {
+        font-size: 24px;
+        font-weight: bold;
+        color: #27ae60;
+    }
+
+    .opportunity-description {
+        color: #34495e;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .opportunity-details {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .detail-item label {
+        font-size: 12px;
+        color: #7f8c8d;
+        font-weight: 600;
+    }
+
+    .detail-item span {
+        font-size: 14px;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .roi-value {
+        color: #27ae60 !important;
+    }
+
+    .difficulty-low {
+        color: #27ae60 !important;
+    }
+
+    .difficulty-medium {
+        color: #f39c12 !important;
+    }
+
+    .difficulty-high {
+        color: #e74c3c !important;
+    }
+
+    .opportunity-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .predictions-overview {
+        margin-bottom: 30px;
+    }
+
+    .predictions-overview h4 {
+        margin: 0 0 8px 0;
+        color: #2c3e50;
+        font-size: 18px;
+    }
+
+    .predictions-overview p {
+        margin: 0;
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    .predictions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .prediction-card {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .prediction-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .prediction-header i {
+        font-size: 24px;
+        color: #3498db;
+    }
+
+    .prediction-header h5 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .prediction-chart {
+        margin-bottom: 15px;
+    }
+
+    .prediction-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .stat-box {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #7f8c8d;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .stat-subtext {
+        font-size: 12px;
+        color: #95a5a6;
+    }
+
+    .prediction-accuracy {
+        padding: 12px;
+        background: #e8f5e9;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 13px;
+        color: #2c3e50;
+    }
+
+    .prediction-accuracy i {
+        color: #27ae60;
+        margin-right: 8px;
+    }
+
+    .discharge-predictions {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .discharge-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .discharge-label {
+        font-weight: 600;
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .discharge-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .staffing-status {
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .staffing-status.status-optimal {
+        background: #27ae60;
+    }
+
+    .staffing-status.status-understaffed {
+        background: #e74c3c;
+    }
+
+    .staffing-status.status-overstaffed {
+        background: #f39c12;
+    }
+
+    .model-performance {
+        margin-top: 40px;
+    }
+
+    .model-performance h5 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .accuracy-value {
+        font-weight: 600;
+        color: #27ae60;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+    }
+</style>

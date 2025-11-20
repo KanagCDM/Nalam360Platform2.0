@@ -1,0 +1,14 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Debug\net8.0\Nalam360.Platform.FeatureFlags.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Debug\net8.0\Nalam360.Platform.FeatureFlags.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Debug\net8.0\Nalam360.Platform.FeatureFlags.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Debug\net8.0\Nalam360.Platform.FeatureFlags.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\refint\Nalam360.Platform.FeatureFlags.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\Nalam360.Platform.FeatureFlags.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Debug\net8.0\ref\Nalam360.Platform.FeatureFlags.dll

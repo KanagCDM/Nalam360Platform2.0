@@ -1,0 +1,15 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Debug\net8.0\Nalam360.Platform.Serialization.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Debug\net8.0\Nalam360.Platform.Serialization.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Debug\net8.0\Nalam360.Platform.Serialization.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\bin\Debug\net8.0\Nalam360.Platform.Serialization.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\refint\Nalam360.Platform.Serialization.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\ref\Nalam360.Platform.Serialization.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Debug\net8.0\Nalam360.Platform.Serialization.csproj.AssemblyReference.cache

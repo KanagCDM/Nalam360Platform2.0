@@ -1,0 +1,119 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-pager @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        <div class="n360-pager__controls">
+            <button class="n360-pager__button" @onclick="FirstPage" disabled="@(CurrentPage <= 1)">
+                <span>First</span>
+            </button>
+            <button class="n360-pager__button" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">
+                <span>Previous</span>
+            </button>
+            
+            <span class="n360-pager__info">
+                Page @CurrentPage of @TotalPages
+            </span>
+            
+            <button class="n360-pager__button" @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)">
+                <span>Next</span>
+            </button>
+            <button class="n360-pager__button" @onclick="LastPage" disabled="@(CurrentPage >= TotalPages)">
+                <span>Last</span>
+            </button>
+        </div>
+        
+        @if (ShowPageSize)
+        {
+            <div class="n360-pager__pagesize">
+                <label>Items per page:</label>
+                <select @bind="PageSize">
+                    @foreach (var size in PageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
+            </div>
+        }
+        
+        @if (ShowTotalItems)
+        {
+            <div class="n360-pager__total">
+                Total: @TotalItemsCount items
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
+    [Parameter] public int PageSize { get; set; } = 12;
+    [Parameter] public EventCallback<int> PageSizeChanged { get; set; }
+    [Parameter] public int TotalItemsCount { get; set; }
+    [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 10, 20, 50, 100 };
+    [Parameter] public bool ShowPageSize { get; set; } = true;
+    [Parameter] public bool ShowTotalItems { get; set; } = true;
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private bool _hasPermission = true;
+
+    private int TotalPages => TotalItemsCount > 0 && PageSize > 0 
+        ? (int)Math.Ceiling((double)TotalItemsCount / PageSize) 
+        : 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task FirstPage()
+    {
+        await ChangePage(1);
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            await ChangePage(CurrentPage - 1);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            await ChangePage(CurrentPage + 1);
+        }
+    }
+
+    private async Task LastPage()
+    {
+        await ChangePage(TotalPages);
+    }
+
+    private async Task ChangePage(int newPage)
+    {
+        if (newPage != CurrentPage && newPage >= 1 && newPage <= TotalPages)
+        {
+            await CurrentPageChanged.InvokeAsync(newPage);
+            await OnPageChanged.InvokeAsync(newPage);
+        }
+    }
+}

@@ -1,0 +1,1312 @@
+<testsuites id="" name="" tests="315" failures="0" skipped="315" errors="0" time="3.13333">
+<testsuite name="accessibility.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="chromium" tests="32" failures="0" skipped="32" time="0" errors="0">
+<testcase name="Accessibility Tests › /dashboard should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should support screen reader announcements" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have proper ARIA labels" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have sufficient color contrast" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="High Contrast Mode › should work in high contrast mode" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Support › should support right-to-left layout" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="button.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="N360Button Component › should render primary button" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should take screenshot of all button variants" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should be accessible" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should handle click interactions" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should support keyboard navigation" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should render disabled state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › default state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › hover state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › focus state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › loading state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="e2e.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="chromium" tests="4" failures="0" skipped="4" time="0" errors="0">
+<testcase name="E2E: Patient Dashboard Journey › complete patient management workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Clinical Decision Support › AI-powered clinical recommendations workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Healthcare Analytics Dashboard › navigate and interact with analytics" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Appointment Scheduling › complete appointment booking flow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="form.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="chromium" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="N360Form Component › should render form with all fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate required fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should submit valid form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate email format" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should be accessible" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › empty form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › form with validation errors" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › filled form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="grid.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="N360Grid Component › should render grid with data" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support sorting" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support filtering" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support paging" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should be accessible" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should take screenshot of grid" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › default view" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with selection" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with grouping" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="accessibility.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="firefox" tests="32" failures="0" skipped="32" time="0" errors="0">
+<testcase name="Accessibility Tests › /dashboard should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should support screen reader announcements" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have proper ARIA labels" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have sufficient color contrast" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="High Contrast Mode › should work in high contrast mode" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Support › should support right-to-left layout" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="button.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="firefox" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="N360Button Component › should render primary button" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should take screenshot of all button variants" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should be accessible" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should handle click interactions" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should support keyboard navigation" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should render disabled state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › default state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › hover state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › focus state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › loading state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="e2e.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="firefox" tests="4" failures="0" skipped="4" time="0" errors="0">
+<testcase name="E2E: Patient Dashboard Journey › complete patient management workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Clinical Decision Support › AI-powered clinical recommendations workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Healthcare Analytics Dashboard › navigate and interact with analytics" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Appointment Scheduling › complete appointment booking flow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="form.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="firefox" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="N360Form Component › should render form with all fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate required fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should submit valid form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate email format" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should be accessible" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › empty form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › form with validation errors" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › filled form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="grid.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="firefox" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="N360Grid Component › should render grid with data" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support sorting" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support filtering" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support paging" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should be accessible" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should take screenshot of grid" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › default view" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with selection" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with grouping" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="accessibility.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="webkit" tests="32" failures="0" skipped="32" time="0" errors="0">
+<testcase name="Accessibility Tests › /dashboard should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should support screen reader announcements" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have proper ARIA labels" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have sufficient color contrast" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="High Contrast Mode › should work in high contrast mode" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Support › should support right-to-left layout" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="button.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="webkit" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="N360Button Component › should render primary button" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should take screenshot of all button variants" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should be accessible" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should handle click interactions" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should support keyboard navigation" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should render disabled state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › default state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › hover state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › focus state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › loading state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="e2e.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="webkit" tests="4" failures="0" skipped="4" time="0" errors="0">
+<testcase name="E2E: Patient Dashboard Journey › complete patient management workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Clinical Decision Support › AI-powered clinical recommendations workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Healthcare Analytics Dashboard › navigate and interact with analytics" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Appointment Scheduling › complete appointment booking flow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="form.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="webkit" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="N360Form Component › should render form with all fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate required fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should submit valid form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate email format" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should be accessible" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › empty form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › form with validation errors" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › filled form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="grid.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="webkit" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="N360Grid Component › should render grid with data" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support sorting" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support filtering" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support paging" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should be accessible" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should take screenshot of grid" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › default view" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with selection" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with grouping" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="accessibility.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Chrome" tests="32" failures="0" skipped="32" time="0" errors="0">
+<testcase name="Accessibility Tests › /dashboard should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should support screen reader announcements" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have proper ARIA labels" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have sufficient color contrast" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="High Contrast Mode › should work in high contrast mode" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Support › should support right-to-left layout" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="button.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="N360Button Component › should render primary button" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should take screenshot of all button variants" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should be accessible" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should handle click interactions" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should support keyboard navigation" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should render disabled state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › default state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › hover state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › focus state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › loading state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="e2e.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Chrome" tests="4" failures="0" skipped="4" time="0" errors="0">
+<testcase name="E2E: Patient Dashboard Journey › complete patient management workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Clinical Decision Support › AI-powered clinical recommendations workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Healthcare Analytics Dashboard › navigate and interact with analytics" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Appointment Scheduling › complete appointment booking flow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="form.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Chrome" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="N360Form Component › should render form with all fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate required fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should submit valid form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate email format" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should be accessible" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › empty form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › form with validation errors" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › filled form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="grid.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="N360Grid Component › should render grid with data" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support sorting" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support filtering" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support paging" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should be accessible" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should take screenshot of grid" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › default view" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with selection" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with grouping" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="accessibility.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Safari" tests="32" failures="0" skipped="32" time="0" errors="0">
+<testcase name="Accessibility Tests › /dashboard should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /dashboard should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /patients should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /appointments should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /clinical-decision-support should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /analytics should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/button should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/grid should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/form should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should be accessible" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should support keyboard navigation" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › /components/chart should have proper heading hierarchy" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should support screen reader announcements" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have proper ARIA labels" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility Tests › should have sufficient color contrast" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="High Contrast Mode › should work in high contrast mode" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Support › should support right-to-left layout" classname="accessibility.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="button.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Safari" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="N360Button Component › should render primary button" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should take screenshot of all button variants" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should be accessible" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should handle click interactions" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should support keyboard navigation" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Button Component › should render disabled state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › default state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › hover state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › focus state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visual Regression - Button States › loading state" classname="button.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="e2e.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Safari" tests="4" failures="0" skipped="4" time="0" errors="0">
+<testcase name="E2E: Patient Dashboard Journey › complete patient management workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Clinical Decision Support › AI-powered clinical recommendations workflow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Healthcare Analytics Dashboard › navigate and interact with analytics" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="E2E: Appointment Scheduling › complete appointment booking flow" classname="e2e.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="form.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Safari" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="N360Form Component › should render form with all fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate required fields" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should submit valid form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should validate email format" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Form Component › should be accessible" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › empty form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › form with validation errors" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Form Visual Regression › filled form" classname="form.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="grid.spec.ts" timestamp="2025-11-20T02:54:28.669Z" hostname="Mobile Safari" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="N360Grid Component › should render grid with data" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support sorting" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support filtering" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should support paging" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should be accessible" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="N360Grid Component › should take screenshot of grid" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › default view" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with selection" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Grid Visual Regression › with grouping" classname="grid.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

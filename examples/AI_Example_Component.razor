@@ -1,0 +1,346 @@
+@page "/ai-example"
+@using Nalam360Enterprise.UI.Core.AI.Services
+@using Nalam360Enterprise.UI.Core.AI.Models
+@inject IAIService AIService
+@inject IAIComplianceService ComplianceService
+@inject ILogger<AIExampleComponent> Logger
+
+<div class="container mt-4">
+    <h2>AI Services Example</h2>
+
+    <!-- Example 1: Intent Analysis -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>1. Intent Analysis</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Enter a message:</label>
+                <input @bind="IntentMessage" class="form-control" 
+                       placeholder="e.g., I need to schedule an appointment" />
+            </div>
+            <button @onclick="AnalyzeIntent" class="btn btn-primary" disabled="@IsProcessing">
+                Analyze Intent
+            </button>
+
+            @if (IntentResult != null)
+            {
+                <div class="alert alert-info mt-3">
+                    <strong>Intent:</strong> @IntentResult.Intent<br/>
+                    <strong>Confidence:</strong> @IntentResult.Confidence.ToString("P2")<br/>
+                    <strong>Timestamp:</strong> @IntentResult.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Example 2: Sentiment Analysis -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>2. Sentiment Analysis</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Enter a message:</label>
+                <input @bind="SentimentMessage" class="form-control" 
+                       placeholder="e.g., I'm feeling much better today" />
+            </div>
+            <button @onclick="AnalyzeSentiment" class="btn btn-primary" disabled="@IsProcessing">
+                Analyze Sentiment
+            </button>
+
+            @if (SentimentResult != null)
+            {
+                <div class="alert alert-success mt-3">
+                    <strong>Sentiment:</strong> @SentimentResult.Sentiment<br/>
+                    <strong>Confidence:</strong> @SentimentResult.Confidence.ToString("P2")<br/>
+                    <strong>Scores:</strong>
+                    <ul>
+                        @foreach (var score in SentimentResult.SentimentScores)
+                        {
+                            <li>@score.Key: @score.Value.ToString("P2")</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Example 3: PHI Detection -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>3. PHI Detection & De-identification</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Enter text with PHI:</label>
+                <textarea @bind="PHIMessage" class="form-control" rows="3"
+                          placeholder="e.g., Patient John Doe (MRN: MED123456) called from 555-123-4567"></textarea>
+            </div>
+            <button @onclick="DetectPHI" class="btn btn-warning" disabled="@IsProcessing">
+                Detect PHI
+            </button>
+
+            @if (PHIElements?.Any() == true)
+            {
+                <div class="alert alert-warning mt-3">
+                    <strong>Detected PHI Elements:</strong>
+                    <table class="table table-sm mt-2">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Value</th>
+                                <th>Confidence</th>
+                                <th>Replacement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var phi in PHIElements)
+                            {
+                                <tr>
+                                    <td>@phi.Type</td>
+                                    <td>@phi.Value</td>
+                                    <td>@phi.Confidence.ToString("P1")</td>
+                                    <td>@phi.SuggestedReplacement</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <strong>De-identified Text:</strong>
+                    <pre class="bg-light p-2 mt-2">@DeIdentifiedText</pre>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Example 4: Response Generation -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>4. AI Response Generation</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Context (previous conversation):</label>
+                <textarea @bind="ResponseContext" class="form-control" rows="2"
+                          placeholder="e.g., User: I have a headache&#10;AI: When did it start?"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Current message:</label>
+                <input @bind="ResponseMessage" class="form-control" 
+                       placeholder="e.g., It started this morning" />
+            </div>
+            <button @onclick="GenerateResponse" class="btn btn-success" disabled="@IsProcessing">
+                Generate Response
+            </button>
+
+            @if (!string.IsNullOrEmpty(AIResponse))
+            {
+                <div class="alert alert-success mt-3">
+                    <strong>AI Response:</strong>
+                    <p class="mt-2">@AIResponse</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Example 5: Streaming Response -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>5. Streaming Response (Real-Time)</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Ask a question:</label>
+                <input @bind="StreamingMessage" class="form-control" 
+                       placeholder="e.g., Tell me about diabetes management" />
+            </div>
+            <button @onclick="GenerateStreamingResponse" class="btn btn-info" disabled="@IsProcessing">
+                @(IsStreaming ? "Streaming..." : "Generate Streaming Response")
+            </button>
+
+            @if (!string.IsNullOrEmpty(StreamingResponse))
+            {
+                <div class="alert alert-info mt-3">
+                    <strong>Streaming Response:</strong>
+                    <p class="mt-2">@StreamingResponse</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (ErrorMessage != null)
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ErrorMessage
+        </div>
+    }
+</div>
+
+@code {
+    // Intent Analysis
+    private string IntentMessage { get; set; } = "";
+    private IntentAnalysisResult? IntentResult { get; set; }
+
+    // Sentiment Analysis
+    private string SentimentMessage { get; set; } = "";
+    private SentimentResult? SentimentResult { get; set; }
+
+    // PHI Detection
+    private string PHIMessage { get; set; } = "";
+    private List<PHIElement>? PHIElements { get; set; }
+    private string? DeIdentifiedText { get; set; }
+
+    // Response Generation
+    private string ResponseContext { get; set; } = "";
+    private string ResponseMessage { get; set; } = "";
+    private string? AIResponse { get; set; }
+
+    // Streaming
+    private string StreamingMessage { get; set; } = "";
+    private string? StreamingResponse { get; set; }
+    private bool IsStreaming { get; set; }
+
+    // State
+    private bool IsProcessing { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private async Task AnalyzeIntent()
+    {
+        if (string.IsNullOrWhiteSpace(IntentMessage)) return;
+
+        IsProcessing = true;
+        ErrorMessage = null;
+
+        try
+        {
+            IntentResult = await AIService.AnalyzeIntentAsync(IntentMessage);
+            Logger.LogInformation("Intent analyzed: {Intent} ({Confidence:P})", 
+                IntentResult.Intent, IntentResult.Confidence);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Logger.LogError(ex, "Error analyzing intent");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task AnalyzeSentiment()
+    {
+        if (string.IsNullOrWhiteSpace(SentimentMessage)) return;
+
+        IsProcessing = true;
+        ErrorMessage = null;
+
+        try
+        {
+            SentimentResult = await AIService.AnalyzeSentimentAsync(SentimentMessage);
+            Logger.LogInformation("Sentiment analyzed: {Sentiment} ({Confidence:P})", 
+                SentimentResult.Sentiment, SentimentResult.Confidence);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Logger.LogError(ex, "Error analyzing sentiment");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task DetectPHI()
+    {
+        if (string.IsNullOrWhiteSpace(PHIMessage)) return;
+
+        IsProcessing = true;
+        ErrorMessage = null;
+
+        try
+        {
+            PHIElements = await ComplianceService.DetectPHIAsync(PHIMessage);
+            
+            if (PHIElements.Any())
+            {
+                DeIdentifiedText = await ComplianceService.DeIdentifyAsync(PHIMessage, PHIElements);
+                Logger.LogWarning("Detected {Count} PHI elements", PHIElements.Count);
+            }
+            else
+            {
+                DeIdentifiedText = "No PHI detected";
+                Logger.LogInformation("No PHI detected in text");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Logger.LogError(ex, "Error detecting PHI");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task GenerateResponse()
+    {
+        if (string.IsNullOrWhiteSpace(ResponseMessage)) return;
+
+        IsProcessing = true;
+        ErrorMessage = null;
+
+        try
+        {
+            AIResponse = await AIService.GenerateResponseAsync(
+                ResponseContext ?? "",
+                ResponseMessage
+            );
+            Logger.LogInformation("Generated response: {Length} characters", AIResponse.Length);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Logger.LogError(ex, "Error generating response");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task GenerateStreamingResponse()
+    {
+        if (string.IsNullOrWhiteSpace(StreamingMessage)) return;
+
+        IsProcessing = true;
+        IsStreaming = true;
+        ErrorMessage = null;
+        StreamingResponse = "";
+
+        try
+        {
+            await foreach (var token in AIService.StreamResponseAsync("", StreamingMessage))
+            {
+                StreamingResponse += token;
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(10); // Smooth visual effect
+            }
+            
+            Logger.LogInformation("Streaming complete: {Length} characters", StreamingResponse.Length);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Logger.LogError(ex, "Error generating streaming response");
+        }
+        finally
+        {
+            IsProcessing = false;
+            IsStreaming = false;
+        }
+    }
+}

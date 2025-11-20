@@ -1,0 +1,1066 @@
+@using Microsoft.AspNetCore.Components
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Components.Enterprise
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@typeparam TModel where TModel : class
+
+<div class="n360-filter-builder @CssClass" style="@Style">
+    @if (_hasPermission)
+    {
+        <div class="filter-builder-header">
+            <div class="header-left">
+                <h3 class="filter-title">
+                    <span class="title-icon">🔍</span>
+                    @Title
+                </h3>
+                @if (!string.IsNullOrEmpty(Description))
+                {
+                    <p class="filter-description">@Description</p>
+                }
+            </div>
+            <div class="header-right">
+                @if (ShowPresets && SavedFilters.Any())
+                {
+                    <SfDropDownList TValue="string"
+                                    TItem="FilterPreset"
+                                    @bind-Value="@_selectedPresetId"
+                                    DataSource="@SavedFilters"
+                                    Placeholder="Load Saved Filter"
+                                    CssClass="preset-selector">
+                        <ItemTemplate>
+                            <div class="preset-item">
+                                <span class="preset-name">@context.Name</span>
+                                @if (!string.IsNullOrEmpty(context.Description))
+                                {
+                                    <span class="preset-desc">@context.Description</span>
+                                }
+                            </div>
+                        </ItemTemplate>
+                    </SfDropDownList>
+                    
+                    @if (!string.IsNullOrEmpty(_selectedPresetId))
+                    {
+                        <SfButton CssClass="btn-load-preset" OnClick="@OnLoadPreset" IconCss="e-icons e-download">
+                            Load
+                        </SfButton>
+                    }
+                }
+
+                @if (ShowClear)
+                {
+                    <SfButton CssClass="btn-clear" OnClick="@OnClear" IconCss="e-icons e-close">
+                        Clear
+                    </SfButton>
+                }
+
+                @if (ShowReset)
+                {
+                    <SfButton CssClass="btn-reset" OnClick="@OnReset" IconCss="e-icons e-refresh">
+                        Reset
+                    </SfButton>
+                }
+            </div>
+        </div>
+        
+        @if (EnableAIFeatures && ShowAIQueryInput)
+        {
+            <div class="ai-query-container">
+                <div class="ai-query-header">
+                    <span class="ai-icon">🤖</span>
+                    <span class="ai-label">Ask AI to build your filter</span>
+                </div>
+                <div class="ai-query-input-wrapper">
+                    <input type="text" 
+                           class="ai-query-input" 
+                           @bind="_aiQueryInput"
+                           @bind:event="oninput"
+                           placeholder="e.g., 'Show me active patients from last month' or 'Find orders over $1000'" />
+                    @if (!string.IsNullOrEmpty(_aiQueryInput))
+                    {
+                        <button class="ai-clear-btn" @onclick="ClearAIQuery">×</button>
+                    }
+                </div>
+                
+                @if (_showAISuggestions && _querySuggestions.Any())
+                {
+                    <div class="ai-suggestions-panel">
+                        <div class="suggestions-header">
+                            <span class="suggestions-title">AI Suggestions</span>
+                            <span class="suggestions-count">@_querySuggestions.Count found</span>
+                        </div>
+                        @foreach (var suggestion in _querySuggestions)
+                        {
+                            <div class="suggestion-card" @onclick="@(() => ApplyAISuggestion(suggestion))">
+                                <div class="suggestion-header">
+                                    <span class="suggestion-label">@suggestion.Label</span>
+                                    <span class="confidence-badge confidence-@GetConfidenceClass(suggestion.Confidence)">
+                                        @($"{suggestion.Confidence:F0}%")
+                                    </span>
+                                </div>
+                                <div class="suggestion-preview">@suggestion.SqlPreview</div>
+                                <div class="suggestion-description">@suggestion.Description</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="filter-builder-content">
+            @if (Columns.Any())
+            {
+                <div class="filter-rules">
+                    @foreach (var rule in _rules)
+                    {
+                        <div class="filter-rule-row">
+                            <SfDropDownList TValue="string"
+                                            TItem="FilterColumn"
+                                            @bind-Value="@rule.Field"
+                                            DataSource="@Columns"
+                                            Placeholder="Select Field"
+                                            CssClass="rule-field">
+                            </SfDropDownList>
+
+                            <SfDropDownList TValue="string"
+                                            TItem="FilterOperator"
+                                            @bind-Value="@rule.Operator"
+                                            DataSource="@GetOperatorsForField(rule.Field)"
+                                            Placeholder="Operator"
+                                            CssClass="rule-operator">
+                            </SfDropDownList>
+
+                            <input type="text" 
+                                   class="rule-value" 
+                                   @bind="rule.Value" 
+                                   placeholder="Value" />
+
+                            <SfButton CssClass="btn-remove-rule btn-icon-only" 
+                                      OnClick="@(() => RemoveRule(rule))" 
+                                      IconCss="e-icons e-close">
+                            </SfButton>
+                        </div>
+                    }
+
+                    <div class="add-rule-container">
+                        <SfButton CssClass="btn-add-rule" 
+                                  OnClick="@AddRule" 
+                                  IconCss="e-icons e-plus">
+                            Add Rule
+                        </SfButton>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="empty-columns-message">
+                    <p>No columns configured. Please provide column definitions to build filters.</p>
+                </div>
+            }
+        </div>
+
+        @if (ShowAdvanced)
+        {
+            <div class="advanced-options">
+                <div class="option-group">
+                    <label class="option-label">Match:</label>
+                    <div class="option-buttons">
+                        <button class="option-btn @(_matchMode == "all" ? "active" : "")" 
+                                @onclick="@(() => SetMatchMode("all"))">
+                            All Conditions
+                        </button>
+                        <button class="option-btn @(_matchMode == "any" ? "active" : "")" 
+                                @onclick="@(() => SetMatchMode("any"))">
+                            Any Condition
+                        </button>
+                    </div>
+                </div>
+
+                @if (ShowCaseSensitive)
+                {
+                    <div class="option-group">
+                        <label class="option-label">
+                            <input type="checkbox" @bind="_isCaseSensitive" />
+                            Case Sensitive
+                        </label>
+                    </div>
+                }
+
+                @if (ShowSqlPreview)
+                {
+                    <div class="option-group full-width">
+                        <label class="option-label">SQL Preview:</label>
+                        <div class="sql-preview">
+                            <code>@_sqlPreview</code>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="filter-builder-actions">
+            <div class="actions-left">
+                @if (ShowValidation && !_isValid)
+                {
+                    <div class="validation-message error">
+                        <span class="error-icon">⚠️</span>
+                        @ValidationMessage
+                    </div>
+                }
+                @if (ShowRuleCount)
+                {
+                    <span class="rule-count">@_ruleCount rule(s) defined</span>
+                }
+            </div>
+
+            <div class="actions-right">
+                @if (ShowSavePreset)
+                {
+                    <SfButton CssClass="btn-save-preset" OnClick="@OnShowSaveDialog" IconCss="e-icons e-save">
+                        Save as Preset
+                    </SfButton>
+                }
+
+                @if (ShowExport)
+                {
+                    <SfButton CssClass="btn-export" OnClick="@OnExportJson" IconCss="e-icons e-export">
+                        Export JSON
+                    </SfButton>
+                }
+
+                @if (ShowImport)
+                {
+                    <SfButton CssClass="btn-import" OnClick="@OnShowImportDialog" IconCss="e-icons e-import">
+                        Import JSON
+                    </SfButton>
+                }
+
+                <SfButton CssClass="btn-apply" OnClick="@OnApply" IsPrimary="true" IconCss="e-icons e-check">
+                    Apply Filter
+                </SfButton>
+            </div>
+        </div>
+
+        @if (_showSaveDialog)
+        {
+            <div class="modal-overlay" @onclick="@(() => _showSaveDialog = false)">
+                <div class="modal-dialog" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h4>Save Filter Preset</h4>
+                        <button class="close-btn" @onclick="@(() => _showSaveDialog = false)">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Preset Name *</label>
+                            <input type="text" class="form-control" @bind="_presetName" placeholder="Enter preset name" />
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" @bind="_presetDescription" placeholder="Optional description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" @bind="_makePresetDefault" />
+                                Set as default filter
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <SfButton OnClick="@(() => _showSaveDialog = false)">Cancel</SfButton>
+                        <SfButton OnClick="@OnSavePreset" IsPrimary="true" Disabled="@string.IsNullOrWhiteSpace(_presetName)">
+                            Save Preset
+                        </SfButton>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_showImportDialog)
+        {
+            <div class="modal-overlay" @onclick="@(() => _showImportDialog = false)">
+                <div class="modal-dialog" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h4>Import Filter from JSON</h4>
+                        <button class="close-btn" @onclick="@(() => _showImportDialog = false)">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Filter JSON *</label>
+                            <textarea class="form-control" @bind="_importJson" placeholder="Paste filter JSON here" rows="10"></textarea>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_importError))
+                        {
+                            <div class="validation-message error">
+                                <span class="error-icon">⚠️</span>
+                                @_importError
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <SfButton OnClick="@(() => _showImportDialog = false)">Cancel</SfButton>
+                        <SfButton OnClick="@OnImportJson" IsPrimary="true" Disabled="@string.IsNullOrWhiteSpace(_importJson)">
+                            Import
+                        </SfButton>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @if (!HideIfNoPermission)
+        {
+            <div class="no-permission-message">
+                You do not have permission to use the filter builder.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "FilterBuilder";
+
+    // Display Configuration
+    [Parameter] public string Title { get; set; } = "Filter Builder";
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+    [Parameter] public string ThemeClass { get; set; } = string.Empty;
+
+    // Query Builder Configuration
+    [Parameter] public List<FilterColumn> Columns { get; set; } = new();
+    [Parameter] public FilterRule? InitialRule { get; set; }
+    [Parameter] public int MaxRules { get; set; } = 10;
+
+    // Feature Toggles
+    [Parameter] public bool ShowPresets { get; set; } = true;
+    [Parameter] public bool ShowClear { get; set; } = true;
+    [Parameter] public bool ShowReset { get; set; } = true;
+    [Parameter] public bool ShowAdvanced { get; set; } = true;
+    
+    // AI Features
+    [Parameter] public bool EnableAIFeatures { get; set; } = true;
+    [Parameter] public bool ShowAIQueryInput { get; set; } = true;
+    [Parameter] public bool ShowQuerySuggestions { get; set; } = true;
+    [Parameter] public double AIConfidenceThreshold { get; set; } = 70.0;
+    [Parameter] public bool ShowCaseSensitive { get; set; } = true;
+    [Parameter] public bool ShowSqlPreview { get; set; } = true;
+    [Parameter] public bool ShowValidation { get; set; } = true;
+    [Parameter] public bool ShowRuleCount { get; set; } = true;
+    [Parameter] public bool ShowSavePreset { get; set; } = true;
+    [Parameter] public bool ShowExport { get; set; } = true;
+    [Parameter] public bool ShowImport { get; set; } = true;
+
+    // Presets
+    [Parameter] public List<FilterPreset> SavedFilters { get; set; } = new();
+    [Parameter] public EventCallback<List<FilterPreset>> SavedFiltersChanged { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<FilterRule> OnFilterApplied { get; set; }
+    [Parameter] public EventCallback<FilterPreset> OnPresetSaved { get; set; }
+    [Parameter] public EventCallback<FilterPreset> OnPresetLoaded { get; set; }
+    [Parameter] public EventCallback OnFilterCleared { get; set; }
+    [Parameter] public EventCallback OnFilterReset { get; set; }
+    [Parameter] public EventCallback<string> OnFilterExported { get; set; }
+    [Parameter] public EventCallback<FilterRule> OnFilterImported { get; set; }
+    [Parameter] public EventCallback<FilterRule> OnRuleChanged { get; set; }
+
+    // Validation
+    [Parameter] public string ValidationMessage { get; set; } = "Please define at least one valid rule.";
+    [Parameter] public Func<FilterRule, Task<(bool IsValid, string Message)>>? CustomValidator { get; set; }
+
+    private bool _hasPermission = true;
+    private FilterRule _currentRule = new();
+    private List<FilterRuleItem> _rules = new();
+    private string _matchMode = "all";
+    private bool _isCaseSensitive = false;
+    private string _sqlPreview = string.Empty;
+    private bool _isValid = true;
+    private int _ruleCount = 0;
+
+    // Preset Management
+    private string? _selectedPresetId;
+    private bool _showSaveDialog = false;
+    private bool _showImportDialog = false;
+    private string _presetName = string.Empty;
+    private string _presetDescription = string.Empty;
+    private bool _makePresetDefault = false;
+    private string _importJson = string.Empty;
+    private string _importError = string.Empty;
+    
+    // AI State
+    private string _aiQueryInput = string.Empty;
+    private List<QuerySuggestion> _querySuggestions = new();
+    private bool _showAISuggestions = false;
+    private Timer? _aiDebounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permissions
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        // Initialize rules
+        if (InitialRule != null && InitialRule.Rules.Any())
+        {
+            _rules = InitialRule.Rules.ToList();
+            _matchMode = InitialRule.Condition;
+        }
+        else
+        {
+            _rules.Add(new FilterRuleItem());
+        }
+
+        _currentRule = new FilterRule
+        {
+            Condition = _matchMode,
+            Rules = _rules
+        };
+
+        UpdateRuleCount();
+        await UpdateSqlPreview();
+    }
+
+    private List<FilterOperator> GetOperatorsForField(string? field)
+    {
+        if (string.IsNullOrEmpty(field))
+        {
+            return new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+                new() { Value = "notequal", Label = "Not Equals" },
+                new() { Value = "contains", Label = "Contains" },
+                new() { Value = "startswith", Label = "Starts With" },
+                new() { Value = "endswith", Label = "Ends With" },
+                new() { Value = "greaterthan", Label = "Greater Than" },
+                new() { Value = "lessthan", Label = "Less Than" },
+            };
+        }
+
+        var column = Columns.FirstOrDefault(c => c.Field == field);
+        if (column == null) return new List<FilterOperator>();
+
+        return column.Type switch
+        {
+            "string" => new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+                new() { Value = "notequal", Label = "Not Equals" },
+                new() { Value = "contains", Label = "Contains" },
+                new() { Value = "startswith", Label = "Starts With" },
+                new() { Value = "endswith", Label = "Ends With" },
+            },
+            "number" => new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+                new() { Value = "notequal", Label = "Not Equals" },
+                new() { Value = "greaterthan", Label = "Greater Than" },
+                new() { Value = "lessthan", Label = "Less Than" },
+                new() { Value = "greaterthanorequal", Label = "Greater Than or Equal" },
+                new() { Value = "lessthanorequal", Label = "Less Than or Equal" },
+            },
+            "date" => new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+                new() { Value = "notequal", Label = "Not Equals" },
+                new() { Value = "greaterthan", Label = "After" },
+                new() { Value = "lessthan", Label = "Before" },
+            },
+            "boolean" => new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+            },
+            _ => new List<FilterOperator>
+            {
+                new() { Value = "equal", Label = "Equals" },
+                new() { Value = "notequal", Label = "Not Equals" },
+            }
+        };
+    }
+
+    private void AddRule()
+    {
+        if (_rules.Count < MaxRules)
+        {
+            _rules.Add(new FilterRuleItem());
+            UpdateRuleCount();
+        }
+    }
+
+    private void RemoveRule(FilterRuleItem rule)
+    {
+        _rules.Remove(rule);
+        if (!_rules.Any())
+        {
+            _rules.Add(new FilterRuleItem());
+        }
+        UpdateRuleCount();
+    }
+
+    private void SetMatchMode(string mode)
+    {
+        _matchMode = mode;
+        _currentRule.Condition = mode == "all" ? "and" : "or";
+    }
+
+    private async Task UpdateSqlPreview()
+    {
+        try
+        {
+            _sqlPreview = "SELECT * FROM Table WHERE " + GenerateSimpleSql(_currentRule);
+        }
+        catch
+        {
+            _sqlPreview = "Unable to generate SQL preview";
+        }
+        await Task.CompletedTask;
+    }
+
+    private string GenerateSimpleSql(FilterRule rule)
+    {
+        if (rule.Rules == null || !rule.Rules.Any(r => !string.IsNullOrEmpty(r.Field)))
+            return "1=1";
+
+        var conditions = new List<string>();
+        foreach (var r in rule.Rules.Where(r => !string.IsNullOrEmpty(r.Field)))
+        {
+            var op = r.Operator switch
+            {
+                "equal" => "=",
+                "notequal" => "!=",
+                "greaterthan" => ">",
+                "lessthan" => "<",
+                "greaterthanorequal" => ">=",
+                "lessthanorequal" => "<=",
+                "contains" => "LIKE",
+                "startswith" => "LIKE",
+                "endswith" => "LIKE",
+                _ => "="
+            };
+
+            var value = r.Value ?? "NULL";
+            var column = Columns.FirstOrDefault(c => c.Field == r.Field);
+            var isString = column?.Type == "string";
+
+            if (r.Operator?.Contains("contains") == true)
+            {
+                value = $"'%{value}%'";
+            }
+            else if (r.Operator == "startswith")
+            {
+                value = $"'{value}%'";
+            }
+            else if (r.Operator == "endswith")
+            {
+                value = $"'%{value}'";
+            }
+            else if (isString)
+            {
+                value = $"'{value}'";
+            }
+
+            conditions.Add($"{r.Field} {op} {value}");
+        }
+
+        return conditions.Any() ? string.Join($" {rule.Condition?.ToUpper()} ", conditions) : "1=1";
+    }
+
+    private void UpdateRuleCount()
+    {
+        _ruleCount = _rules.Count(r => !string.IsNullOrEmpty(r.Field));
+    }
+
+    private async Task<bool> ValidateFilter()
+    {
+        if (CustomValidator != null)
+        {
+            var result = await CustomValidator(_currentRule!);
+            _isValid = result.IsValid;
+            if (!result.IsValid)
+            {
+                ValidationMessage = result.Message;
+            }
+            return result.IsValid;
+        }
+
+        _isValid = _ruleCount > 0;
+        return _isValid;
+    }
+
+    private async Task OnApply()
+    {
+        UpdateRuleCount();
+        await UpdateSqlPreview();
+
+        if (!await ValidateFilter())
+        {
+            return;
+        }
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FilterApplied",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["RuleCount"] = _ruleCount,
+                    ["Condition"] = _currentRule?.Condition ?? "and"
+                }
+            });
+        }
+
+        await OnFilterApplied.InvokeAsync(_currentRule);
+        await OnRuleChanged.InvokeAsync(_currentRule);
+    }
+
+    private async Task OnClear()
+    {
+        _rules.Clear();
+        _rules.Add(new FilterRuleItem());
+        
+        _currentRule = new FilterRule
+        {
+            Condition = "and",
+            Rules = _rules
+        };
+
+        UpdateRuleCount();
+        await UpdateSqlPreview();
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FilterCleared",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnFilterCleared.InvokeAsync();
+    }
+
+    private async Task OnReset()
+    {
+        if (InitialRule != null && InitialRule.Rules.Any())
+        {
+            _rules = InitialRule.Rules.ToList();
+            _matchMode = InitialRule.Condition;
+        }
+        else
+        {
+            _rules.Clear();
+            _rules.Add(new FilterRuleItem());
+            _matchMode = "all";
+        }
+
+        _currentRule = new FilterRule
+        {
+            Condition = _matchMode,
+            Rules = _rules
+        };
+
+        UpdateRuleCount();
+        await UpdateSqlPreview();
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FilterReset",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnFilterReset.InvokeAsync();
+    }
+
+    private async Task OnLoadPreset()
+    {
+        var preset = SavedFilters.FirstOrDefault(f => f.Id == _selectedPresetId);
+        if (preset != null && preset.Rule != null)
+        {
+            _rules = preset.Rule.Rules.ToList();
+            _matchMode = preset.Rule.Condition;
+            
+            _currentRule = new FilterRule
+            {
+                Condition = _matchMode,
+                Rules = _rules
+            };
+
+            UpdateRuleCount();
+            await UpdateSqlPreview();
+
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "PresetLoaded",
+                    Resource = AuditResource,
+                    Timestamp = DateTime.UtcNow,
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["PresetName"] = preset.Name
+                    }
+                });
+            }
+
+            await OnPresetLoaded.InvokeAsync(preset);
+        }
+    }
+
+    private void OnShowSaveDialog()
+    {
+        _presetName = string.Empty;
+        _presetDescription = string.Empty;
+        _makePresetDefault = false;
+        _showSaveDialog = true;
+    }
+
+    private async Task OnSavePreset()
+    {
+        if (string.IsNullOrWhiteSpace(_presetName))
+            return;
+
+        var preset = new FilterPreset
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = _presetName,
+            Description = _presetDescription,
+            Rule = _currentRule,
+            IsDefault = _makePresetDefault,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        SavedFilters.Add(preset);
+        await SavedFiltersChanged.InvokeAsync(SavedFilters);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "PresetSaved",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["PresetName"] = preset.Name,
+                    ["IsDefault"] = preset.IsDefault
+                }
+            });
+        }
+
+        await OnPresetSaved.InvokeAsync(preset);
+        _showSaveDialog = false;
+    }
+
+    private async Task OnExportJson()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(_currentRule, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FilterExported",
+                Resource = AuditResource,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnFilterExported.InvokeAsync(json);
+    }
+
+    private void OnShowImportDialog()
+    {
+        _importJson = string.Empty;
+        _importError = string.Empty;
+        _showImportDialog = true;
+    }
+
+    private async Task OnImportJson()
+    {
+        try
+        {
+            _importError = string.Empty;
+            var rule = System.Text.Json.JsonSerializer.Deserialize<FilterRule>(_importJson);
+            
+            if (rule != null && rule.Rules != null)
+            {
+                _rules = rule.Rules.ToList();
+                _matchMode = rule.Condition;
+                
+                _currentRule = new FilterRule
+                {
+                    Condition = _matchMode,
+                    Rules = _rules
+                };
+
+                UpdateRuleCount();
+                await UpdateSqlPreview();
+
+                if (EnableAudit)
+                {
+                    await AuditService.LogAsync(new AuditMetadata
+                    {
+                        Action = "FilterImported",
+                        Resource = AuditResource,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+
+                await OnFilterImported.InvokeAsync(rule);
+                _showImportDialog = false;
+            }
+            else
+            {
+                _importError = "Invalid JSON format";
+            }
+        }
+        catch (Exception ex)
+        {
+            _importError = $"Import failed: {ex.Message}";
+        }
+    }
+
+    public async Task<FilterRule> GetCurrentRule()
+    {
+        return _currentRule;
+    }
+
+    public async Task SetRule(FilterRule rule)
+    {
+        _rules = rule.Rules.ToList();
+        _matchMode = rule.Condition;
+        
+        _currentRule = new FilterRule
+        {
+            Condition = _matchMode,
+            Rules = _rules
+        };
+
+        UpdateRuleCount();
+        await UpdateSqlPreview();
+    }
+    
+    // AI Query Suggestion Methods
+    private async Task OnAIQueryInput(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _aiQueryInput = e.Value?.ToString() ?? string.Empty;
+        
+        _aiDebounceTimer?.Dispose();
+        _aiDebounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                if (!string.IsNullOrWhiteSpace(_aiQueryInput))
+                {
+                    await GenerateAIQuerySuggestions(_aiQueryInput);
+                    StateHasChanged();
+                }
+            });
+        }, null, 800, Timeout.Infinite);
+        
+        await Task.CompletedTask;
+    }
+    
+    private async Task GenerateAIQuerySuggestions(string query)
+    {
+        _querySuggestions.Clear();
+        var queryLower = query.ToLower();
+        
+        // AI Query Pattern Recognition
+        var suggestions = new List<QuerySuggestion>();
+        
+        // Pattern 1: Time-based queries
+        if (queryLower.Contains("last month") || queryLower.Contains("this month") || queryLower.Contains("today"))
+        {
+            var dateField = Columns.FirstOrDefault(c => c.Type == "date")?.Field ?? "CreatedDate";
+            var timeRange = queryLower.Contains("last month") ? "last 30 days" : 
+                           queryLower.Contains("this month") ? "this month" : "today";
+            
+            suggestions.Add(new QuerySuggestion
+            {
+                Label = $"Filter by {timeRange}",
+                Description = $"Show records where {dateField} is within {timeRange}",
+                SqlPreview = $"{dateField} >= DATEADD(day, -30, GETDATE())",
+                Confidence = 94.5,
+                Rules = new List<FilterRuleItem>
+                {
+                    new() { Field = dateField, Operator = "greaterthan", Value = DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd") }
+                }
+            });
+        }
+        
+        // Pattern 2: Numeric comparisons
+        var numberMatch = System.Text.RegularExpressions.Regex.Match(queryLower, @"(over|above|more than|greater than|>)\s*\$?(\d+)");
+        if (numberMatch.Success)
+        {
+            var value = numberMatch.Groups[2].Value;
+            var numberField = Columns.FirstOrDefault(c => c.Type == "number")?.Field ?? "Amount";
+            
+            suggestions.Add(new QuerySuggestion
+            {
+                Label = $"Values greater than {value}",
+                Description = $"Show records where {numberField} > {value}",
+                SqlPreview = $"{numberField} > {value}",
+                Confidence = 92.3,
+                Rules = new List<FilterRuleItem>
+                {
+                    new() { Field = numberField, Operator = "greaterthan", Value = value }
+                }
+            });
+        }
+        
+        // Pattern 3: Status/Type filtering
+        if (queryLower.Contains("active") || queryLower.Contains("inactive") || queryLower.Contains("pending"))
+        {
+            var status = queryLower.Contains("active") ? "Active" :
+                        queryLower.Contains("inactive") ? "Inactive" : "Pending";
+            var statusField = Columns.FirstOrDefault(c => c.Field?.ToLower().Contains("status") == true)?.Field ?? "Status";
+            
+            suggestions.Add(new QuerySuggestion
+            {
+                Label = $"Filter by {status} status",
+                Description = $"Show only {status.ToLower()} records",
+                SqlPreview = $"{statusField} = '{status}'",
+                Confidence = 96.8,
+                Rules = new List<FilterRuleItem>
+                {
+                    new() { Field = statusField, Operator = "equal", Value = status }
+                }
+            });
+        }
+        
+        // Pattern 4: Name/Text search
+        if (queryLower.Contains("contains") || queryLower.Contains("with") || queryLower.Contains("named"))
+        {
+            var searchMatch = System.Text.RegularExpressions.Regex.Match(queryLower, @"(?:contains|with|named)\s+['\""]?(\w+)['\""]?");
+            if (searchMatch.Success)
+            {
+                var searchTerm = searchMatch.Groups[1].Value;
+                var nameField = Columns.FirstOrDefault(c => c.Field?.ToLower().Contains("name") == true)?.Field ?? "Name";
+                
+                suggestions.Add(new QuerySuggestion
+                {
+                    Label = $"Search for '{searchTerm}'",
+                    Description = $"Find records where {nameField} contains '{searchTerm}'",
+                    SqlPreview = $"{nameField} LIKE '%{searchTerm}%'",
+                    Confidence = 88.7,
+                    Rules = new List<FilterRuleItem>
+                    {
+                        new FilterRuleItem { Field = nameField, Operator = "contains", Value = searchTerm }
+                    }
+                });
+            }
+        }
+        
+        // Pattern 5: Category/Department filtering
+        var categoryColumns = GetCategoryColumns();
+        foreach (var column in categoryColumns)
+        {
+            if (queryLower.Contains(column.Field?.ToLower() ?? ""))
+            {
+                suggestions.Add(new QuerySuggestion
+                {
+                    Label = $"Filter by {column.Label}",
+                    Description = $"Narrow results by {column.Label?.ToLower()}",
+                    SqlPreview = $"{column.Field} = '[value]'",
+                    Confidence = 85.2,
+                    Rules = new List<FilterRuleItem>
+                    {
+                        new FilterRuleItem { Field = column.Field, Operator = "equal", Value = "" }
+                    }
+                });
+            }
+        }
+        
+        // Filter by confidence threshold
+        _querySuggestions = suggestions
+            .Where(s => s.Confidence >= AIConfidenceThreshold)
+            .OrderByDescending(s => s.Confidence)
+            .Take(5)
+            .ToList();
+        
+        _showAISuggestions = _querySuggestions.Any();
+        await Task.CompletedTask;
+    }
+    
+    private async Task ApplyAISuggestion(QuerySuggestion suggestion)
+    {
+        if (suggestion.Rules != null && suggestion.Rules.Any())
+        {
+            _rules.Clear();
+            _rules.AddRange(suggestion.Rules);
+            
+            _currentRule = new FilterRule
+            {
+                Condition = _matchMode,
+                Rules = _rules
+            };
+            
+            UpdateRuleCount();
+            await UpdateSqlPreview();
+            
+            _showAISuggestions = false;
+            _aiQueryInput = suggestion.Label;
+            
+            if (EnableAudit)
+            {
+                var auditMetadata = new AuditMetadata
+                {
+                    Action = "AISuggestionApplied",
+                    Resource = AuditResource,
+                    Timestamp = DateTime.UtcNow
+                };
+                auditMetadata.AdditionalData["Query"] = _aiQueryInput;
+                auditMetadata.AdditionalData["Confidence"] = suggestion.Confidence;
+                auditMetadata.AdditionalData["SuggestionLabel"] = suggestion.Label;
+                await AuditService.LogAsync(auditMetadata);
+            }
+        }
+    }
+    
+    private void ClearAIQuery()
+    {
+        _aiQueryInput = string.Empty;
+        _querySuggestions.Clear();
+        _showAISuggestions = false;
+    }
+    
+    private string GetConfidenceClass(double confidence)
+    {
+        return confidence >= 90 ? "high" : confidence >= 75 ? "medium" : "low";
+    }
+
+    private IEnumerable<FilterColumn> GetCategoryColumns()
+    {
+        return Columns.Where(c => c.Type == "string" && 
+                                  (c.Field?.ToLower().Contains("category") == true || 
+                                   c.Field?.ToLower().Contains("department") == true ||
+                                   c.Field?.ToLower().Contains("type") == true))
+                      .ToList();
+    }
+    
+    public void Dispose()
+    {
+        _aiDebounceTimer?.Dispose();
+    }
+}

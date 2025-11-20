@@ -1,0 +1,55 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/Nalam360Enterprise.Docs.Web/**'
+      - '.github/workflows/deploy-docs.yml'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Docs
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      working-directory: docs/Nalam360Enterprise.Docs.Web
+      run: dotnet restore
+    
+    - name: Build documentation site
+      working-directory: docs/Nalam360Enterprise.Docs.Web
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Publish documentation site
+      working-directory: docs/Nalam360Enterprise.Docs.Web
+      run: dotnet publish --configuration Release --no-build --output ./publish
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/Nalam360Enterprise.Docs.Web/publish/wwwroot
+        cname: nalam360-docs.example.com  # Optional: Custom domain
+    
+    - name: Deploy Summary
+      run: |
+        echo "### Documentation Deployment 📚" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Documentation site deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,260 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetInputNumberClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (ShowControls && ControlsPosition == InputNumberControlsPosition.Both)
+        {
+            <button type="button" 
+                    class="n360-inputnumber__control n360-inputnumber__control--down"
+                    @onclick="DecrementAsync"
+                    disabled="@(_value <= Min || Disabled)">
+                <span>−</span>
+            </button>
+        }
+        
+        <input type="text" 
+               class="n360-inputnumber__input"
+               value="@GetFormattedValue()"
+               @oninput="HandleInputAsync"
+               @onblur="HandleBlurAsync"
+               placeholder="@Placeholder"
+               disabled="@Disabled"
+               readonly="@ReadOnly" />
+        
+        @if (ShowControls)
+        {
+            @if (ControlsPosition == InputNumberControlsPosition.Right)
+            {
+                <div class="n360-inputnumber__controls n360-inputnumber__controls--right">
+                    <button type="button" 
+                            class="n360-inputnumber__control n360-inputnumber__control--up"
+                            @onclick="IncrementAsync"
+                            disabled="@(_value >= Max || Disabled)">
+                        <span>▲</span>
+                    </button>
+                    <button type="button" 
+                            class="n360-inputnumber__control n360-inputnumber__control--down"
+                            @onclick="DecrementAsync"
+                            disabled="@(_value <= Min || Disabled)">
+                        <span>▼</span>
+                    </button>
+                </div>
+            }
+            else if (ControlsPosition == InputNumberControlsPosition.Both)
+            {
+                <button type="button" 
+                        class="n360-inputnumber__control n360-inputnumber__control--up"
+                        @onclick="IncrementAsync"
+                        disabled="@(_value >= Max || Disabled)">
+                    <span>+</span>
+                </button>
+            }
+        }
+        
+        @if (PrefixContent != null || !string.IsNullOrEmpty(Prefix))
+        {
+            <span class="n360-inputnumber__prefix">
+                @if (PrefixContent != null)
+                {
+                    @PrefixContent
+                }
+                else
+                {
+                    @Prefix
+                }
+            </span>
+        }
+        
+        @if (SuffixContent != null || !string.IsNullOrEmpty(Suffix))
+        {
+            <span class="n360-inputnumber__suffix">
+                @if (SuffixContent != null)
+                {
+                    @SuffixContent
+                }
+                else
+                {
+                    @Suffix
+                }
+            </span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public decimal Min { get; set; } = decimal.MinValue;
+    [Parameter] public decimal Max { get; set; } = decimal.MaxValue;
+    [Parameter] public decimal Step { get; set; } = 1;
+    [Parameter] public int Precision { get; set; } = 0;
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Prefix { get; set; }
+    [Parameter] public string? Suffix { get; set; }
+    [Parameter] public RenderFragment? PrefixContent { get; set; }
+    [Parameter] public RenderFragment? SuffixContent { get; set; }
+    [Parameter] public bool ShowControls { get; set; } = true;
+    [Parameter] public InputNumberControlsPosition ControlsPosition { get; set; } = InputNumberControlsPosition.Right;
+    [Parameter] public string? Format { get; set; }
+    [Parameter] public Func<string, decimal?>? Parser { get; set; }
+    [Parameter] public Func<decimal, string>? Formatter { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public InputNumberSize Size { get; set; } = InputNumberSize.Default;
+    
+    // Events
+    [Parameter] public EventCallback<decimal> OnChange { get; set; }
+    [Parameter] public EventCallback<decimal> OnStep { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private decimal _value;
+    private string _inputValue = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _value = Math.Clamp(Value, Min, Max);
+        _inputValue = GetFormattedValue();
+    }
+
+    private async Task IncrementAsync()
+    {
+        var newValue = Math.Min(_value + Step, Max);
+        await UpdateValueAsync(newValue);
+        await OnStep.InvokeAsync(newValue);
+    }
+
+    private async Task DecrementAsync()
+    {
+        var newValue = Math.Max(_value - Step, Min);
+        await UpdateValueAsync(newValue);
+        await OnStep.InvokeAsync(newValue);
+    }
+
+    private async Task HandleInputAsync(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _inputValue = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task HandleBlurAsync()
+    {
+        decimal? parsedValue = null;
+        
+        if (Parser != null)
+        {
+            parsedValue = Parser(_inputValue);
+        }
+        else if (decimal.TryParse(_inputValue, out var parsed))
+        {
+            parsedValue = parsed;
+        }
+        
+        if (parsedValue.HasValue)
+        {
+            var clampedValue = Math.Clamp(parsedValue.Value, Min, Max);
+            var roundedValue = Math.Round(clampedValue, Precision);
+            await UpdateValueAsync(roundedValue);
+        }
+        else
+        {
+            _inputValue = GetFormattedValue();
+        }
+    }
+
+    private async Task UpdateValueAsync(decimal newValue)
+    {
+        _value = newValue;
+        _inputValue = GetFormattedValue();
+        
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+        await OnChange.InvokeAsync(newValue);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "InputNumberChange",
+                Resource = AuditResource ?? "InputNumber",
+                AdditionalData = new Dictionary<string, object> {
+                    { "Value", newValue }
+                }
+            });
+        }
+    }
+
+    private string GetFormattedValue()
+    {
+        if (Formatter != null)
+        {
+            return Formatter(_value);
+        }
+        
+        if (!string.IsNullOrEmpty(Format))
+        {
+            return _value.ToString(Format);
+        }
+        
+        return _value.ToString($"F{Precision}");
+    }
+
+    private string GetInputNumberClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-inputnumber",
+            $"n360-inputnumber--{Size.ToString().ToLower()}",
+            $"n360-inputnumber--controls-{ControlsPosition.ToString().ToLower()}"
+        };
+        
+        if (Disabled)
+        {
+            classes.Add("n360-inputnumber--disabled");
+        }
+        
+        if (ReadOnly)
+        {
+            classes.Add("n360-inputnumber--readonly");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

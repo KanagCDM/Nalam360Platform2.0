@@ -1,0 +1,543 @@
+@typeparam TEntry
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService? PermissionService
+
+<div class="n360-activity-log @CssClass @(IsResponsive ? "responsive" : "")" @attributes="GetHtmlAttributes()">
+    
+    @* Toolbar *@
+    @if (ShowToolbar)
+    {
+        <div class="activity-log-toolbar">
+            <div class="toolbar-start">
+                <button class="btn btn-icon @(CurrentViewMode == ActivityLogViewMode.List ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(ActivityLogViewMode.List)" 
+                        title="List View">
+                    📋 List
+                </button>
+                <button class="btn btn-icon @(CurrentViewMode == ActivityLogViewMode.Timeline ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(ActivityLogViewMode.Timeline)" 
+                        title="Timeline View">
+                    ⏱️ Timeline
+                </button>
+                <button class="btn btn-icon @(CurrentViewMode == ActivityLogViewMode.Grid ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(ActivityLogViewMode.Grid)" 
+                        title="Grid View">
+                    ⚏ Grid
+                </button>
+                <button class="btn btn-icon @(CurrentViewMode == ActivityLogViewMode.Chart ? "active" : "")" 
+                        @onclick="() => ChangeViewMode(ActivityLogViewMode.Chart)" 
+                        title="Chart View">
+                    📊 Chart
+                </button>
+                
+                <div class="toolbar-divider"></div>
+                
+                <button class="btn btn-icon" @onclick="ToggleFilters" title="@(_showFilters ? "Hide" : "Show") Filters">
+                    🔍 Filters
+                    @if (_activeFilterCount > 0)
+                    {
+                        <span class="filter-badge">@_activeFilterCount</span>
+                    }
+                </button>
+                
+                <button class="btn btn-icon" @onclick="RefreshLogs" title="Refresh">
+                    🔄 Refresh
+                </button>
+                
+                @if (AllowExport)
+                {
+                    <button class="btn btn-icon" @onclick="ShowExportDialog" title="Export">
+                        📥 Export
+                    </button>
+                }
+            </div>
+            
+            <div class="toolbar-end">
+                @if (ShowStatistics && _statistics != null)
+                {
+                    <div class="statistics-summary">
+                        <span class="stat-item">
+                            <strong>@_statistics.TotalEntries</strong> Total
+                        </span>
+                        @if (_statistics.ErrorCount > 0)
+                        {
+                            <span class="stat-item error">
+                                <strong>@_statistics.ErrorCount</strong> Errors
+                            </span>
+                        }
+                        @if (_statistics.WarningCount > 0)
+                        {
+                            <span class="stat-item warning">
+                                <strong>@_statistics.WarningCount</strong> Warnings
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    
+    @* Filter Panel *@
+    @if (_showFilters)
+    {
+        <div class="filter-panel">
+            <div class="filter-section">
+                <h4>🏷️ Type</h4>
+                <div class="filter-options">
+                    @foreach (var type in Enum.GetValues<ActivityLogType>())
+                    {
+                        <label class="filter-checkbox">
+                            <input type="checkbox" 
+                                   checked="@_filter.Types.Contains(type)"
+                                   @onchange="@(e => ToggleTypeFilter(type, (bool)e.Value!))" />
+                            <span class="type-badge type-@type.ToString().ToLower()">@GetTypeIcon(type) @type</span>
+                        </label>
+                    }
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>⚠️ Severity</h4>
+                <div class="filter-options">
+                    @foreach (var severity in Enum.GetValues<ActivityLogSeverity>())
+                    {
+                        <label class="filter-checkbox">
+                            <input type="checkbox" 
+                                   checked="@_filter.Severities.Contains(severity)"
+                                   @onchange="@(e => ToggleSeverityFilter(severity, (bool)e.Value!))" />
+                            <span class="severity-badge severity-@severity.ToString().ToLower()">@severity</span>
+                        </label>
+                    }
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>📅 Date Range</h4>
+                <div class="date-range-inputs">
+                    <input type="datetime-local" 
+                           class="form-control"
+                           placeholder="Start Date"
+                           @bind="_filter.StartDate" />
+                    <span class="date-separator">to</span>
+                    <input type="datetime-local" 
+                           class="form-control"
+                           @bind="_filter.EndDate" />
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>🔍 Search</h4>
+                <input type="text" 
+                       class="form-control search-input"
+                       placeholder="Search action, user, resource..."
+                       @bind="_filter.SearchQuery"
+                       @bind:event="oninput" />
+            </div>
+            
+            <div class="filter-actions">
+                <button class="btn btn-primary" @onclick="ApplyFilters">Apply Filters</button>
+                <button class="btn btn-secondary" @onclick="ClearFilters">Clear All</button>
+            </div>
+        </div>
+    }
+    
+    @* Main Content Area *@
+    <div class="activity-log-content">
+        @if (IsLoading)
+        {
+            <div class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading activity logs...</div>
+            </div>
+        }
+        else if (!_filteredEntries.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-message">@EmptyText</div>
+                @if (_activeFilterCount > 0)
+                {
+                    <button class="btn btn-secondary" @onclick="ClearFilters">Clear Filters</button>
+                }
+            </div>
+        }
+        else
+        {
+            @if (CurrentViewMode == ActivityLogViewMode.List)
+            {
+                <div class="list-view">
+                    @foreach (var entry in _filteredEntries.Skip((_currentPage - 1) * _settings.PageSize).Take(_settings.PageSize))
+                    {
+                        <div class="log-entry @(entry.IsSuccess ? "" : "error")" 
+                             @onclick="() => ShowEntryDetails(entry)">
+                            <div class="entry-header">
+                                <span class="type-badge type-@entry.Type.ToString().ToLower()">
+                                    @GetTypeIcon(entry.Type)
+                                </span>
+                                <span class="severity-badge severity-@entry.Severity.ToString().ToLower()">
+                                    @entry.Severity
+                                </span>
+                                <span class="entry-timestamp">@entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                @if (entry.Duration.HasValue)
+                                {
+                                    <span class="entry-duration">⏱️ @entry.Duration.Value.TotalMilliseconds ms</span>
+                                }
+                            </div>
+                            <div class="entry-body">
+                                <div class="entry-action">@entry.Action</div>
+                                <div class="entry-description">@entry.Description</div>
+                                <div class="entry-meta">
+                                    @if (!string.IsNullOrEmpty(entry.UserName))
+                                    {
+                                        <span class="meta-item">👤 @entry.UserName</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.Module))
+                                    {
+                                        <span class="meta-item">📦 @entry.Module</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.Resource))
+                                    {
+                                        <span class="meta-item">📄 @entry.Resource</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(entry.IpAddress))
+                                    {
+                                        <span class="meta-item">🌐 @entry.IpAddress</span>
+                                    }
+                                </div>
+                            </div>
+                            @if (!entry.IsSuccess && !string.IsNullOrEmpty(entry.ErrorMessage))
+                            {
+                                <div class="entry-error">
+                                    <strong>Error:</strong> @entry.ErrorMessage
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else if (CurrentViewMode == ActivityLogViewMode.Timeline)
+            {
+                <div class="timeline-view">
+                    @{
+                        var groupedByDate = _filteredEntries
+                            .GroupBy(e => e.Timestamp.Date)
+                            .OrderByDescending(g => g.Key);
+                    }
+                    @foreach (var dateGroup in groupedByDate)
+                    {
+                        <div class="timeline-group">
+                            <div class="timeline-date">@dateGroup.Key.ToString("MMMM dd, yyyy")</div>
+                            <div class="timeline-entries">
+                                @foreach (var entry in dateGroup.OrderByDescending(e => e.Timestamp))
+                                {
+                                    <div class="timeline-entry" @onclick="() => ShowEntryDetails(entry)">
+                                        <div class="timeline-marker type-@entry.Type.ToString().ToLower()"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">@entry.Timestamp.ToString("HH:mm:ss")</div>
+                                            <div class="timeline-action">@entry.Action</div>
+                                            <div class="timeline-description">@entry.Description</div>
+                                            @if (!string.IsNullOrEmpty(entry.UserName))
+                                            {
+                                                <div class="timeline-user">by @entry.UserName</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (CurrentViewMode == ActivityLogViewMode.Grid)
+            {
+                <div class="grid-view">
+                    <table class="activity-grid">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Severity</th>
+                                <th>Action</th>
+                                <th>User</th>
+                                <th>Module</th>
+                                <th>Resource</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in _filteredEntries.Skip((_currentPage - 1) * _settings.PageSize).Take(_settings.PageSize))
+                            {
+                                <tr class="@(entry.IsSuccess ? "" : "error-row")" @onclick="() => ShowEntryDetails(entry)">
+                                    <td>@entry.Timestamp.ToString("MM/dd HH:mm")</td>
+                                    <td>
+                                        <span class="type-badge type-@entry.Type.ToString().ToLower()">
+                                            @GetTypeIcon(entry.Type)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="severity-badge severity-@entry.Severity.ToString().ToLower()">
+                                            @entry.Severity
+                                        </span>
+                                    </td>
+                                    <td class="action-cell">@entry.Action</td>
+                                    <td>@entry.UserName</td>
+                                    <td>@entry.Module</td>
+                                    <td>@entry.Resource</td>
+                                    <td>
+                                        <span class="status-badge @(entry.IsSuccess ? "success" : "failed")">
+                                            @(entry.IsSuccess ? "✓" : "✗")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else if (CurrentViewMode == ActivityLogViewMode.Chart)
+            {
+                <div class="chart-view">
+                    <div class="chart-container">
+                        <h3>Activity Distribution by Type</h3>
+                        <div class="bar-chart">
+                            @if (_statistics != null)
+                            {
+                                @foreach (var (type, count) in _statistics.EntriesByType)
+                                {
+                                    var percentage = (_statistics.TotalEntries > 0) ? (count * 100.0 / _statistics.TotalEntries) : 0;
+                                    <div class="chart-bar">
+                                        <div class="bar-label">@type</div>
+                                        <div class="bar-visual">
+                                            <div class="bar-fill" style="width: @(percentage)%"></div>
+                                        </div>
+                                        <div class="bar-value">@count</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Activity by Module</h3>
+                        <div class="pie-chart">
+                            @if (_statistics != null && _statistics.EntriesByModule.Any())
+                            {
+                                <div class="pie-legend">
+                                    @foreach (var (module, count) in _statistics.EntriesByModule.Take(10))
+                                    {
+                                        <div class="legend-item">
+                                            <span class="legend-color"></span>
+                                            <span class="legend-label">@module</span>
+                                            <span class="legend-value">@count</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+    
+    @* Pagination *@
+    @if (_filteredEntries.Any() && _totalPages > 1)
+    {
+        <div class="activity-log-pagination">
+            <div class="pagination-info">
+                Showing @((_currentPage - 1) * _settings.PageSize + 1) - @Math.Min(_currentPage * _settings.PageSize, _filteredEntries.Count) of @_filteredEntries.Count entries
+            </div>
+            <div class="pagination-controls">
+                <button class="btn btn-icon" @onclick="FirstPage" disabled="@(_currentPage == 1)">⏮️</button>
+                <button class="btn btn-icon" @onclick="PreviousPage" disabled="@(_currentPage == 1)">◀️</button>
+                <span class="page-info">Page @_currentPage of @_totalPages</span>
+                <button class="btn btn-icon" @onclick="NextPage" disabled="@(_currentPage == _totalPages)">▶️</button>
+                <button class="btn btn-icon" @onclick="LastPage" disabled="@(_currentPage == _totalPages)">⏭️</button>
+            </div>
+        </div>
+    }
+    
+    @* Entry Details Modal *@
+    @if (_showDetails && _selectedEntry != null)
+    {
+        <div class="modal-overlay" @onclick="CloseDetails">
+            <div class="modal-dialog" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Activity Log Details</h3>
+                    <button class="btn-close" @onclick="CloseDetails">✖️</button>
+                </div>
+                <div class="modal-content">
+                    <div class="detail-section">
+                        <h4>Basic Information</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Timestamp:</label>
+                                <span>@_selectedEntry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Type:</label>
+                                <span class="type-badge type-@_selectedEntry.Type.ToString().ToLower()">
+                                    @GetTypeIcon(_selectedEntry.Type) @_selectedEntry.Type
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Severity:</label>
+                                <span class="severity-badge severity-@_selectedEntry.Severity.ToString().ToLower()">
+                                    @_selectedEntry.Severity
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Action:</label>
+                                <span>@_selectedEntry.Action</span>
+                            </div>
+                            <div class="detail-item full-width">
+                                <label>Description:</label>
+                                <span>@_selectedEntry.Description</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(_selectedEntry.UserName))
+                    {
+                        <div class="detail-section">
+                            <h4>User Information</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>User:</label>
+                                    <span>@_selectedEntry.UserName</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Email:</label>
+                                    <span>@_selectedEntry.UserEmail</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>IP Address:</label>
+                                    <span>@_selectedEntry.IpAddress</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(_selectedEntry.SessionId))
+                                {
+                                    <div class="detail-item">
+                                        <label>Session ID:</label>
+                                        <span class="monospace">@_selectedEntry.SessionId</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="detail-section">
+                        <h4>Resource Information</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Module:</label>
+                                <span>@_selectedEntry.Module</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Resource:</label>
+                                <span>@_selectedEntry.Resource</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_selectedEntry.ResourceId))
+                            {
+                                <div class="detail-item">
+                                    <label>Resource ID:</label>
+                                    <span>@_selectedEntry.ResourceId</span>
+                                </div>
+                            }
+                            @if (_selectedEntry.Duration.HasValue)
+                            {
+                                <div class="detail-item">
+                                    <label>Duration:</label>
+                                    <span>@_selectedEntry.Duration.Value.TotalMilliseconds ms</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    @if (!_selectedEntry.IsSuccess)
+                    {
+                        <div class="detail-section error-section">
+                            <h4>Error Details</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item full-width">
+                                    <label>Error Message:</label>
+                                    <pre class="error-message">@_selectedEntry.ErrorMessage</pre>
+                                </div>
+                                @if (_settings.ShowStackTrace && !string.IsNullOrEmpty(_selectedEntry.StackTrace))
+                                {
+                                    <div class="detail-item full-width">
+                                        <label>Stack Trace:</label>
+                                        <pre class="stack-trace">@_selectedEntry.StackTrace</pre>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (_selectedEntry.Metadata.Any() && _settings.ShowMetadata)
+                    {
+                        <div class="detail-section">
+                            <h4>Metadata</h4>
+                            <div class="metadata-list">
+                                @foreach (var (key, value) in _selectedEntry.Metadata)
+                                {
+                                    <div class="metadata-item">
+                                        <span class="metadata-key">@key:</span>
+                                        <span class="metadata-value">@value</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDetails">Close</button>
+                </div>
+            </div>
+        </div>
+    }
+    
+    @* Export Dialog *@
+    @if (_showExportDialog)
+    {
+        <div class="modal-overlay" @onclick="CloseExportDialog">
+            <div class="modal-dialog" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Export Activity Logs</h3>
+                    <button class="btn-close" @onclick="CloseExportDialog">✖️</button>
+                </div>
+                <div class="modal-content">
+                    <div class="form-group">
+                        <label>Format:</label>
+                        <select class="form-control" @bind="_exportOptions.Format">
+                            @foreach (var format in Enum.GetValues<ActivityLogExportFormat>())
+                            {
+                                <option value="@format">@format</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>File Name:</label>
+                        <input type="text" class="form-control" @bind="_exportOptions.FileName" />
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" @bind="_exportOptions.IncludeMetadata" />
+                            Include metadata
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" @bind="_exportOptions.IncludeStackTrace" />
+                            Include stack traces
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="ConfirmExport">Export</button>
+                    <button class="btn btn-secondary" @onclick="CloseExportDialog">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>

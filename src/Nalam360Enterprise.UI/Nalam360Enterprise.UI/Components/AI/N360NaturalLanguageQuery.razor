@@ -1,0 +1,633 @@
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Charts
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-natural-language-query" @attributes="GetHtmlAttributes()">
+    @if (!string.IsNullOrEmpty(RequiredPermission))
+    {
+        if (!HasPermission && HideIfNoPermission)
+        {
+            return;
+        }
+        if (!HasPermission)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> You don't have permission to use natural language query.
+            </div>
+            return;
+        }
+    }
+
+    <div class="nlq-header">
+        <div class="header-left">
+            <h3>
+                <i class="fas fa-comments"></i> Natural Language Query
+                @if (UseRealAI)
+                {
+                    <span class="badge bg-success ms-2">🤖 Real AI</span>
+                }
+            </h3>
+            <p class="text-muted">Ask questions in plain English - AI translates to SQL and retrieves data instantly</p>
+        </div>
+        <div class="header-right">
+            <SfButton CssClass="e-outline-primary" @onclick="ShowExamples">
+                <i class="fas fa-lightbulb"></i> Example Queries
+            </SfButton>
+        </div>
+    </div>
+
+    <div class="query-interface">
+        <div class="query-input-section">
+            <SfTextBox @bind-Value="QueryText"
+                       Placeholder="Ask anything... e.g., 'Show me all diabetic patients admitted in the last 30 days'"
+                       CssClass="query-input"
+                       Multiline="true"
+                       @onkeydown="OnKeyDown">
+            </SfTextBox>
+            <div class="input-actions">
+                <SfButton CssClass="e-primary e-large" @onclick="ExecuteQuery" Disabled="@(string.IsNullOrWhiteSpace(QueryText) || IsProcessing)">
+                    @if (IsProcessing)
+                    {
+                        <span><i class="fas fa-spinner fa-spin"></i> Processing...</span>
+                    }
+                    else
+                    {
+                        <span><i class="fas fa-search"></i> Execute Query</span>
+                    }
+                </SfButton>
+                <SfButton CssClass="e-outline-secondary" @onclick="ClearQuery" Disabled="@IsProcessing">
+                    <i class="fas fa-times"></i> Clear
+                </SfButton>
+            </div>
+        </div>
+
+        @if (ShowExamplePanel)
+        {
+            <div class="example-queries-panel">
+                <div class="panel-header">
+                    <h5>Example Queries</h5>
+                    <button class="btn-close" @onclick="() => ShowExamplePanel = false"></button>
+                </div>
+                <div class="examples-grid">
+                    @foreach (var example in ExampleQueries)
+                    {
+                        <div class="example-card" @onclick="() => UseExample(example.Query)">
+                            <div class="example-icon">
+                                <i class="@example.Icon"></i>
+                            </div>
+                            <div class="example-content">
+                                <div class="example-category">@example.Category</div>
+                                <div class="example-text">"@example.Query"</div>
+                            </div>
+                            <div class="example-action">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (CurrentResult != null)
+        {
+            <div class="query-result">
+                <div class="result-header">
+                    <div class="result-title">
+                        <i class="fas fa-check-circle text-success"></i>
+                        Query Results
+                    </div>
+                    <div class="result-meta">
+                        <span class="meta-item">
+                            <i class="fas fa-clock"></i> @CurrentResult.ExecutionTime.ToString("F2")ms
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-database"></i> @CurrentResult.RowCount rows
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-bolt"></i> @CurrentResult.Confidence.ToString("F1")% confidence
+                        </span>
+                    </div>
+                </div>
+
+                <div class="interpretation-section">
+                    <div class="interpretation-header">
+                        <i class="fas fa-brain"></i> AI Interpretation
+                    </div>
+                    <div class="interpretation-content">
+                        <div class="natural-query">
+                            <strong>Your Question:</strong> @CurrentResult.NaturalQuery
+                        </div>
+                        <div class="sql-translation">
+                            <strong>Generated SQL:</strong>
+                            <pre><code>@CurrentResult.GeneratedSQL</code></pre>
+                        </div>
+                        @if (CurrentResult.Insights.Any())
+                        {
+                            <div class="query-insights">
+                                <strong>Insights:</strong>
+                                <ul>
+                                    @foreach (var insight in CurrentResult.Insights)
+                                    {
+                                        <li>@insight</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (CurrentResult.HasVisualization)
+                {
+                    <div class="visualization-section">
+                        <h5>Data Visualization</h5>
+                        @if (CurrentResult.VisualizationType == "Bar")
+                        {
+                            <SfChart Height="350px">
+                                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                <ChartPrimaryYAxis Title="@CurrentResult.YAxisLabel"></ChartPrimaryYAxis>
+                                <ChartSeriesCollection>
+                                    <ChartSeries DataSource="@CurrentResult.ChartData" XName="Category" YName="Value" 
+                                                 Type="ChartSeriesType.Column" Fill="#2196F3">
+                                        <ChartMarker>
+                                            <ChartDataLabel Visible="true" Position="Syncfusion.Blazor.Charts.LabelPosition.Top"></ChartDataLabel>
+                                        </ChartMarker>
+                                    </ChartSeries>
+                                </ChartSeriesCollection>
+                                <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                            </SfChart>
+                        }
+                        else if (CurrentResult.VisualizationType == "Line")
+                        {
+                            <SfChart Height="350px">
+                                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" LabelFormat="MMM dd"></ChartPrimaryXAxis>
+                                <ChartPrimaryYAxis Title="@CurrentResult.YAxisLabel"></ChartPrimaryYAxis>
+                                <ChartSeriesCollection>
+                                    <ChartSeries DataSource="@CurrentResult.TimeSeriesData" XName="Date" YName="Count" 
+                                                 Type="ChartSeriesType.Line" Fill="#4CAF50" Width="3">
+                                        <ChartMarker Visible="true" Height="8" Width="8"></ChartMarker>
+                                    </ChartSeries>
+                                </ChartSeriesCollection>
+                                <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                            </SfChart>
+                        }
+                        else if (CurrentResult.VisualizationType == "Pie")
+                        {
+                            <SfAccumulationChart Height="350px">
+                                <AccumulationChartSeriesCollection>
+                                    <AccumulationChartSeries DataSource="@CurrentResult.ChartData" XName="Category" YName="Value" 
+                                                             InnerRadius="40%">
+                                        <AccumulationDataLabelSettings Visible="true" Name="Category" Position="AccumulationLabelPosition.Outside">
+                                            <AccumulationChartConnector Length="20px" Type="ConnectorType.Curve"></AccumulationChartConnector>
+                                        </AccumulationDataLabelSettings>
+                                    </AccumulationChartSeries>
+                                </AccumulationChartSeriesCollection>
+                                <AccumulationChartLegendSettings Visible="true" Position="LegendPosition.Bottom"></AccumulationChartLegendSettings>
+                            </SfAccumulationChart>
+                        }
+                    </div>
+                }
+
+                <div class="data-grid-section">
+                    <div class="grid-actions">
+                        <h5>Data Results</h5>
+                        <div class="action-buttons">
+                            <SfButton CssClass="e-small e-outline-primary" @onclick="ExportToCsv">
+                                <i class="fas fa-file-csv"></i> Export CSV
+                            </SfButton>
+                            <SfButton CssClass="e-small e-outline-secondary" @onclick="ExportToExcel">
+                                <i class="fas fa-file-excel"></i> Export Excel
+                            </SfButton>
+                        </div>
+                    </div>
+                    <SfGrid DataSource="@CurrentResult.Data" AllowPaging="true" PageSize="15" AllowSorting="true" AllowFiltering="true">
+                        <GridPageSettings PageSize="15"></GridPageSettings>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <GridColumns>
+                            @foreach (var column in CurrentResult.Columns)
+                            {
+                                <GridColumn Field="@column.Field" HeaderText="@column.HeaderText" Width="@column.Width"></GridColumn>
+                            }
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (QueryHistory.Any())
+    {
+        <div class="query-history">
+            <div class="history-header">
+                <h5>Recent Queries</h5>
+                <SfButton CssClass="e-small" @onclick="ClearHistory">
+                    <i class="fas fa-trash"></i> Clear History
+                </SfButton>
+            </div>
+            <div class="history-list">
+                @foreach (var history in QueryHistory.Take(10))
+                {
+                    <div class="history-item" @onclick="() => ReuseQuery(history.Query)">
+                        <div class="history-time">@history.Timestamp.ToString("HH:mm")</div>
+                        <div class="history-query">@history.Query</div>
+                        <div class="history-stats">
+                            <span class="badge bg-primary">@history.RowCount rows</span>
+                            <span class="badge bg-success">@history.ExecutionTime.ToString("F0")ms</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="nlq-capabilities">
+        <h5>Natural Language Query Capabilities</h5>
+        <div class="capabilities-grid">
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h6>Patient Queries</h6>
+                <p>Search, filter, and analyze patient demographics, diagnoses, medications, and visit history</p>
+            </div>
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h6>Lab Results</h6>
+                <p>Query lab values, trends, abnormal results, and compare across patient populations</p>
+            </div>
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <h6>Medication Analytics</h6>
+                <p>Analyze prescriptions, adherence rates, drug interactions, and formulary compliance</p>
+            </div>
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-hospital"></i>
+                </div>
+                <h6>Operational Metrics</h6>
+                <p>Track admissions, length of stay, readmissions, and resource utilization</p>
+            </div>
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h6>Trend Analysis</h6>
+                <p>Identify patterns, compare time periods, and forecast future metrics</p>
+            </div>
+            <div class="capability-item">
+                <div class="capability-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h6>Compliance & Quality</h6>
+                <p>Monitor quality measures, compliance rates, and regulatory reporting</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .n360-natural-language-query {
+        padding: 1rem;
+    }
+
+    .nlq-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .query-interface {
+        margin-bottom: 2rem;
+    }
+
+    .query-input-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .query-input-section .query-input {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .input-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .example-queries-panel {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 2px solid #e0e0e0;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .panel-header h5 {
+        margin: 0;
+    }
+
+    .examples-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1rem;
+    }
+
+    .example-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+
+    .example-card:hover {
+        border-color: #2196F3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
+    }
+
+    .example-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .example-content {
+        flex: 1;
+    }
+
+    .example-category {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .example-text {
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .example-action {
+        color: #2196F3;
+        font-size: 1.2rem;
+    }
+
+    .query-result {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .result-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+    .result-meta {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .interpretation-section {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .interpretation-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+
+    .interpretation-content > div {
+        margin-bottom: 1rem;
+    }
+
+    .natural-query {
+        padding: 0.75rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 4px solid #2196F3;
+    }
+
+    .sql-translation {
+        padding: 0.75rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 4px solid #4CAF50;
+    }
+
+    .sql-translation pre {
+        margin: 0.5rem 0 0 0;
+        background: #263238;
+        color: #aed581;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+    }
+
+    .query-insights {
+        padding: 0.75rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 4px solid #FF9800;
+    }
+
+    .query-insights ul {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1.5rem;
+    }
+
+    .query-insights li {
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .visualization-section {
+        padding: 1.5rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .visualization-section h5 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .data-grid-section {
+        padding: 1.5rem;
+    }
+
+    .grid-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .grid-actions h5 {
+        margin: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .query-history {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .history-header h5 {
+        margin: 0;
+    }
+
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .history-item:hover {
+        background: #e3f2fd;
+        transform: translateX(5px);
+    }
+
+    .history-time {
+        font-size: 0.85rem;
+        color: #999;
+        min-width: 50px;
+    }
+
+    .history-query {
+        flex: 1;
+        color: #333;
+    }
+
+    .history-stats {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .nlq-capabilities {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .nlq-capabilities h5 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .capabilities-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .capability-item {
+        padding: 1.5rem;
+        background: #f9f9f9;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .capability-icon {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .capability-item h6 {
+        margin-bottom: 0.5rem;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .capability-item p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+</style>

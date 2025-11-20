@@ -41,21 +41,30 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.0" />
+    <PackageReference Include="Microsoft.ML" Version="3.0.1" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Charts" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Diagram" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Grid" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Kanban" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="31.2.10" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
+    <PackageReference Include="Syncfusion.Blazor.ProgressBar" Version="29.1.33" />
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.1" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Charts" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Diagram" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.FileManager" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Grid" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Kanban" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="29.1.33" />
     <PackageReference Include="Syncfusion.Blazor.PdfViewer" Version="27.1.58" />
-    <PackageReference Include="Syncfusion.Blazor.Popups" Version="31.2.10" />
-    <PackageReference Include="Syncfusion.Blazor.Schedule" Version="31.2.10" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="29.1.33" />
+    <PackageReference Include="Syncfusion.Blazor.Schedule" Version="29.1.33" />
   </ItemGroup>
 
 </Project>

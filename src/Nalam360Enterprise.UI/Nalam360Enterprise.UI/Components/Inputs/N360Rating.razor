@@ -1,0 +1,180 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Forms
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-rating @CssClass" dir="@(IsRtl ? "rtl" : "ltr")">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-rating__label">
+                @Label
+                @if (IsRequired)
+                {
+                    <span class="n360-rating__required" aria-label="required">*</span>
+                }
+            </label>
+        }
+
+        <SfRating Value="@Value"
+                  ItemsCount="@ItemsCount"
+                  AllowReset="@AllowReset"
+                  Disabled="@(Disabled || !_hasPermission)"
+                  ReadOnly="@ReadOnly"
+                  ShowLabel="@ShowLabel"
+                  LabelPosition="@LabelPosition"
+                  EmptyTemplate="@EmptyTemplate"
+                  FullTemplate="@FullTemplate"
+                  CssClass="@GetInternalCssClass()"
+                  ValueChange="@OnValueChangedHandlerAsync">
+        </SfRating>
+
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <small class="n360-rating__help-text">@HelpText</small>
+        }
+
+        @if (ValidationErrors?.Any() == true)
+        {
+            <div class="n360-rating__validation">
+                @foreach (var error in ValidationErrors)
+                {
+                    <span class="n360-rating__error">@error</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    [Parameter] public int ItemsCount { get; set; } = 5;
+    [Parameter] public bool AllowReset { get; set; } = true;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool IsRequired { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool ShowLabel { get; set; }
+    [Parameter] public Syncfusion.Blazor.Inputs.LabelPosition LabelPosition { get; set; } = Syncfusion.Blazor.Inputs.LabelPosition.Right;
+    [Parameter] public RenderFragment<Syncfusion.Blazor.Inputs.RatingItemContext>? EmptyTemplate { get; set; }
+    [Parameter] public RenderFragment<Syncfusion.Blazor.Inputs.RatingItemContext>? FullTemplate { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    [Parameter] public string? AuditAction { get; set; }
+
+    // Validation
+    [Parameter] public List<IValidationRule<double?>>? ValidationRules { get; set; }
+    [Parameter] public List<string>? ValidationErrors { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<double> OnChange { get; set; }
+
+    private bool _hasPermission = true;
+    private double _previousValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        _previousValue = Value;
+    }
+
+    private async Task OnValueChangedHandlerAsync(double newValue)
+    {
+        var oldValue = _previousValue;
+
+        // Validation
+        if (ValidationRules?.Any() == true)
+        {
+            ValidationErrors = new List<string>();
+            foreach (var rule in ValidationRules)
+            {
+                var result = await rule.ValidateAsync(newValue);
+                if (!result.IsValid)
+                {
+                    ValidationErrors.AddRange(result.Errors.Select(e => e.Message));
+                    return;
+                }
+            }
+        }
+
+        // Audit
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource ?? "Rating",
+                Action = AuditAction ?? "Changed",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["OldValue"] = oldValue.ToString(),
+                    ["NewValue"] = newValue.ToString()
+                }
+            });
+        }
+
+        _previousValue = newValue;
+
+        // Trigger change event
+        await OnChange.InvokeAsync(newValue);
+    }
+
+    private string GetInternalCssClass()
+    {
+        var classes = new List<string> { "n360-rating__control" };
+        
+        if (!string.IsNullOrEmpty(InternalCssClass))
+        {
+            classes.Add(InternalCssClass);
+        }
+
+        if (ValidationErrors?.Any() == true)
+        {
+            classes.Add("n360-rating__control--error");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRequired)
+        {
+            attributes["aria-required"] = "true";
+        }
+
+        if (Disabled || !_hasPermission)
+        {
+            attributes["aria-disabled"] = "true";
+        }
+
+        if (ValidationErrors?.Any() == true)
+        {
+            attributes["aria-invalid"] = "true";
+        }
+
+        return attributes;
+    }
+}

@@ -22,4 +22,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nalam360.Platform.Core\Nalam360.Platform.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nalam360.Platform.Domain\Nalam360.Platform.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Nalam360.Platform.Security\Nalam360.Platform.Security.csproj" />
+    <ProjectReference Include="..\..\src\Nalam360.Platform.Caching\Nalam360.Platform.Caching.csproj" />
+  </ItemGroup>
+
 </Project>

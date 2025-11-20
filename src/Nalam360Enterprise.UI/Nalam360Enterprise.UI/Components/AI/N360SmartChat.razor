@@ -1,0 +1,60 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-smart-chat @CssClass" style="@Style" @attributes="GetHtmlAttributes()">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <div class="n360-smart-chat__header">
+            <h3>@Title</h3>
+            @if (ShowAIIndicator)
+            {
+                <span class="n360-smart-chat__ai-badge">🤖 AI-Powered</span>
+            }
+        </div>
+    }
+
+    <div class="n360-smart-chat__messages">
+        @foreach (var msg in InternalMessages)
+        {
+            <div class="n360-smart-chat__message @(msg.Author?.Id == CurrentUser?.Id ? "own" : "other")">
+                <div class="n360-smart-chat__message-avatar">@(msg.Author?.AvatarUrl ?? "👤")</div>
+                <div class="n360-smart-chat__message-content">
+                    <div class="n360-smart-chat__message-author">@msg.Author?.Name</div>
+                    <div class="n360-smart-chat__message-text">@msg.Text</div>
+                    <div class="n360-smart-chat__message-time">@msg.TimeStamp.ToString("t")</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="n360-smart-chat__input">
+        <input type="text" 
+               class="n360-input" 
+               placeholder="@Placeholder" 
+               @bind="_currentMessage"
+               @onkeydown="OnKeyDown" />
+        <button class="n360-btn n360-btn--primary" @onclick="SendMessageAsync">Send</button>
+    </div>
+
+    @if (ShowSmartSuggestions && SmartSuggestions?.Any() == true)
+    {
+        <div class="n360-smart-chat__suggestions">
+            <strong>Suggestions:</strong>
+            @foreach (var suggestion in SmartSuggestions)
+            {
+                <button class="n360-btn n360-btn--sm n360-btn--outline" 
+                        @onclick="() => ApplySuggestion(suggestion)">
+                    @suggestion
+                </button>
+            }
+        </div>
+    }
+
+    @if (ShowSentimentIndicator && !string.IsNullOrEmpty(CurrentSentiment))
+    {
+        <div class="n360-smart-chat__sentiment">
+            <span>@GetSentimentIcon() Detected Sentiment: @CurrentSentiment</span>
+        </div>
+    }
+</div>

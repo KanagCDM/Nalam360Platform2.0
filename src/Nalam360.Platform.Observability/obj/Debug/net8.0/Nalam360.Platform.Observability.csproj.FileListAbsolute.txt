@@ -1,0 +1,15 @@
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.deps.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\bin\Debug\net8.0\Nalam360.Platform.Observability.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.csproj.AssemblyReference.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.GeneratedMSBuildEditorConfig.editorconfig
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.AssemblyInfoInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.AssemblyInfo.cs
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.csproj.CoreCompileInputs.cache
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.sourcelink.json
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\refint\Nalam360.Platform.Observability.dll
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.xml
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\Nalam360.Platform.Observability.pdb
+D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Observability\obj\Debug\net8.0\ref\Nalam360.Platform.Observability.dll

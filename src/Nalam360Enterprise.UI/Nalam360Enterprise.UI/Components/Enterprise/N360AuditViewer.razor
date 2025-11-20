@@ -1,0 +1,619 @@
+@using Microsoft.AspNetCore.Components
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Components.Enterprise
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Calendars
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-audit-viewer @CssClass" style="@Style">
+    @if (_hasPermission)
+    {
+        <div class="audit-viewer-header">
+            <div class="header-left">
+                <h3 class="audit-title">
+                    <span class="title-icon">📋</span>
+                    @Title
+                </h3>
+                @if (!string.IsNullOrEmpty(Description))
+                {
+                    <p class="audit-description">@Description</p>
+                }
+            </div>
+            <div class="header-right">
+                @if (ShowDateRange)
+                {
+                    <SfDateRangePicker TValue="DateTime?"
+                                       @bind-StartDate="@_startDate"
+                                       @bind-EndDate="@_endDate"
+                                       Placeholder="Select Date Range"
+                                       CssClass="date-range-picker"
+                                       Format="MMM dd, yyyy">
+                    </SfDateRangePicker>
+                }
+
+                @if (ShowResourceFilter)
+                {
+                    <SfDropDownList TValue="string"
+                                    TItem="string"
+                                    @bind-Value="@_selectedResource"
+                                    DataSource="@_availableResources"
+                                    Placeholder="All Resources"
+                                    CssClass="resource-filter">
+                    </SfDropDownList>
+                }
+
+                @if (ShowActionFilter)
+                {
+                    <SfDropDownList TValue="string"
+                                    TItem="string"
+                                    @bind-Value="@_selectedAction"
+                                    DataSource="@_availableActions"
+                                    Placeholder="All Actions"
+                                    CssClass="action-filter">
+                    </SfDropDownList>
+                }
+
+                @if (ShowUserFilter)
+                {
+                    <SfTextBox @bind-Value="@_userFilter"
+                               Placeholder="Filter by User"
+                               CssClass="user-filter">
+                    </SfTextBox>
+                }
+
+                <SfButton CssClass="btn-refresh" OnClick="@OnRefresh" IconCss="e-icons e-refresh" IsPrimary="true">
+                    Refresh
+                </SfButton>
+
+                @if (ShowExport)
+                {
+                    <SfButton CssClass="btn-export" OnClick="@OnExport" IconCss="e-icons e-export">
+                        Export
+                    </SfButton>
+                }
+            </div>
+        </div>
+
+        <div class="audit-viewer-tabs">
+            <button class="tab-button @(_viewMode == "timeline" ? "active" : "")" @onclick="@(() => SetViewMode("timeline"))">
+                <span class="tab-icon">📅</span> Timeline View
+            </button>
+            <button class="tab-button @(_viewMode == "list" ? "active" : "")" @onclick="@(() => SetViewMode("list"))">
+                <span class="tab-icon">📄</span> List View
+            </button>
+            <button class="tab-button @(_viewMode == "grouped" ? "active" : "")" @onclick="@(() => SetViewMode("grouped"))">
+                <span class="tab-icon">📊</span> Grouped View
+            </button>
+        </div>
+
+        <div class="audit-viewer-content">
+            @if (!_filteredAudits.Any())
+            {
+                <div class="empty-state">
+                    <span class="empty-icon">📭</span>
+                    <p class="empty-message">@EmptyMessage</p>
+                </div>
+            }
+            else
+            {
+                @if (_viewMode == "timeline")
+                {
+                    <div class="timeline-view">
+                        @foreach (var group in GetGroupedByDate())
+                        {
+                            <div class="timeline-date-group">
+                                <div class="date-header">
+                                    <span class="date-label">@group.Key.ToString("MMMM dd, yyyy")</span>
+                                    <span class="date-count">@group.Count() event(s)</span>
+                                </div>
+                                <div class="timeline-items">
+                                    @foreach (var audit in group)
+                                    {
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker @GetActionClass(audit.Action)"></div>
+                                            <div class="timeline-content">
+                                                <div class="audit-header">
+                                                    <span class="audit-time">@audit.Timestamp.ToString("HH:mm:ss")</span>
+                                                    <span class="audit-action @GetActionClass(audit.Action)">
+                                                        @GetActionIcon(audit.Action) @audit.Action
+                                                    </span>
+                                                    <span class="audit-resource">@audit.Resource</span>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(audit.UserId))
+                                                {
+                                                    <div class="audit-user">
+                                                        <span class="user-icon">👤</span>
+                                                        <span class="user-name">@(audit.UserName ?? audit.UserId)</span>
+                                                    </div>
+                                                }
+                                                @if (audit.AdditionalData != null && audit.AdditionalData.Any())
+                                                {
+                                                    <div class="audit-details">
+                                                        <button class="btn-toggle-details" @onclick="@(() => ToggleDetails(audit.Id))">
+                                                            @(_expandedItems.Contains(audit.Id) ? "▼" : "▶") Details
+                                                        </button>
+                                                        @if (_expandedItems.Contains(audit.Id))
+                                                        {
+                                                            <div class="details-content">
+                                                                @foreach (var kvp in audit.AdditionalData)
+                                                                {
+                                                                    <div class="detail-item">
+                                                                        <span class="detail-key">@kvp.Key:</span>
+                                                                        <span class="detail-value">@kvp.Value</span>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                @if (AuditItemTemplate != null)
+                                                {
+                                                    <div class="custom-content">
+                                                        @AuditItemTemplate(audit)
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (_viewMode == "list")
+                {
+                    <div class="list-view">
+                        <div class="list-header">
+                            <div class="list-col col-timestamp">Timestamp</div>
+                            <div class="list-col col-action">Action</div>
+                            <div class="list-col col-resource">Resource</div>
+                            <div class="list-col col-user">User</div>
+                            <div class="list-col col-actions">Actions</div>
+                        </div>
+                        <div class="list-body">
+                            @foreach (var audit in _filteredAudits.Take(PageSize))
+                            {
+                                <div class="list-row">
+                                    <div class="list-col col-timestamp">
+                                        <span class="timestamp-date">@audit.Timestamp.ToString("MMM dd, yyyy")</span>
+                                        <span class="timestamp-time">@audit.Timestamp.ToString("HH:mm:ss")</span>
+                                    </div>
+                                    <div class="list-col col-action">
+                                        <span class="action-badge @GetActionClass(audit.Action)">
+                                            @GetActionIcon(audit.Action) @audit.Action
+                                        </span>
+                                    </div>
+                                    <div class="list-col col-resource">@audit.Resource</div>
+                                    <div class="list-col col-user">
+                                        @if (!string.IsNullOrEmpty(audit.UserId))
+                                        {
+                                            <span class="user-info">
+                                                <span class="user-icon">👤</span>
+                                                @(audit.UserName ?? audit.UserId)
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="list-col col-actions">
+                                        <button class="btn-view-details" @onclick="@(() => OnViewDetails(audit))">
+                                            View
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_viewMode == "grouped")
+                {
+                    <div class="grouped-view">
+                        @foreach (var group in GetGroupedByResource())
+                        {
+                            <div class="resource-group">
+                                <div class="group-header" @onclick="@(() => ToggleResourceGroup(group.Key))">
+                                    <span class="group-toggle">@(_expandedGroups.Contains(group.Key) ? "▼" : "▶")</span>
+                                    <span class="group-title">@group.Key</span>
+                                    <span class="group-count">@group.Count() event(s)</span>
+                                </div>
+                                @if (_expandedGroups.Contains(group.Key))
+                                {
+                                    <div class="group-content">
+                                        @foreach (var audit in group)
+                                        {
+                                            <div class="grouped-item">
+                                                <div class="item-header">
+                                                    <span class="item-time">@audit.Timestamp.ToString("MMM dd, yyyy HH:mm:ss")</span>
+                                                    <span class="item-action @GetActionClass(audit.Action)">
+                                                        @GetActionIcon(audit.Action) @audit.Action
+                                                    </span>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(audit.UserId))
+                                                {
+                                                    <div class="item-user">
+                                                        <span class="user-icon">👤</span>
+                                                        @(audit.UserName ?? audit.UserId)
+                                                    </div>
+                                                }
+                                                @if (audit.AdditionalData != null && audit.AdditionalData.Any())
+                                                {
+                                                    <div class="item-summary">
+                                                        @string.Join(", ", audit.AdditionalData.Take(3).Select(kvp => $"{kvp.Key}: {kvp.Value}"))
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (ShowPagination && _filteredAudits.Count() > PageSize)
+                {
+                    <div class="pagination-container">
+                        <button class="pagination-btn" @onclick="@OnPreviousPage" disabled="@(_currentPage == 1)">
+                            Previous
+                        </button>
+                        <span class="pagination-info">
+                            Showing @((_currentPage - 1) * PageSize + 1) - @Math.Min(_currentPage * PageSize, _filteredAudits.Count()) of @_filteredAudits.Count()
+                        </span>
+                        <button class="pagination-btn" @onclick="@OnNextPage" disabled="@(_currentPage >= TotalPages)">
+                            Next
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+
+        @if (ShowStatistics)
+        {
+            <div class="audit-statistics">
+                <div class="stat-group">
+                    <span class="stat-label">Total Events:</span>
+                    <span class="stat-value">@_filteredAudits.Count()</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Unique Resources:</span>
+                    <span class="stat-value">@_filteredAudits.Select(a => a.Resource).Distinct().Count()</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Unique Users:</span>
+                    <span class="stat-value">@_filteredAudits.Where(a => !string.IsNullOrEmpty(a.UserId)).Select(a => a.UserId).Distinct().Count()</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Date Range:</span>
+                    <span class="stat-value">
+                        @if (_filteredAudits.Any())
+                        {
+                            @($"{_filteredAudits.Min(a => a.Timestamp):MMM dd} - {_filteredAudits.Max(a => a.Timestamp):MMM dd}")
+                        }
+                    </span>
+                </div>
+            </div>
+        }
+
+        @if (_showDetailsDialog && _selectedAudit != null)
+        {
+            <div class="modal-overlay" @onclick="@(() => _showDetailsDialog = false)">
+                <div class="modal-dialog" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h4>Audit Event Details</h4>
+                        <button class="close-btn" @onclick="@(() => _showDetailsDialog = false)">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-group">
+                            <label>Action:</label>
+                            <span class="action-badge @GetActionClass(_selectedAudit.Action)">
+                                @GetActionIcon(_selectedAudit.Action) @_selectedAudit.Action
+                            </span>
+                        </div>
+                        <div class="detail-group">
+                            <label>Resource:</label>
+                            <span>@_selectedAudit.Resource</span>
+                        </div>
+                        <div class="detail-group">
+                            <label>Timestamp:</label>
+                            <span>@_selectedAudit.Timestamp.ToString("MMMM dd, yyyy HH:mm:ss")</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_selectedAudit.UserId))
+                        {
+                            <div class="detail-group">
+                                <label>User:</label>
+                                <span>@(_selectedAudit.UserName ?? _selectedAudit.UserId) (@_selectedAudit.UserId)</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_selectedAudit.IpAddress))
+                        {
+                            <div class="detail-group">
+                                <label>IP Address:</label>
+                                <span>@_selectedAudit.IpAddress</span>
+                            </div>
+                        }
+                        @if (_selectedAudit.AdditionalData != null && _selectedAudit.AdditionalData.Any())
+                        {
+                            <div class="detail-group full-width">
+                                <label>Additional Data:</label>
+                                <div class="data-table">
+                                    @foreach (var kvp in _selectedAudit.AdditionalData)
+                                    {
+                                        <div class="data-row">
+                                            <span class="data-key">@kvp.Key</span>
+                                            <span class="data-value">@kvp.Value</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <SfButton OnClick="@(() => _showDetailsDialog = false)">Close</SfButton>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @if (!HideIfNoPermission)
+        {
+            <div class="no-permission-message">
+                You do not have permission to view audit logs.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    // Permissions
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+
+    // Display Configuration
+    [Parameter] public string Title { get; set; } = "Audit Log";
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+    [Parameter] public string EmptyMessage { get; set; } = "No audit events to display";
+
+    // Data
+    [Parameter] public List<AuditEntry> AuditEntries { get; set; } = new();
+    [Parameter] public EventCallback<List<AuditEntry>> AuditEntriesChanged { get; set; }
+
+    // Feature Toggles
+    [Parameter] public bool ShowDateRange { get; set; } = true;
+    [Parameter] public bool ShowResourceFilter { get; set; } = true;
+    [Parameter] public bool ShowActionFilter { get; set; } = true;
+    [Parameter] public bool ShowUserFilter { get; set; } = true;
+    [Parameter] public bool ShowExport { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = true;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public int PageSize { get; set; } = 50;
+
+    // Templates
+    [Parameter] public RenderFragment<AuditEntry>? AuditItemTemplate { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnRefreshClicked { get; set; }
+    [Parameter] public EventCallback<string> OnExportClicked { get; set; }
+    [Parameter] public EventCallback<AuditEntry> OnAuditSelected { get; set; }
+
+    private bool _hasPermission = true;
+    private List<AuditEntry> _filteredAudits = new();
+    private string _viewMode = "timeline";
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private string? _selectedResource;
+    private string? _selectedAction;
+    private string _userFilter = string.Empty;
+    private List<string> _availableResources = new();
+    private List<string> _availableActions = new();
+    private HashSet<string> _expandedItems = new();
+    private HashSet<string> _expandedGroups = new();
+    private int _currentPage = 1;
+    private bool _showDetailsDialog = false;
+    private AuditEntry? _selectedAudit;
+
+    private int TotalPages => (int)Math.Ceiling((double)_filteredAudits.Count() / PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permissions
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        // Set default date range (last 7 days)
+        _endDate = DateTime.Now;
+        _startDate = DateTime.Now.AddDays(-7);
+
+        await LoadAudits();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAudits();
+    }
+
+    private async Task LoadAudits()
+    {
+        _filteredAudits = AuditEntries.ToList();
+
+        // Extract unique resources and actions
+        _availableResources = _filteredAudits.Select(a => a.Resource).Distinct().OrderBy(r => r).ToList();
+        _availableResources.Insert(0, "All Resources");
+        
+        _availableActions = _filteredAudits.Select(a => a.Action).Distinct().OrderBy(a => a).ToList();
+        _availableActions.Insert(0, "All Actions");
+
+        ApplyFilters();
+        await Task.CompletedTask;
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredAudits = AuditEntries.ToList();
+
+        // Date range filter
+        if (_startDate.HasValue)
+        {
+            _filteredAudits = _filteredAudits.Where(a => a.Timestamp >= _startDate.Value).ToList();
+        }
+        if (_endDate.HasValue)
+        {
+            _filteredAudits = _filteredAudits.Where(a => a.Timestamp <= _endDate.Value.AddDays(1)).ToList();
+        }
+
+        // Resource filter
+        if (!string.IsNullOrEmpty(_selectedResource) && _selectedResource != "All Resources")
+        {
+            _filteredAudits = _filteredAudits.Where(a => a.Resource == _selectedResource).ToList();
+        }
+
+        // Action filter
+        if (!string.IsNullOrEmpty(_selectedAction) && _selectedAction != "All Actions")
+        {
+            _filteredAudits = _filteredAudits.Where(a => a.Action == _selectedAction).ToList();
+        }
+
+        // User filter
+        if (!string.IsNullOrEmpty(_userFilter))
+        {
+            _filteredAudits = _filteredAudits.Where(a => 
+                (a.UserId?.Contains(_userFilter, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.UserName?.Contains(_userFilter, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+        }
+
+        // Sort by timestamp descending
+        _filteredAudits = _filteredAudits.OrderByDescending(a => a.Timestamp).ToList();
+
+        _currentPage = 1;
+    }
+
+    private void SetViewMode(string mode)
+    {
+        _viewMode = mode;
+        if (mode == "grouped")
+        {
+            // Auto-expand first group
+            var firstResource = GetGroupedByResource().FirstOrDefault()?.Key;
+            if (firstResource != null)
+            {
+                _expandedGroups.Add(firstResource);
+            }
+        }
+    }
+
+    private IEnumerable<IGrouping<DateTime, AuditEntry>> GetGroupedByDate()
+    {
+        return _filteredAudits.GroupBy(a => a.Timestamp.Date).OrderByDescending(g => g.Key);
+    }
+
+    private IEnumerable<IGrouping<string, AuditEntry>> GetGroupedByResource()
+    {
+        return _filteredAudits.GroupBy(a => a.Resource).OrderBy(g => g.Key);
+    }
+
+    private void ToggleDetails(string id)
+    {
+        if (_expandedItems.Contains(id))
+        {
+            _expandedItems.Remove(id);
+        }
+        else
+        {
+            _expandedItems.Add(id);
+        }
+    }
+
+    private void ToggleResourceGroup(string resource)
+    {
+        if (_expandedGroups.Contains(resource))
+        {
+            _expandedGroups.Remove(resource);
+        }
+        else
+        {
+            _expandedGroups.Add(resource);
+        }
+    }
+
+    private string GetActionClass(string action)
+    {
+        return action.ToLower() switch
+        {
+            var a when a.Contains("create") || a.Contains("add") => "action-create",
+            var a when a.Contains("update") || a.Contains("edit") || a.Contains("modify") => "action-update",
+            var a when a.Contains("delete") || a.Contains("remove") => "action-delete",
+            var a when a.Contains("view") || a.Contains("read") || a.Contains("get") => "action-view",
+            var a when a.Contains("login") || a.Contains("logout") => "action-auth",
+            var a when a.Contains("error") || a.Contains("fail") => "action-error",
+            _ => "action-default"
+        };
+    }
+
+    private string GetActionIcon(string action)
+    {
+        return action.ToLower() switch
+        {
+            var a when a.Contains("create") || a.Contains("add") => "➕",
+            var a when a.Contains("update") || a.Contains("edit") || a.Contains("modify") => "✏️",
+            var a when a.Contains("delete") || a.Contains("remove") => "🗑️",
+            var a when a.Contains("view") || a.Contains("read") || a.Contains("get") => "👁️",
+            var a when a.Contains("login") => "🔐",
+            var a when a.Contains("logout") => "🚪",
+            var a when a.Contains("error") || a.Contains("fail") => "❌",
+            _ => "📝"
+        };
+    }
+
+    private async Task OnRefresh()
+    {
+        ApplyFilters();
+        await OnRefreshClicked.InvokeAsync();
+    }
+
+    private async Task OnExport()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(_filteredAudits, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        await OnExportClicked.InvokeAsync(json);
+    }
+
+    private async Task OnViewDetails(AuditEntry audit)
+    {
+        _selectedAudit = audit;
+        _showDetailsDialog = true;
+        await OnAuditSelected.InvokeAsync(audit);
+    }
+
+    private async Task OnPreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task OnNextPage()
+    {
+        if (_currentPage < TotalPages)
+        {
+            _currentPage++;
+        }
+        await Task.CompletedTask;
+    }
+
+    public async Task RefreshData()
+    {
+        await LoadAudits();
+        StateHasChanged();
+    }
+}

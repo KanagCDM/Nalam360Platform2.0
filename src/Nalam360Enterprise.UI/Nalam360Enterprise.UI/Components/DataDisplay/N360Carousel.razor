@@ -1,0 +1,232 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetCarouselClass()" style="@Style" @attributes="GetHtmlAttributes()">
+        <div class="n360-carousel__container">
+            <div class="n360-carousel__track" style="@GetTrackStyle()">
+                @if (ItemTemplate != null && Items != null)
+                {
+                    @for (int i = 0; i < Items.Count; i++)
+                    {
+                        var index = i;
+                        <div class="n360-carousel__item @(index == _currentIndex ? "n360-carousel__item--active" : "")"
+                             style="@GetItemStyle()">
+                            @ItemTemplate(Items[index])
+                        </div>
+                    }
+                }
+                else if (ChildContent != null)
+                {
+                    @ChildContent
+                }
+            </div>
+        </div>
+        
+        @if (ShowArrows && (_itemCount > 1))
+        {
+            <button type="button" 
+                    class="n360-carousel__arrow n360-carousel__arrow--prev"
+                    @onclick="PreviousAsync"
+                    disabled="@(_currentIndex == 0 && !Infinite)">
+                <span>‹</span>
+            </button>
+            <button type="button" 
+                    class="n360-carousel__arrow n360-carousel__arrow--next"
+                    @onclick="NextAsync"
+                    disabled="@(_currentIndex == _itemCount - 1 && !Infinite)">
+                <span>›</span>
+            </button>
+        }
+        
+        @if (ShowDots && (_itemCount > 1))
+        {
+            <div class="n360-carousel__dots">
+                @for (int i = 0; i < _itemCount; i++)
+                {
+                    var index = i;
+                    <button type="button"
+                            class="n360-carousel__dot @(index == _currentIndex ? "n360-carousel__dot--active" : "")"
+                            @onclick="() => GoToAsync(index)">
+                    </button>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<TItem>? Items { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public int CurrentIndex { get; set; }
+    [Parameter] public EventCallback<int> CurrentIndexChanged { get; set; }
+    [Parameter] public bool Autoplay { get; set; }
+    [Parameter] public int AutoplaySpeed { get; set; } = 3000;
+    [Parameter] public bool Infinite { get; set; } = true;
+    [Parameter] public bool ShowArrows { get; set; } = true;
+    [Parameter] public bool ShowDots { get; set; } = true;
+    [Parameter] public CarouselEffect Effect { get; set; } = CarouselEffect.Slide;
+    [Parameter] public int SlidesToShow { get; set; } = 1;
+    [Parameter] public bool Swipeable { get; set; } = true;
+    
+    // Events
+    [Parameter] public EventCallback<int> OnChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private int _currentIndex;
+    private int _itemCount;
+    private Timer? _autoplayTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _currentIndex = CurrentIndex;
+        _itemCount = Items?.Count ?? 0;
+        
+        if (Autoplay)
+        {
+            StartAutoplay();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _itemCount = Items?.Count ?? 0;
+    }
+
+    private void StartAutoplay()
+    {
+        _autoplayTimer = new Timer(async _ =>
+        {
+            await NextAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, AutoplaySpeed, AutoplaySpeed);
+    }
+
+    private void StopAutoplay()
+    {
+        _autoplayTimer?.Dispose();
+        _autoplayTimer = null;
+    }
+
+    public async Task NextAsync()
+    {
+        var nextIndex = _currentIndex + 1;
+        
+        if (nextIndex >= _itemCount)
+        {
+            nextIndex = Infinite ? 0 : _itemCount - 1;
+        }
+        
+        await GoToAsync(nextIndex);
+    }
+
+    public async Task PreviousAsync()
+    {
+        var prevIndex = _currentIndex - 1;
+        
+        if (prevIndex < 0)
+        {
+            prevIndex = Infinite ? _itemCount - 1 : 0;
+        }
+        
+        await GoToAsync(prevIndex);
+    }
+
+    public async Task GoToAsync(int index)
+    {
+        if (index < 0 || index >= _itemCount) return;
+        
+        _currentIndex = index;
+        CurrentIndex = index;
+        
+        await CurrentIndexChanged.InvokeAsync(index);
+        await OnChange.InvokeAsync(index);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "CarouselChange",
+                Resource = AuditResource ?? "Carousel",
+                AdditionalData = new Dictionary<string, object> {
+                    { "Index", index }
+                }
+            });
+        }
+    }
+
+    private string GetCarouselClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-carousel",
+            $"n360-carousel--{Effect.ToString().ToLower()}"
+        };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetTrackStyle()
+    {
+        if (Effect == CarouselEffect.Fade)
+        {
+            return "display: flex; position: relative;";
+        }
+        
+        var translateX = -(_currentIndex * (100.0 / SlidesToShow));
+        return $"transform: translateX({translateX}%); transition: transform 0.3s ease-in-out; display: flex;";
+    }
+
+    private string GetItemStyle()
+    {
+        return $"flex: 0 0 {100.0 / SlidesToShow}%; min-width: 0;";
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        attributes["role"] = "region";
+        attributes["aria-label"] = "Carousel";
+
+        return attributes;
+    }
+
+    public void Dispose()
+    {
+        StopAutoplay();
+    }
+}

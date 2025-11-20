@@ -1,0 +1,385 @@
+@page "/components"
+@inject NavigationManager Navigation
+
+<PageTitle>Components - Nalam360 Enterprise UI</PageTitle>
+
+<div class="components-page">
+    <div class="page-header">
+        <h1>Components</h1>
+        <p>Browse all 144+ production-ready components</p>
+        
+        <div class="search-box">
+            <input type="text" 
+                   placeholder="Search components..." 
+                   @bind="searchQuery" 
+                   @bind:event="oninput"
+                   class="search-input" />
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab @(selectedCategory == "all" ? "active" : "")" 
+                    @onclick='() => SetCategory("all")'>
+                All Components
+            </button>
+            <button class="filter-tab @(selectedCategory == "input" ? "active" : "")" 
+                    @onclick='() => SetCategory("input")'>
+                Input (27)
+            </button>
+            <button class="filter-tab @(selectedCategory == "data" ? "active" : "")" 
+                    @onclick='() => SetCategory("data")'>
+                Data (15)
+            </button>
+            <button class="filter-tab @(selectedCategory == "charts" ? "active" : "")" 
+                    @onclick='() => SetCategory("charts")'>
+                Charts (8)
+            </button>
+            <button class="filter-tab @(selectedCategory == "healthcare" ? "active" : "")" 
+                    @onclick='() => SetCategory("healthcare")'>
+                Healthcare (26)
+            </button>
+            <button class="filter-tab @(selectedCategory == "ai" ? "active" : "")" 
+                    @onclick='() => SetCategory("ai")'>
+                AI-Powered (18)
+            </button>
+        </div>
+    </div>
+
+    <div class="components-grid">
+        @foreach (var component in FilteredComponents)
+        {
+            <a href="/components/@component.Name" class="component-card">
+                <div class="component-icon">@component.Icon</div>
+                <h3>@component.Name</h3>
+                <p>@component.Description</p>
+                <div class="component-badges">
+                    <span class="badge">@component.Category</span>
+                    @if (component.IsNew)
+                    {
+                        <span class="badge badge-new">New</span>
+                    }
+                    @if (component.IsAIPowered)
+                    {
+                        <span class="badge badge-ai">AI</span>
+                    }
+                </div>
+            </a>
+        }
+    </div>
+</div>
+
+@code {
+    private string searchQuery = string.Empty;
+    private string selectedCategory = "all";
+
+    private List<ComponentInfo> AllComponents => new()
+    {
+        // Input Components (27)
+        new("N360Button", "input", "Flexible button with multiple variants and states", "🔘", true),
+        new("N360TextBox", "input", "Text input with validation and formatting", "📝"),
+        new("N360NumericTextBox", "input", "Numeric input with formatting and validation", "🔢"),
+        new("N360DatePicker", "input", "Date selection with calendar popup", "📅"),
+        new("N360TimePicker", "input", "Time selection component", "🕐"),
+        new("N360DateTimePicker", "input", "Combined date and time picker", "📆"),
+        new("N360DropDownList", "input", "Dropdown selection component", "▼"),
+        new("N360ComboBox", "input", "Autocomplete combo box", "📋"),
+        new("N360MultiSelect", "input", "Multiple selection dropdown", "☑️"),
+        new("N360AutoComplete", "input", "Auto-complete text input", "🔍"),
+        new("N360CheckBox", "input", "Checkbox input component", "✓"),
+        new("N360RadioButton", "input", "Radio button selection", "◉"),
+        new("N360Switch", "input", "Toggle switch component", "🔄"),
+        new("N360Slider", "input", "Range slider input", "📏"),
+        new("N360ColorPicker", "input", "Color selection component", "🎨"),
+        new("N360FileUpload", "input", "File upload with drag and drop", "📤"),
+        new("N360Rating", "input", "Star rating component", "⭐"),
+        new("N360SignaturePad", "input", "Digital signature capture", "✍️"),
+        new("N360MaskedTextBox", "input", "Masked input with format", "🎭"),
+        new("N360RichTextEditor", "input", "WYSIWYG text editor", "📄"),
+        new("N360MarkdownEditor", "input", "Markdown text editor", "📝"),
+        new("N360CodeEditor", "input", "Syntax-highlighted code editor", "💻"),
+        new("N360ChipList", "input", "Chip/tag selection component", "🏷️"),
+        new("N360ButtonGroup", "input", "Grouped buttons", "▦"),
+        new("N360FAB", "input", "Floating action button", "⊕"),
+        new("N360ToggleButton", "input", "Toggle button component", "⏯️"),
+        new("N360SearchBox", "input", "Search input with suggestions", "🔎"),
+
+        // Data Display Components (15)
+        new("N360Grid", "data", "Advanced data grid with server-side features", "📊"),
+        new("N360TreeGrid", "data", "Hierarchical tree grid", "🌳"),
+        new("N360Pivot", "data", "Pivot table component", "◫"),
+        new("N360ListView", "data", "List view with templates", "📃"),
+        new("N360DataTable", "data", "Enterprise data table", "📋"),
+        new("N360VirtualScroll", "data", "Virtual scrolling list", "⬇️"),
+        new("N360Timeline", "data", "Timeline visualization", "📈"),
+        new("N360Gantt", "data", "Gantt chart component", "📊"),
+        new("N360TreeView", "data", "Tree navigation component", "🌲"),
+        new("N360Spreadsheet", "data", "Excel-like spreadsheet", "📊"),
+        new("N360QueryBuilder", "data", "Visual query builder", "🔍"),
+        new("N360FileManager", "data", "File browser and manager", "📁"),
+        new("N360Badge", "data", "Badge/label component", "🏷️"),
+        new("N360Chip", "data", "Chip display component", "🎫"),
+        new("N360Avatar", "data", "User avatar component", "👤"),
+
+        // Charts & Visualizations (8)
+        new("N360Chart", "charts", "Multi-type charting component", "📈"),
+        new("N360Dashboard", "charts", "Dashboard layout component", "📊"),
+        new("N360KPI", "charts", "KPI display widget", "📊", true),
+        new("N360Gauge", "charts", "Circular gauge component", "⏲️"),
+        new("N360Heatmap", "charts", "Data heatmap visualization", "🔥"),
+        new("N360DiagramEditor", "charts", "Diagram creation tool", "🔷"),
+        new("N360Sparkline", "charts", "Inline sparkline charts", "📉"),
+        new("N360BulletChart", "charts", "Bullet chart component", "▶️"),
+
+        // Healthcare Components (26)
+        new("N360PatientCard", "healthcare", "Patient information card", "🏥"),
+        new("N360VitalSignsInput", "healthcare", "Vital signs data entry", "💓"),
+        new("N360AppointmentScheduler", "healthcare", "Medical appointment scheduling", "📅"),
+        new("N360MedicalHistory", "healthcare", "Patient medical history viewer", "📋"),
+        new("N360PrescriptionWriter", "healthcare", "Electronic prescription form", "💊"),
+        new("N360LabResults", "healthcare", "Laboratory results display", "🔬"),
+        new("N360RadiologyViewer", "healthcare", "Medical imaging viewer", "🖼️"),
+        new("N360DiagnosisCodePicker", "healthcare", "ICD-10 code selector", "🏷️"),
+        new("N360DrugInteractionChecker", "healthcare", "Medication interaction validator", "⚠️"),
+        new("N360TreatmentPlan", "healthcare", "Treatment plan manager", "📝"),
+        new("N360ClinicalNotes", "healthcare", "Clinical notes editor", "📄"),
+        new("N360Immunization", "healthcare", "Vaccination record tracker", "💉"),
+        new("N360AllergyTracker", "healthcare", "Patient allergy management", "🚫"),
+        new("N360BedManagement", "healthcare", "Hospital bed allocation", "🛏️"),
+        new("N360SurgeryScheduler", "healthcare", "Operating room scheduler", "⚕️"),
+        new("N360EmergencyTriage", "healthcare", "ER triage assessment", "🚨"),
+        new("N360DischargeInstructions", "healthcare", "Patient discharge forms", "📋"),
+        new("N360ConsentForm", "healthcare", "Medical consent management", "✍️"),
+        new("N360InsuranceVerification", "healthcare", "Insurance validation", "💳"),
+        new("N360ReferralManager", "healthcare", "Patient referral tracking", "➡️"),
+        new("N360TelemedicineConsole", "healthcare", "Virtual care interface", "💻"),
+        new("N360HealthRiskAssessment", "healthcare", "Risk assessment questionnaire", "📊"),
+        new("N360CareCoordination", "healthcare", "Care team collaboration", "👥"),
+        new("N360PatientPortal", "healthcare", "Patient self-service portal", "🏥"),
+        new("N360MedicationAdministration", "healthcare", "MAR tracking system", "💊"),
+        new("N360VitalSignsMonitor", "healthcare", "Real-time vitals monitoring", "💗"),
+
+        // AI-Powered Components (18)
+        new("N360SmartChat", "ai", "AI healthcare chatbot", "💬", false, true),
+        new("N360ClinicalDecisionSupport", "ai", "AI-powered clinical recommendations", "🧠", false, true),
+        new("N360PredictiveAnalytics", "ai", "ML-based patient outcome predictions", "🔮", false, true),
+        new("N360DrugRecommendation", "ai", "AI medication suggestions", "💊", false, true),
+        new("N360RiskStratification", "ai", "ML patient risk scoring", "⚠️", false, true),
+        new("N360DiagnosticAssistant", "ai", "AI differential diagnosis helper", "🏥", false, true),
+        new("N360ImageAnalysis", "ai", "Medical image AI analysis", "🖼️", false, true),
+        new("N360NaturalLanguageSearch", "ai", "AI-powered medical record search", "🔍", false, true),
+        new("N360SentimentAnalysis", "ai", "Patient feedback sentiment analysis", "😊", false, true),
+        new("N360AutoDocumentation", "ai", "AI clinical note generation", "📝", false, true),
+        new("N360ReadmissionPredictor", "ai", "ML readmission risk prediction", "📊", false, true),
+        new("N360AnomalyDetection", "ai", "Anomaly detection in vitals", "🚨", false, true),
+        new("N360PatientClassification", "ai", "ML patient categorization", "📋", false, true),
+        new("N360TrendAnalysis", "ai", "Healthcare trend forecasting", "📈", false, true),
+        new("N360SmartScheduling", "ai", "AI-optimized appointment scheduling", "📅", false, true),
+        new("N360VoiceToText", "ai", "Medical voice transcription", "🎤", false, true),
+        new("N360CodingAssistant", "ai", "AI medical coding suggestions", "🏷️", false, true),
+        new("N360ResourceOptimization", "ai", "ML resource allocation", "🎯", false, true),
+
+        // Navigation & Layout Components (13)
+        new("N360Sidebar", "input", "Collapsible sidebar navigation", "☰"),
+        new("N360AppBar", "input", "Application top bar", "▬"),
+        new("N360Tabs", "input", "Tabbed navigation component", "▭"),
+        new("N360Breadcrumb", "input", "Breadcrumb navigation trail", "→"),
+        new("N360Menu", "input", "Context menu component", "☰"),
+        new("N360ContextMenu", "input", "Right-click context menu", "⋮"),
+        new("N360Toolbar", "input", "Action toolbar component", "🔧"),
+        new("N360Stepper", "input", "Multi-step form wizard", "①②③"),
+        new("N360Accordion", "input", "Expandable accordion panels", "▼"),
+        new("N360Carousel", "input", "Image/content carousel", "⟨⟩"),
+        new("N360Drawer", "input", "Slide-out drawer panel", "☰"),
+        new("N360BottomSheet", "input", "Bottom sheet modal", "▬"),
+        new("N360Navigation", "input", "Main navigation component", "🧭"),
+
+        // Feedback & Notification Components (8)
+        new("N360Toast", "input", "Toast notification", "📢"),
+        new("N360Dialog", "input", "Modal dialog component", "💬"),
+        new("N360Alert", "input", "Alert message component", "⚠️"),
+        new("N360Snackbar", "input", "Snackbar notification", "📣"),
+        new("N360Tooltip", "input", "Tooltip overlay", "ℹ️"),
+        new("N360Progress", "input", "Progress indicator", "⏳"),
+        new("N360Skeleton", "input", "Loading skeleton", "▯"),
+        new("N360Spinner", "input", "Loading spinner", "⌛"),
+
+        // Enterprise Business Components (22)
+        new("N360FormBuilder", "input", "Drag-and-drop form builder", "📝", true),
+        new("N360WorkflowDesigner", "input", "Visual workflow builder", "🔄", true),
+        new("N360ReportViewer", "data", "Report viewer and generator", "📊"),
+        new("N360NotificationCenter", "input", "Notification management hub", "🔔", true),
+        new("N360UserDirectory", "data", "Employee directory", "👥"),
+        new("N360RoleManager", "input", "Role management interface", "🔐"),
+        new("N360AuditLog", "data", "Activity audit log viewer", "📜"),
+        new("N360Settings", "input", "Application settings panel", "⚙️"),
+        new("N360ProfileEditor", "input", "User profile editor", "👤"),
+        new("N360ActivityLog", "data", "User activity timeline", "📋"),
+        new("N360Calendar", "input", "Full calendar component", "📅"),
+        new("N360Scheduler", "input", "Resource scheduler", "🗓️"),
+        new("N360Kanban", "data", "Kanban board component", "▦"),
+        new("N360TaskManager", "input", "Task management interface", "✓"),
+        new("N360ProjectPlanner", "input", "Project planning tool", "📊"),
+        new("N360TeamCollaboration", "input", "Team collaboration hub", "👥", true),
+        new("N360DocumentEditor", "input", "Collaborative document editor", "📄", true),
+        new("N360Inbox", "data", "Message inbox component", "📬"),
+        new("N360MultiStepForm", "input", "Complex multi-step form", "①②③"),
+        new("N360Wizard", "input", "Setup wizard component", "🧙"),
+        new("N360Survey", "input", "Survey form builder", "📋"),
+        new("N360Poll", "input", "Polling component", "📊"),
+    };
+
+    private IEnumerable<ComponentInfo> FilteredComponents =>
+        AllComponents.Where(c =>
+            (selectedCategory == "all" || c.Category.ToLower() == selectedCategory) &&
+            (string.IsNullOrEmpty(searchQuery) || 
+             c.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+             c.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+        );
+
+    private void SetCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    private record ComponentInfo(
+        string Name,
+        string Category,
+        string Description,
+        string Icon,
+        bool IsNew = false,
+        bool IsAIPowered = false
+    );
+}
+
+<style>
+    .components-page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-header {
+        margin-bottom: 3rem;
+    }
+
+    .page-header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        font-size: 1.25rem;
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+
+    .search-box {
+        margin-bottom: 2rem;
+    }
+
+    .search-input {
+        width: 100%;
+        max-width: 600px;
+        padding: 1rem;
+        font-size: 1.125rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+
+    .filter-tab {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #e5e7eb;
+        background: white;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-tab:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .filter-tab.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .components-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .component-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 2rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+    }
+
+    .component-card:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
+    }
+
+    .component-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .component-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .component-card p {
+        color: #6b7280;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .component-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .badge-new {
+        background: #10b981;
+        color: white;
+    }
+
+    .badge-ai {
+        background: #8b5cf6;
+        color: white;
+    }
+</style>

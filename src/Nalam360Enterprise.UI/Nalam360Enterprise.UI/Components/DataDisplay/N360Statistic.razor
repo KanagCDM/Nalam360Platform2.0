@@ -1,0 +1,155 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetStatisticClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="n360-statistic__title">@Title</div>
+        }
+        
+        <div class="n360-statistic__content">
+            @if (PrefixContent != null)
+            {
+                <span class="n360-statistic__prefix">@PrefixContent</span>
+            }
+            
+            <span class="n360-statistic__value @(ValueStyle != null ? $"n360-statistic__value--{ValueStyle.ToLower()}" : "")">
+                @if (ValueContent != null)
+                {
+                    @ValueContent
+                }
+                else
+                {
+                    @GetFormattedValue()
+                }
+            </span>
+            
+            @if (SuffixContent != null)
+            {
+                <span class="n360-statistic__suffix">@SuffixContent</span>
+            }
+        </div>
+        
+        @if (ShowTrend && TrendValue != 0)
+        {
+            <div class="n360-statistic__trend @GetTrendClass()">
+                <span class="n360-statistic__trend-icon">
+                    @if (TrendValue > 0)
+                    {
+                        <span>↑</span>
+                    }
+                    else
+                    {
+                        <span>↓</span>
+                    }
+                </span>
+                <span class="n360-statistic__trend-value">@Math.Abs(TrendValue)%</span>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <div class="n360-statistic__description">@Description</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public object? Value { get; set; }
+    [Parameter] public RenderFragment? ValueContent { get; set; }
+    [Parameter] public RenderFragment? PrefixContent { get; set; }
+    [Parameter] public RenderFragment? SuffixContent { get; set; }
+    [Parameter] public string? ValueStyle { get; set; } // success, warning, danger
+    [Parameter] public int Precision { get; set; } = 0;
+    [Parameter] public string? Format { get; set; }
+    [Parameter] public bool GroupSeparator { get; set; } = true;
+    [Parameter] public string? Description { get; set; }
+    
+    // Trend
+    [Parameter] public bool ShowTrend { get; set; }
+    [Parameter] public decimal TrendValue { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private string GetFormattedValue()
+    {
+        if (Value == null) return "0";
+        
+        if (!string.IsNullOrEmpty(Format))
+        {
+            return string.Format($"{{0:{Format}}}", Value);
+        }
+        
+        if (Value is decimal decValue)
+        {
+            var rounded = Math.Round(decValue, Precision);
+            return GroupSeparator ? rounded.ToString($"N{Precision}") : rounded.ToString($"F{Precision}");
+        }
+        
+        if (Value is double dblValue)
+        {
+            var rounded = Math.Round(dblValue, Precision);
+            return GroupSeparator ? rounded.ToString($"N{Precision}") : rounded.ToString($"F{Precision}");
+        }
+        
+        if (Value is int || Value is long)
+        {
+            return GroupSeparator ? string.Format("{0:N0}", Value) : Value.ToString()!;
+        }
+        
+        return Value.ToString() ?? "0";
+    }
+
+    private string GetStatisticClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-statistic"
+        };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetTrendClass()
+    {
+        return TrendValue > 0 ? "n360-statistic__trend--up" : "n360-statistic__trend--down";
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

@@ -1,0 +1,1145 @@
+@using Nalam360Enterprise.UI.Models
+@using System.Globalization
+
+<div class="task-manager @CssClass" @attributes="GetHtmlAttributes()">
+    @if (!_hasPermission)
+    {
+        <div class="task-manager-no-permission">
+            <span class="no-permission-icon">🔒</span>
+            <p>You don't have permission to access the task manager.</p>
+        </div>
+        return;
+    }
+
+    @if (_isLoading)
+    {
+        <div class="task-manager-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading tasks...</p>
+        </div>
+        return;
+    }
+
+    <!-- Header Section -->
+    <div class="task-manager-header">
+        <div class="header-title">
+            <h2>@Title</h2>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <p class="header-description">@Description</p>
+            }
+        </div>
+
+        @if (ShowStatistics)
+        {
+            <div class="header-statistics">
+                <div class="stat-card">
+                    <span class="stat-icon">📋</span>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.TotalTasks</div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">✅</span>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.CompletedTasks</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">⏳</span>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.InProgressTasks</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">⚠️</span>
+                    <div class="stat-content">
+                        <div class="stat-value">@_statistics.OverdueTasks</div>
+                        <div class="stat-label">Overdue</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Toolbar Section -->
+    <div class="task-manager-toolbar">
+        <!-- View Mode Toggle -->
+        <div class="toolbar-view-mode">
+            <button class="view-mode-btn @(_viewMode == TaskViewMode.List ? "active" : "")" 
+                    @onclick="() => OnChangeViewModeAsync(TaskViewMode.List)"
+                    title="List View">
+                ☰
+            </button>
+            <button class="view-mode-btn @(_viewMode == TaskViewMode.Kanban ? "active" : "")" 
+                    @onclick="() => OnChangeViewModeAsync(TaskViewMode.Kanban)"
+                    title="Kanban Board">
+                ⊞
+            </button>
+            <button class="view-mode-btn @(_viewMode == TaskViewMode.Calendar ? "active" : "")" 
+                    @onclick="() => OnChangeViewModeAsync(TaskViewMode.Calendar)"
+                    title="Calendar View">
+                📅
+            </button>
+            <button class="view-mode-btn @(_viewMode == TaskViewMode.Timeline ? "active" : "")" 
+                    @onclick="() => OnChangeViewModeAsync(TaskViewMode.Timeline)"
+                    title="Timeline View">
+                📊
+            </button>
+            <button class="view-mode-btn @(_viewMode == TaskViewMode.Table ? "active" : "")" 
+                    @onclick="() => OnChangeViewModeAsync(TaskViewMode.Table)"
+                    title="Table View">
+                🗃️
+            </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="toolbar-search">
+            <input type="text" 
+                   placeholder="Search tasks..." 
+                   @bind="_filter.SearchQuery"
+                   @bind:event="oninput"
+                   @onchange="OnApplyFilterAsync"
+                   class="search-input" />
+        </div>
+
+        <!-- Filter Toggle -->
+        <button class="btn-toolbar" @onclick="OnToggleFilterPanel" title="Filter Tasks">
+            🔍 Filter
+        </button>
+
+        <!-- Sort Dropdown -->
+        <div class="toolbar-dropdown">
+            <button class="btn-toolbar dropdown-toggle" @onclick="() => _showSortDropdown = !_showSortDropdown">
+                ↕️ Sort
+            </button>
+            @if (_showSortDropdown)
+            {
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.Title)">Title</button>
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.DueDate)">Due Date</button>
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.Priority)">Priority</button>
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.Status)">Status</button>
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.CreatedDate)">Created Date</button>
+                    <button class="dropdown-item" @onclick="() => OnSortByAsync(TaskSortBy.Progress)">Progress</button>
+                </div>
+            }
+        </div>
+
+        <!-- Group By Dropdown -->
+        <div class="toolbar-dropdown">
+            <button class="btn-toolbar dropdown-toggle" @onclick="() => _showGroupDropdown = !_showGroupDropdown">
+                📁 Group
+            </button>
+            @if (_showGroupDropdown)
+            {
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" @onclick="() => OnGroupByAsync(TaskGroupBy.None)">None</button>
+                    <button class="dropdown-item" @onclick="() => OnGroupByAsync(TaskGroupBy.Status)">By Status</button>
+                    <button class="dropdown-item" @onclick="() => OnGroupByAsync(TaskGroupBy.Priority)">By Priority</button>
+                    <button class="dropdown-item" @onclick="() => OnGroupByAsync(TaskGroupBy.Project)">By Project</button>
+                    <button class="dropdown-item" @onclick="() => OnGroupByAsync(TaskGroupBy.AssignedTo)">By Assignee</button>
+                </div>
+            }
+        </div>
+
+        @if (AllowAddTask)
+        {
+            <button class="btn-toolbar btn-primary" @onclick="OnAddTaskAsync">
+                ➕ New Task
+            </button>
+        }
+    </div>
+
+    <!-- Filter Panel -->
+    @if (_showFilterPanel)
+    {
+        <div class="task-manager-filter-panel">
+            <div class="filter-header">
+                <h3>Filter Tasks</h3>
+                <button class="btn-close" @onclick="OnToggleFilterPanel">✕</button>
+            </div>
+
+            <div class="filter-content">
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    @foreach (var status in Enum.GetValues<Models.TaskStatus>())
+                    {
+                        <label class="filter-checkbox">
+                            <input type="checkbox" 
+                                   checked="@_filter.Statuses.Contains(status)"
+                                   @onchange="@(e => OnStatusFilterChanged(status, (bool)e.Value!))" />
+                            <span>@GetStatusBadge(status)</span>
+                        </label>
+                    }
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Priority</label>
+                    @foreach (var priority in Enum.GetValues<TaskPriority>())
+                    {
+                        <label class="filter-checkbox">
+                            <input type="checkbox" 
+                                   checked="@_filter.Priorities.Contains(priority)"
+                                   @onchange="@(e => OnPriorityFilterChanged(priority, (bool)e.Value!))" />
+                            <span>@GetPriorityBadge(priority)</span>
+                        </label>
+                    }
+                </div>
+
+                <!-- Due Date Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Due Date</label>
+                    <input type="date" class="filter-input" @bind="_filter.DueDateFrom" placeholder="From" />
+                    <input type="date" class="filter-input" @bind="_filter.DueDateTo" placeholder="To" />
+                </div>
+
+                <!-- Quick Filters -->
+                <div class="filter-group">
+                    <label class="filter-label">Quick Filters</label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" @bind="_filter.IsOverdue" />
+                        <span>Overdue only</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" @bind="_filter.IsStarred" />
+                        <span>Starred only</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" @bind="_filter.IsBlocked" />
+                        <span>Blocked only</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="filter-footer">
+                <button class="btn-filter btn-secondary" @onclick="OnClearFilterAsync">Clear</button>
+                <button class="btn-filter btn-primary" @onclick="OnApplyFilterAsync">Apply</button>
+            </div>
+        </div>
+    }
+
+    <!-- Content Area -->
+    <div class="task-manager-content">
+        @if (_viewMode == TaskViewMode.List)
+        {
+            <!-- List View -->
+            <div class="task-list-view">
+                @if (_groupBy != TaskGroupBy.None)
+                {
+                    @foreach (var group in GetGroupedTasks())
+                    {
+                        <div class="task-group">
+                            <div class="task-group-header">
+                                <h4>@group.Key</h4>
+                                <span class="task-group-count">@group.Value.Count tasks</span>
+                            </div>
+                            @foreach (var task in group.Value)
+                            {
+                                @RenderTaskListItem(task)
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var task in _filteredTasks)
+                    {
+                        @RenderTaskListItem(task)
+                    }
+                }
+            </div>
+        }
+        else if (_viewMode == TaskViewMode.Kanban)
+        {
+            <!-- Kanban View -->
+            <div class="task-kanban-view">
+                @foreach (var status in Enum.GetValues<Models.TaskStatus>())
+                {
+                    var statusTasks = _filteredTasks.Where(t => t.Status == status).ToList();
+                    <div class="kanban-column">
+                        <div class="kanban-column-header">
+                            <h4>@GetStatusBadge(status)</h4>
+                            <span class="kanban-count">@statusTasks.Count</span>
+                        </div>
+                        <div class="kanban-column-body">
+                            @foreach (var task in statusTasks)
+                            {
+                                <div class="kanban-card @(task.IsOverdue ? "overdue" : "")" @onclick="() => OnSelectTaskAsync(task.Id)">
+                                    <div class="kanban-card-header">
+                                        <span class="priority-indicator priority-@task.Priority.ToString().ToLower()"></span>
+                                        <h5>@task.Title</h5>
+                                        @if (task.IsStarred)
+                                        {
+                                            <span class="star-icon">⭐</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(task.Description))
+                                    {
+                                        <p class="kanban-card-description">@task.Description</p>
+                                    }
+                                    <div class="kanban-card-meta">
+                                        @if (task.DueDate.HasValue)
+                                        {
+                                            <span class="meta-item">
+                                                📅 @task.DueDate.Value.ToString("MMM dd")
+                                            </span>
+                                        }
+                                        @if (task.SubtaskCount > 0)
+                                        {
+                                            <span class="meta-item">
+                                                ✓ @task.CompletedSubtaskCount/@task.SubtaskCount
+                                            </span>
+                                        }
+                                        @if (task.Comments.Count > 0)
+                                        {
+                                            <span class="meta-item">
+                                                💬 @task.Comments.Count
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(task.AssignedToAvatar) || !string.IsNullOrEmpty(task.AssignedToName))
+                                    {
+                                        <div class="kanban-card-assignee">
+                                            @if (!string.IsNullOrEmpty(task.AssignedToAvatar))
+                                            {
+                                                <img src="@task.AssignedToAvatar" alt="@task.AssignedToName" class="assignee-avatar" />
+                                            }
+                                            else if (!string.IsNullOrEmpty(task.AssignedToName))
+                                            {
+                                                <div class="assignee-avatar">@GetInitials(task.AssignedToName)</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_viewMode == TaskViewMode.Calendar)
+        {
+            <!-- Calendar View -->
+            <div class="task-calendar-view">
+                <div class="calendar-header">
+                    <button class="btn-calendar-nav" @onclick="OnPreviousMonth">‹</button>
+                    <h3>@_currentMonth.ToString("MMMM yyyy")</h3>
+                    <button class="btn-calendar-nav" @onclick="OnNextMonth">›</button>
+                </div>
+                <div class="calendar-weekdays">
+                    @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                    {
+                        <div class="calendar-weekday">@day</div>
+                    }
+                </div>
+                <div class="calendar-grid">
+                    @foreach (var calendarDay in GetCalendarDays())
+                    {
+                        <div class="calendar-day @(calendarDay.IsToday ? "today" : "") @(calendarDay.IsCurrentMonth ? "" : "other-month")">
+                            <div class="calendar-day-number">@calendarDay.Date.Day</div>
+                            @if (calendarDay.TaskCount > 0)
+                            {
+                                <div class="calendar-day-tasks">
+                                    @foreach (var task in calendarDay.Tasks.Take(3))
+                                    {
+                                        <div class="calendar-task @GetPriorityClass(task.Priority)" @onclick="() => OnSelectTaskAsync(task.Id)">
+                                            <span class="calendar-task-title">@task.Title</span>
+                                        </div>
+                                    }
+                                    @if (calendarDay.TaskCount > 3)
+                                    {
+                                        <div class="calendar-task-more">+@(calendarDay.TaskCount - 3) more</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_viewMode == TaskViewMode.Timeline)
+        {
+            <!-- Timeline View -->
+            <div class="task-timeline-view">
+                <div class="timeline-header">
+                    <button class="btn-timeline-nav" @onclick="OnPreviousWeek">‹ Previous Week</button>
+                    <h3>Week of @_currentWeekStart.ToString("MMM dd, yyyy")</h3>
+                    <button class="btn-timeline-nav" @onclick="OnNextWeek">Next Week ›</button>
+                </div>
+                <div class="timeline-grid">
+                    <!-- Timeline Header with Dates -->
+                    <div class="timeline-row timeline-header-row">
+                        <div class="timeline-label">Tasks</div>
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var date = _currentWeekStart.AddDays(i);
+                            <div class="timeline-date @(date.Date == DateTime.Today ? "today" : "")">
+                                <div class="timeline-date-day">@date.ToString("ddd")</div>
+                                <div class="timeline-date-number">@date.Day</div>
+                            </div>
+                        }
+                    </div>
+                    <!-- Timeline Tasks -->
+                    @foreach (var task in _filteredTasks.Where(t => t.DueDate.HasValue))
+                    {
+                        <div class="timeline-row">
+                            <div class="timeline-label">
+                                <div class="timeline-task-title">@task.Title</div>
+                                <div class="timeline-task-meta">
+                                    @GetPriorityBadge(task.Priority)
+                                    @if (!string.IsNullOrEmpty(task.AssignedToName))
+                                    {
+                                        <span>@task.AssignedToName</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="timeline-bar-container">
+                                @{
+                                    var (startPos, duration) = CalculateTimelinePosition(task);
+                                }
+                                <div class="timeline-bar @GetPriorityClass(task.Priority)" 
+                                     style="left: @(startPos)%; width: @(duration)%;"
+                                     @onclick="() => OnSelectTaskAsync(task.Id)">
+                                    <span class="timeline-bar-progress" style="width: @task.Progress%"></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_viewMode == TaskViewMode.Table)
+        {
+            <!-- Table View -->
+            <div class="task-table-view">
+                <table class="task-table">
+                    <thead>
+                        <tr>
+                            <th @onclick="() => OnSortByAsync(TaskSortBy.Title)">
+                                Title @GetSortIndicator(TaskSortBy.Title)
+                            </th>
+                            <th @onclick="() => OnSortByAsync(TaskSortBy.Status)">
+                                Status @GetSortIndicator(TaskSortBy.Status)
+                            </th>
+                            <th @onclick="() => OnSortByAsync(TaskSortBy.Priority)">
+                                Priority @GetSortIndicator(TaskSortBy.Priority)
+                            </th>
+                            <th>Assignee</th>
+                            <th @onclick="() => OnSortByAsync(TaskSortBy.DueDate)">
+                                Due Date @GetSortIndicator(TaskSortBy.DueDate)
+                            </th>
+                            <th @onclick="() => OnSortByAsync(TaskSortBy.Progress)">
+                                Progress @GetSortIndicator(TaskSortBy.Progress)
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in _filteredTasks)
+                        {
+                            <tr class="@(task.IsOverdue ? "overdue-row" : "")" @onclick="() => OnSelectTaskAsync(task.Id)">
+                                <td>
+                                    <div class="table-task-title">
+                                        @if (task.IsStarred) { <span>⭐</span> }
+                                        @task.Title
+                                    </div>
+                                </td>
+                                <td>@GetStatusBadge(task.Status)</td>
+                                <td>@GetPriorityBadge(task.Priority)</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(task.AssignedToName))
+                                    {
+                                        <div class="table-assignee">
+                                            @if (!string.IsNullOrEmpty(task.AssignedToAvatar))
+                                            {
+                                                <img src="@task.AssignedToAvatar" alt="@task.AssignedToName" />
+                                            }
+                                            else
+                                            {
+                                                <div class="assignee-avatar-small">@GetInitials(task.AssignedToName)</div>
+                                            }
+                                            <span>@task.AssignedToName</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (task.DueDate.HasValue)
+                                    {
+                                        <span class="@(task.IsOverdue ? "overdue-text" : "")">
+                                            @task.DueDate.Value.ToString("MMM dd, yyyy")
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="table-progress">
+                                        <div class="progress-bar-small">
+                                            <div class="progress-fill" style="width: @task.Progress%"></div>
+                                        </div>
+                                        <span>@task.Progress%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="btn-table-action" @onclick:stopPropagation="true" @onclick="() => OnEditTaskAsync(task.Id)" title="Edit">✏️</button>
+                                        <button class="btn-table-action" @onclick:stopPropagation="true" @onclick="() => OnDeleteTaskAsync(task.Id)" title="Delete">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (_filteredTasks.Count == 0 && !_isLoading)
+        {
+            <div class="task-manager-empty">
+                <span class="empty-icon">📋</span>
+                <p>No tasks found</p>
+                @if (AllowAddTask)
+                {
+                    <button class="btn-empty" @onclick="OnAddTaskAsync">Create Your First Task</button>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Task Details Panel -->
+    @if (_showTaskDetails && _selectedTask != null)
+    {
+        <div class="task-details-panel @(_showTaskDetails ? "open" : "")">
+            <div class="task-details-header">
+                <h3>Task Details</h3>
+                <button class="btn-close" @onclick="OnCloseTaskDetails">✕</button>
+            </div>
+
+            <div class="task-details-content">
+                <!-- Task Title and Priority -->
+                <div class="details-section">
+                    <div class="task-title-section">
+                        <h2>@_selectedTask.Title</h2>
+                        @GetPriorityBadge(_selectedTask.Priority)
+                    </div>
+                    @if (!string.IsNullOrEmpty(_selectedTask.Description))
+                    {
+                        <p class="task-description">@_selectedTask.Description</p>
+                    }
+                </div>
+
+                <!-- Status and Progress -->
+                <div class="details-section">
+                    <h4>Status & Progress</h4>
+                    <div class="detail-item">
+                        <label>Status:</label>
+                        <span>@GetStatusBadge(_selectedTask.Status)</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Progress:</label>
+                        <div class="progress-bar-detail">
+                            <div class="progress-fill" style="width: @_selectedTask.Progress%"></div>
+                        </div>
+                        <span>@_selectedTask.Progress%</span>
+                    </div>
+                </div>
+
+                <!-- Assignment and Dates -->
+                <div class="details-section">
+                    <h4>Assignment & Schedule</h4>
+                    @if (!string.IsNullOrEmpty(_selectedTask.AssignedToName))
+                    {
+                        <div class="detail-item">
+                            <label>Assigned To:</label>
+                            <div class="detail-assignee">
+                                @if (!string.IsNullOrEmpty(_selectedTask.AssignedToAvatar))
+                                {
+                                    <img src="@_selectedTask.AssignedToAvatar" alt="@_selectedTask.AssignedToName" />
+                                }
+                                else
+                                {
+                                    <div class="assignee-avatar">@GetInitials(_selectedTask.AssignedToName)</div>
+                                }
+                                <span>@_selectedTask.AssignedToName</span>
+                            </div>
+                        </div>
+                    }
+                    @if (_selectedTask.DueDate.HasValue)
+                    {
+                        <div class="detail-item">
+                            <label>Due Date:</label>
+                            <span class="@(_selectedTask.IsOverdue ? "overdue-text" : "")">
+                                @_selectedTask.DueDate.Value.ToString("MMM dd, yyyy")
+                                @if (_selectedTask.IsOverdue)
+                                {
+                                    <span class="overdue-badge">Overdue</span>
+                                }
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Subtasks -->
+                @if (_selectedTask.SubtaskCount > 0)
+                {
+                    <div class="details-section">
+                        <h4>Subtasks (@_selectedTask.CompletedSubtaskCount/@_selectedTask.SubtaskCount)</h4>
+                        @foreach (var subtask in _selectedTask.Subtasks)
+                        {
+                            <div class="subtask-item">
+                                <input type="checkbox" checked="@(subtask.Status == Models.TaskStatus.Completed)" />
+                                <span>@subtask.Title</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Tags and Labels -->
+                @if (_selectedTask.Tags.Count > 0 || _selectedTask.Labels.Count > 0)
+                {
+                    <div class="details-section">
+                        <h4>Tags & Labels</h4>
+                        <div class="detail-tags">
+                            @foreach (var tag in _selectedTask.Tags)
+                            {
+                                <span class="detail-tag">@tag</span>
+                            }
+                            @foreach (var label in _selectedTask.Labels)
+                            {
+                                <span class="detail-label">@label</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Comments -->
+                <div class="details-section">
+                    <h4>Comments (@_selectedTask.Comments.Count)</h4>
+                    @foreach (var comment in _selectedTask.Comments)
+                    {
+                        <div class="detail-comment">
+                            <div class="comment-header">
+                                @if (!string.IsNullOrEmpty(comment.AuthorAvatar))
+                                {
+                                    <img src="@comment.AuthorAvatar" alt="@comment.AuthorName" class="comment-avatar" />
+                                }
+                                else
+                                {
+                                    <div class="comment-avatar">@GetInitials(comment.AuthorName)</div>
+                                }
+                                <div class="comment-meta">
+                                    <strong>@comment.AuthorName</strong>
+                                    <span class="comment-time">@FormatTimeAgo(comment.CreatedAt)</span>
+                                </div>
+                            </div>
+                            <p class="comment-content">@comment.Content</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="task-details-footer">
+                <button class="btn-detail" @onclick="() => OnEditTaskAsync(_selectedTask.Id)">✏️ Edit</button>
+                <button class="btn-detail" @onclick="() => OnDeleteTaskAsync(_selectedTask.Id)">🗑️ Delete</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters - Data
+    [Parameter] public List<TaskItem> Tasks { get; set; } = new();
+    [Parameter] public List<TaskProject> Projects { get; set; } = new();
+    [Parameter] public TaskViewMode InitialViewMode { get; set; } = TaskViewMode.List;
+    [Parameter] public TaskFilter? InitialFilter { get; set; }
+    [Parameter] public TaskSortBy InitialSortBy { get; set; } = TaskSortBy.DueDate;
+    [Parameter] public TaskGroupBy InitialGroupBy { get; set; } = TaskGroupBy.None;
+
+    // Parameters - Display
+    [Parameter] public string Title { get; set; } = "Task Manager";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public bool AllowAddTask { get; set; } = true;
+    [Parameter] public bool AllowEditTask { get; set; } = true;
+    [Parameter] public bool AllowDeleteTask { get; set; } = true;
+
+    // Parameters - Events
+    [Parameter] public EventCallback<Guid> OnTaskSelected { get; set; }
+    [Parameter] public EventCallback OnAddTask { get; set; }
+    [Parameter] public EventCallback<Guid> OnEditTask { get; set; }
+    [Parameter] public EventCallback<Guid> OnDeleteTask { get; set; }
+    [Parameter] public EventCallback<TaskFilter> OnFilterChanged { get; set; }
+    [Parameter] public EventCallback<TaskViewMode> OnViewModeChanged { get; set; }
+
+    // Parameters - RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+
+    // Parameters - Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Parameters - Styling
+    [Parameter] public string? CssClass { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isLoading = false;
+    private TaskViewMode _viewMode;
+    private TaskFilter _filter = new();
+    private List<TaskItem> _filteredTasks = new();
+    private TaskStatistics _statistics = new();
+    private bool _showFilterPanel = false;
+    private bool _showSortDropdown = false;
+    private bool _showGroupDropdown = false;
+    private TaskSortBy _currentSortBy;
+    private bool _sortAscending = true;
+    private TaskGroupBy _groupBy;
+    private bool _showTaskDetails = false;
+    private TaskItem? _selectedTask;
+    private DateTime _currentMonth = DateTime.Today;
+    private DateTime _currentWeekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _viewMode = InitialViewMode;
+        _filter = InitialFilter ?? new TaskFilter();
+        _currentSortBy = InitialSortBy;
+        _groupBy = InitialGroupBy;
+
+        ApplyFilters();
+        ApplySorting();
+        CalculateStatistics();
+
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ApplyFilters();
+        ApplySorting();
+        CalculateStatistics();
+        await Task.CompletedTask;
+    }
+
+    // View Mode
+    private async Task OnChangeViewModeAsync(TaskViewMode mode)
+    {
+        _viewMode = mode;
+        if (OnViewModeChanged.HasDelegate)
+        {
+            await OnViewModeChanged.InvokeAsync(mode);
+        }
+    }
+
+    // Filter
+    private void OnToggleFilterPanel()
+    {
+        _showFilterPanel = !_showFilterPanel;
+    }
+
+    private void OnStatusFilterChanged(Models.TaskStatus status, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_filter.Statuses.Contains(status))
+                _filter.Statuses.Add(status);
+        }
+        else
+        {
+            _filter.Statuses.Remove(status);
+        }
+    }
+
+    private void OnPriorityFilterChanged(TaskPriority priority, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!_filter.Priorities.Contains(priority))
+                _filter.Priorities.Add(priority);
+        }
+        else
+        {
+            _filter.Priorities.Remove(priority);
+        }
+    }
+
+    private async Task OnApplyFilterAsync()
+    {
+        ApplyFilters();
+        ApplySorting();
+        CalculateStatistics();
+        _showFilterPanel = false;
+
+        if (OnFilterChanged.HasDelegate)
+        {
+            await OnFilterChanged.InvokeAsync(_filter);
+        }
+    }
+
+    private async Task OnClearFilterAsync()
+    {
+        _filter = new TaskFilter();
+        await OnApplyFilterAsync();
+    }
+
+    // Sorting
+    private async Task OnSortByAsync(TaskSortBy sortBy)
+    {
+        if (_currentSortBy == sortBy)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _currentSortBy = sortBy;
+            _sortAscending = true;
+        }
+        ApplySorting();
+        _showSortDropdown = false;
+        await Task.CompletedTask;
+    }
+
+    // Grouping
+    private async Task OnGroupByAsync(TaskGroupBy groupBy)
+    {
+        _groupBy = groupBy;
+        _showGroupDropdown = false;
+        await Task.CompletedTask;
+    }
+
+    // Task Selection
+    private async Task OnSelectTaskAsync(Guid taskId)
+    {
+        _selectedTask = Tasks.FirstOrDefault(t => t.Id == taskId);
+        _showTaskDetails = _selectedTask != null;
+
+        if (OnTaskSelected.HasDelegate)
+        {
+            await OnTaskSelected.InvokeAsync(taskId);
+        }
+    }
+
+    private void OnCloseTaskDetails()
+    {
+        _showTaskDetails = false;
+        _selectedTask = null;
+    }
+
+    // Task Actions
+    private async Task OnAddTaskAsync()
+    {
+        if (OnAddTask.HasDelegate)
+        {
+            await OnAddTask.InvokeAsync();
+        }
+    }
+
+    private async Task OnEditTaskAsync(Guid taskId)
+    {
+        if (OnEditTask.HasDelegate)
+        {
+            await OnEditTask.InvokeAsync(taskId);
+        }
+    }
+
+    private async Task OnDeleteTaskAsync(Guid taskId)
+    {
+        if (OnDeleteTask.HasDelegate)
+        {
+            await OnDeleteTask.InvokeAsync(taskId);
+        }
+    }
+
+    // Calendar Navigation
+    private void OnPreviousMonth()
+    {
+        _currentMonth = _currentMonth.AddMonths(-1);
+    }
+
+    private void OnNextMonth()
+    {
+        _currentMonth = _currentMonth.AddMonths(1);
+    }
+
+    private void OnPreviousWeek()
+    {
+        _currentWeekStart = _currentWeekStart.AddDays(-7);
+    }
+
+    private void OnNextWeek()
+    {
+        _currentWeekStart = _currentWeekStart.AddDays(7);
+    }
+
+    // Helper Methods
+    private void ApplyFilters()
+    {
+        _filteredTasks = Tasks.Where(task =>
+        {
+            // Search query
+            if (!string.IsNullOrEmpty(_filter.SearchQuery))
+            {
+                var search = _filter.SearchQuery.ToLower();
+                if (!task.Title.ToLower().Contains(search) &&
+                    !(task.Description?.ToLower().Contains(search) ?? false))
+                    return false;
+            }
+
+            // Status filter
+            if (_filter.Statuses.Count > 0 && !_filter.Statuses.Contains(task.Status))
+                return false;
+
+            // Priority filter
+            if (_filter.Priorities.Count > 0 && !_filter.Priorities.Contains(task.Priority))
+                return false;
+
+            // Project filter
+            if (_filter.ProjectIds.Count > 0 && (!task.ProjectId.HasValue || !_filter.ProjectIds.Contains(task.ProjectId.Value)))
+                return false;
+
+            // Assignee filter
+            if (_filter.AssignedToIds.Count > 0 && (!task.AssignedToId.HasValue || !_filter.AssignedToIds.Contains(task.AssignedToId.Value)))
+                return false;
+
+            // Due date filter
+            if (_filter.DueDateFrom.HasValue && (!task.DueDate.HasValue || task.DueDate.Value < _filter.DueDateFrom.Value))
+                return false;
+            if (_filter.DueDateTo.HasValue && (!task.DueDate.HasValue || task.DueDate.Value > _filter.DueDateTo.Value))
+                return false;
+
+            // Quick filters
+            if (_filter.IsOverdue == true && !task.IsOverdue)
+                return false;
+            if (_filter.IsStarred == true && !task.IsStarred)
+                return false;
+            if (_filter.IsBlocked == true && task.Status != Models.TaskStatus.Blocked)
+                return false;
+
+            // Archived filter
+            if (!_filter.ShowArchived && task.IsArchived)
+                return false;
+
+            return true;
+        }).ToList();
+    }
+
+    private void ApplySorting()
+    {
+        _filteredTasks = _currentSortBy switch
+        {
+            TaskSortBy.Title => _sortAscending ? _filteredTasks.OrderBy(t => t.Title).ToList() : _filteredTasks.OrderByDescending(t => t.Title).ToList(),
+            TaskSortBy.DueDate => _sortAscending ? _filteredTasks.OrderBy(t => t.DueDate ?? DateTime.MaxValue).ToList() : _filteredTasks.OrderByDescending(t => t.DueDate ?? DateTime.MinValue).ToList(),
+            TaskSortBy.Priority => _sortAscending ? _filteredTasks.OrderBy(t => t.Priority).ToList() : _filteredTasks.OrderByDescending(t => t.Priority).ToList(),
+            TaskSortBy.Status => _sortAscending ? _filteredTasks.OrderBy(t => t.Status).ToList() : _filteredTasks.OrderByDescending(t => t.Status).ToList(),
+            TaskSortBy.CreatedDate => _sortAscending ? _filteredTasks.OrderBy(t => t.CreatedAt).ToList() : _filteredTasks.OrderByDescending(t => t.CreatedAt).ToList(),
+            TaskSortBy.Progress => _sortAscending ? _filteredTasks.OrderBy(t => t.Progress).ToList() : _filteredTasks.OrderByDescending(t => t.Progress).ToList(),
+            _ => _filteredTasks
+        };
+    }
+
+    private Dictionary<string, List<TaskItem>> GetGroupedTasks()
+    {
+        return _groupBy switch
+        {
+            TaskGroupBy.Status => _filteredTasks.GroupBy(t => t.Status.ToString()).ToDictionary(g => g.Key, g => g.ToList()),
+            TaskGroupBy.Priority => _filteredTasks.GroupBy(t => t.Priority.ToString()).ToDictionary(g => g.Key, g => g.ToList()),
+            TaskGroupBy.Project => _filteredTasks.GroupBy(t => t.ProjectName ?? "No Project").ToDictionary(g => g.Key, g => g.ToList()),
+            TaskGroupBy.AssignedTo => _filteredTasks.GroupBy(t => t.AssignedToName ?? "Unassigned").ToDictionary(g => g.Key, g => g.ToList()),
+            TaskGroupBy.DueDate => _filteredTasks.GroupBy(t => GetDueDateGroup(t)).ToDictionary(g => g.Key, g => g.ToList()),
+            _ => new Dictionary<string, List<TaskItem>> { { "All Tasks", _filteredTasks } }
+        };
+    }
+
+    private string GetDueDateGroup(TaskItem task)
+    {
+        if (!task.DueDate.HasValue) return "No Due Date";
+        if (task.IsOverdue) return "Overdue";
+        if (task.DaysUntilDue == 0) return "Due Today";
+        if (task.DaysUntilDue <= 7) return "Due This Week";
+        if (task.DaysUntilDue <= 30) return "Due This Month";
+        return "Due Later";
+    }
+
+    private void CalculateStatistics()
+    {
+        _statistics = new TaskStatistics
+        {
+            TotalTasks = Tasks.Count,
+            CompletedTasks = Tasks.Count(t => t.Status == Models.TaskStatus.Completed),
+            InProgressTasks = Tasks.Count(t => t.Status == Models.TaskStatus.InProgress),
+            OverdueTasks = Tasks.Count(t => t.IsOverdue),
+            DueTodayTasks = Tasks.Count(t => t.DueDate?.Date == DateTime.Today),
+            DueThisWeekTasks = Tasks.Count(t => t.DueDate.HasValue && t.DueDate.Value <= DateTime.Today.AddDays(7)),
+            BlockedTasks = Tasks.Count(t => t.Status == Models.TaskStatus.Blocked),
+            UnassignedTasks = Tasks.Count(t => !t.AssignedToId.HasValue),
+            TotalEstimatedHours = Tasks.Sum(t => t.EstimatedHours ?? 0),
+            TotalActualHours = Tasks.Sum(t => t.ActualHours ?? 0)
+        };
+
+        if (_statistics.TotalTasks > 0)
+        {
+            _statistics.AverageCompletionRate = (double)_statistics.CompletedTasks / _statistics.TotalTasks * 100;
+        }
+    }
+
+    private List<CalendarDay> GetCalendarDays()
+    {
+        var days = new List<CalendarDay>();
+        var firstDayOfMonth = new DateTime(_currentMonth.Year, _currentMonth.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+        var startDate = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+        var endDate = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
+
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var tasksForDay = Tasks.Where(t => t.DueDate?.Date == date.Date).ToList();
+            days.Add(new CalendarDay
+            {
+                Date = date,
+                IsToday = date.Date == DateTime.Today,
+                IsCurrentMonth = date.Month == _currentMonth.Month,
+                Tasks = tasksForDay
+            });
+        }
+
+        return days;
+    }
+
+    private (double startPos, double duration) CalculateTimelinePosition(TaskItem task)
+    {
+        if (!task.DueDate.HasValue) return (0, 0);
+
+        var weekEnd = _currentWeekStart.AddDays(7);
+        var startDate = task.StartDate ?? _currentWeekStart;
+        var endDate = task.DueDate.Value;
+
+        if (startDate < _currentWeekStart) startDate = _currentWeekStart;
+        if (endDate > weekEnd) endDate = weekEnd;
+
+        var totalDays = (weekEnd - _currentWeekStart).TotalDays;
+        var startDays = (startDate - _currentWeekStart).TotalDays;
+        var durationDays = (endDate - startDate).TotalDays;
+
+        var startPos = (startDays / totalDays) * 100;
+        var duration = (durationDays / totalDays) * 100;
+
+        return (Math.Max(0, startPos), Math.Max(1, duration));
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return parts[0][0].ToString().ToUpper();
+    }
+
+    private string GetStatusBadge(Models.TaskStatus status) => status switch
+    {
+        Models.TaskStatus.NotStarted => "Not Started",
+        Models.TaskStatus.InProgress => "In Progress",
+        Models.TaskStatus.OnHold => "On Hold",
+        Models.TaskStatus.UnderReview => "Under Review",
+        Models.TaskStatus.Completed => "Completed",
+        Models.TaskStatus.Cancelled => "Cancelled",
+        Models.TaskStatus.Blocked => "Blocked",
+        Models.TaskStatus.Deferred => "Deferred",
+        _ => status.ToString()
+    };
+
+    private string GetPriorityBadge(TaskPriority priority) => priority switch
+    {
+        TaskPriority.Trivial => "Trivial",
+        TaskPriority.Low => "Low",
+        TaskPriority.Normal => "Normal",
+        TaskPriority.High => "High",
+        TaskPriority.Critical => "Critical",
+        _ => priority.ToString()
+    };
+
+    private string GetPriorityClass(TaskPriority priority) => $"priority-{priority.ToString().ToLower()}";
+
+    private string GetSortIndicator(TaskSortBy sortBy)
+    {
+        if (_currentSortBy != sortBy) return "";
+        return _sortAscending ? "▲" : "▼";
+    }
+
+    private string FormatTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.Now - dateTime;
+        if (timeSpan.TotalMinutes < 1) return "just now";
+        if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays}d ago";
+        return dateTime.ToString("MMM dd, yyyy");
+    }
+
+    private RenderFragment RenderTaskListItem(TaskItem task) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"task-list-item {(task.IsOverdue ? "overdue" : "")}");
+        builder.AddAttribute(2, "onclick", EventCallback.Factory.Create(this, () => OnSelectTaskAsync(task.Id)));
+
+        // Priority indicator
+        builder.OpenElement(3, "span");
+        builder.AddAttribute(4, "class", $"priority-indicator priority-{task.Priority.ToString().ToLower()}");
+        builder.CloseElement();
+
+        // Content
+        builder.OpenElement(5, "div");
+        builder.AddAttribute(6, "class", "task-list-content");
+
+        builder.OpenElement(7, "h4");
+        if (task.IsStarred)
+        {
+            builder.OpenElement(8, "span");
+            builder.AddContent(9, "⭐ ");
+            builder.CloseElement();
+        }
+        builder.AddContent(10, task.Title);
+        builder.CloseElement();
+
+        if (!string.IsNullOrEmpty(task.Description))
+        {
+            builder.OpenElement(11, "p");
+            builder.AddAttribute(12, "class", "task-description");
+            builder.AddContent(13, task.Description);
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+
+        // Meta info
+        builder.OpenElement(14, "div");
+        builder.AddAttribute(15, "class", "task-list-meta");
+
+        builder.AddMarkupContent(16, $"<span class='meta-badge'>{GetStatusBadge(task.Status)}</span>");
+        builder.AddMarkupContent(17, $"<span class='meta-badge'>{GetPriorityBadge(task.Priority)}</span>");
+
+        if (task.DueDate.HasValue)
+        {
+            builder.AddMarkupContent(18, $"<span class='meta-item'>📅 {task.DueDate.Value:MMM dd}</span>");
+        }
+
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>
+        {
+            ["role"] = "region",
+            ["aria-label"] = "Task Manager"
+        };
+        return attrs;
+    }
+}

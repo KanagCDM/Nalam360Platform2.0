@@ -1,0 +1,188 @@
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TItem
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetSpeedDialClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        <button type="button" 
+                class="n360-speeddial__trigger"
+                @onclick="ToggleOpenAsync"
+                disabled="@Disabled">
+            @if (TriggerIcon != null)
+            {
+                @TriggerIcon
+            }
+            else
+            {
+                <span>+</span>
+            }
+        </button>
+        
+        @if (_isOpen)
+        {
+            <div class="n360-speeddial__actions" style="@GetActionsStyle()">
+                @foreach (var action in Actions)
+                {
+                    <div class="n360-speeddial__action-wrapper">
+                        @if (ShowLabels)
+                        {
+                            <span class="n360-speeddial__label">@LabelSelector(action)</span>
+                        }
+                        <button type="button"
+                                class="n360-speeddial__action"
+                                @onclick="() => HandleActionClickAsync(action)"
+                                title="@LabelSelector(action)">
+                            @if (IconSelector != null)
+                            {
+                                @IconSelector(action)
+                            }
+                            else
+                            {
+                                <span>@LabelSelector(action).Substring(0, 1)</span>
+                            }
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        
+        @if (_isOpen && ShowOverlay)
+        {
+            <div class="n360-speeddial__overlay" @onclick="CloseAsync"></div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<TItem> Actions { get; set; } = new();
+    [Parameter] public Func<TItem, string> LabelSelector { get; set; } = item => item?.ToString() ?? string.Empty;
+    [Parameter] public Func<TItem, RenderFragment?>? IconSelector { get; set; }
+    [Parameter] public RenderFragment? TriggerIcon { get; set; }
+    [Parameter] public SpeedDialDirection Direction { get; set; } = SpeedDialDirection.Up;
+    [Parameter] public SpeedDialPosition Position { get; set; } = SpeedDialPosition.BottomRight;
+    [Parameter] public bool ShowLabels { get; set; } = true;
+    [Parameter] public bool ShowOverlay { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TItem> OnActionClick { get; set; }
+    [Parameter] public EventCallback<bool> OnOpenChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+
+    private async Task ToggleOpenAsync()
+    {
+        _isOpen = !_isOpen;
+        await OnOpenChange.InvokeAsync(_isOpen);
+    }
+
+    private async Task CloseAsync()
+    {
+        _isOpen = false;
+        await OnOpenChange.InvokeAsync(false);
+    }
+
+    private async Task HandleActionClickAsync(TItem action)
+    {
+        await OnActionClick.InvokeAsync(action);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "SpeedDialActionClick",
+                Resource = AuditResource ?? "SpeedDial",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Action", LabelSelector(action) }
+                }
+            });
+        }
+        
+        await CloseAsync();
+    }
+
+    private string GetSpeedDialClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-speeddial",
+            $"n360-speeddial--{Position.ToString().ToLower()}",
+            $"n360-speeddial--{Direction.ToString().ToLower()}"
+        };
+        
+        if (_isOpen)
+        {
+            classes.Add("n360-speeddial--open");
+        }
+        
+        if (Disabled)
+        {
+            classes.Add("n360-speeddial--disabled");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetActionsStyle()
+    {
+        var flexDirection = Direction switch
+        {
+            SpeedDialDirection.Up => "column-reverse",
+            SpeedDialDirection.Down => "column",
+            SpeedDialDirection.Left => "row-reverse",
+            SpeedDialDirection.Right => "row",
+            _ => "column-reverse"
+        };
+        
+        return $"display: flex; flex-direction: {flexDirection}; gap: 8px;";
+    }
+
+    public async Task OpenAsync()
+    {
+        _isOpen = true;
+        await OnOpenChange.InvokeAsync(true);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

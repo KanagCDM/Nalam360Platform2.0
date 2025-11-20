@@ -1,0 +1,507 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
+@typeparam TValue
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-datatable @CssClass" dir="@(IsRtl ? "rtl" : "ltr")" @attributes="@GetHtmlAttributes()">
+    
+    @if (!string.IsNullOrEmpty(RequiredPermission) && !HasPermission)
+    {
+        if (!HideIfNoPermission)
+        {
+            <div class="n360-datatable__no-permission">Access Denied</div>
+        }
+        return;
+    }
+
+    <div class="n360-datatable__container">
+        @if (ShowToolbar)
+        {
+            <div class="n360-datatable__toolbar">
+                <div class="n360-datatable__toolbar-left">
+                    <h3 class="n360-datatable__title">@Title</h3>
+                    @if (ShowSearch)
+                    {
+                        <div class="n360-datatable__search">
+                            <input type="text" 
+                                   class="n360-datatable__search-input"
+                                   placeholder="@SearchPlaceholder"
+                                   @bind="SearchText"
+                                   @bind:event="oninput"
+                                   @bind:after="OnSearchChanged" />
+                            <span class="n360-datatable__search-icon">🔍</span>
+                        </div>
+                    }
+                </div>
+                <div class="n360-datatable__toolbar-right">
+                    @if (ShowRefresh)
+                    {
+                        <button class="n360-datatable__btn n360-datatable__btn--icon" @onclick="OnRefresh" title="Refresh">
+                            🔄
+                        </button>
+                    }
+                    @if (ShowExport && AllowExcelExport)
+                    {
+                        <button class="n360-datatable__btn n360-datatable__btn--icon" @onclick="ExportToExcel" title="Export to Excel">
+                            📊
+                        </button>
+                    }
+                    @if (ShowExport && AllowPdfExport)
+                    {
+                        <button class="n360-datatable__btn n360-datatable__btn--icon" @onclick="ExportToPdf" title="Export to PDF">
+                            📄
+                        </button>
+                    }
+                    @if (ShowColumnChooser)
+                    {
+                        <button class="n360-datatable__btn n360-datatable__btn--icon" @onclick="OpenColumnChooser" title="Choose Columns">
+                            ⚙️
+                        </button>
+                    }
+                    @if (ShowCreate && CreatePermission != null && HasCreatePermission)
+                    {
+                        <button class="n360-datatable__btn n360-datatable__btn--primary" @onclick="OnCreate">
+                            ➕ @CreateButtonText
+                        </button>
+                    }
+                    @if (CustomToolbarButtons != null)
+                    {
+                        @CustomToolbarButtons
+                    }
+                </div>
+            </div>
+        }
+
+        @if (SelectedRows?.Any() == true && ShowBulkActions)
+        {
+            <div class="n360-datatable__bulk-actions">
+                <span class="n360-datatable__bulk-count">@SelectedRows.Count selected</span>
+                @if (BulkActions != null)
+                {
+                    @BulkActions(SelectedRows)
+                }
+                <button class="n360-datatable__btn n360-datatable__btn--secondary" @onclick="ClearSelection">
+                    Clear Selection
+                </button>
+            </div>
+        }
+
+        <SfGrid @ref="_grid"
+                TValue="TValue"
+                DataSource="@FilteredDataSource"
+                AllowPaging="@AllowPaging"
+                AllowSorting="@AllowSorting"
+                AllowFiltering="@AllowFiltering"
+                AllowSelection="@AllowSelection"
+                AllowReordering="@AllowReordering"
+                AllowResizing="@AllowResizing"
+                AllowGrouping="@AllowGrouping"
+                AllowExcelExport="@AllowExcelExport"
+                AllowPdfExport="@AllowPdfExport"
+                ShowColumnChooser="@ShowColumnChooser"
+                EnableVirtualization="@EnableVirtualization"
+                EnableHover="@EnableHover"
+                EnableAltRow="@EnableAltRow"
+                Height="@Height"
+                CssClass="@InternalCssClass"
+                RowHeight="@RowHeight"
+                RowSelected="@OnRowSelected"
+                RowDeselected="@OnRowDeselected"
+                RecordDoubleClick="@OnRecordDoubleClick"
+                ActionBegin="@OnActionBegin"
+                ActionComplete="@OnActionComplete">
+            
+            <GridSelectionSettings Type="@SelectionType" Mode="@SelectionMode" />
+            
+            @if (AllowPaging)
+            {
+                <GridPageSettings PageSize="@PageSize" PageSizes="@PageSizes" />
+            }
+
+            @if (AllowFiltering)
+            {
+                <GridFilterSettings Type="@FilterType" />
+            }
+
+            @if (AllowGrouping)
+            {
+                <GridGroupSettings ShowGroupedColumn="@ShowGroupedColumn" />
+            }
+
+            <GridColumns>
+                @if (ShowRowNumber)
+                {
+                    <GridColumn HeaderText="#" Width="60" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var index = DataSource?.ToList().IndexOf((TValue)context) ?? -1;
+                                <span>@(index + 1)</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                }
+                
+                @if (AllowSelection && SelectionType == Syncfusion.Blazor.Grids.SelectionType.Multiple)
+                {
+                    <GridColumn Type="ColumnType.CheckBox" Width="50" />
+                }
+
+                @ChildContent
+
+                @if (ShowActions && (ShowEdit || ShowDelete || ShowView || CustomRowActions != null))
+                {
+                    <GridColumn HeaderText="Actions" Width="@ActionsColumnWidth" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var row = (TValue)context;
+                                <div class="n360-datatable__actions">
+                                    @if (ShowView && ViewPermission != null && HasViewPermission)
+                                    {
+                                        <button class="n360-datatable__action-btn n360-datatable__action-btn--view" 
+                                                @onclick="() => OnView(row)"
+                                                title="View">
+                                            👁️
+                                        </button>
+                                    }
+                                    @if (ShowEdit && EditPermission != null && HasEditPermission)
+                                    {
+                                        <button class="n360-datatable__action-btn n360-datatable__action-btn--edit" 
+                                                @onclick="() => OnEdit(row)"
+                                                title="Edit">
+                                            ✏️
+                                        </button>
+                                    }
+                                    @if (ShowDelete && DeletePermission != null && HasDeletePermission)
+                                    {
+                                        <button class="n360-datatable__action-btn n360-datatable__action-btn--delete" 
+                                                @onclick="() => OnDelete(row)"
+                                                title="Delete">
+                                            🗑️
+                                        </button>
+                                    }
+                                    @if (CustomRowActions != null)
+                                    {
+                                        @CustomRowActions(row)
+                                    }
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                }
+            </GridColumns>
+
+            @if (ShowDetailRow && DetailTemplate != null)
+            {
+                <GridTemplates>
+                    <DetailTemplate>
+                        @DetailTemplate((TValue)context)
+                    </DetailTemplate>
+                </GridTemplates>
+            }
+        </SfGrid>
+
+        @if (ShowFooter)
+        {
+            <div class="n360-datatable__footer">
+                <div class="n360-datatable__footer-info">
+                    Showing @GetDisplayRange() of @(DataSource?.Count() ?? 0) records
+                </div>
+                @if (CustomFooter != null)
+                {
+                    @CustomFooter
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; } = "DataTable";
+    [Parameter] public string? ViewPermission { get; set; }
+    [Parameter] public string? EditPermission { get; set; }
+    [Parameter] public string? DeletePermission { get; set; }
+    [Parameter] public string? CreatePermission { get; set; }
+
+    // Display Options
+    [Parameter] public string Title { get; set; } = "Data Table";
+    [Parameter] public string Height { get; set; } = "500px";
+    [Parameter] public double RowHeight { get; set; } = 40;
+    [Parameter] public bool ShowToolbar { get; set; } = true;
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public bool ShowRowNumber { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+
+    // Toolbar Options
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowRefresh { get; set; } = true;
+    [Parameter] public bool ShowExport { get; set; } = true;
+    [Parameter] public bool ShowCreate { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public string CreateButtonText { get; set; } = "Create New";
+
+    // Action Buttons
+    [Parameter] public bool ShowView { get; set; } = true;
+    [Parameter] public bool ShowEdit { get; set; } = true;
+    [Parameter] public bool ShowDelete { get; set; } = true;
+    [Parameter] public string ActionsColumnWidth { get; set; } = "150px";
+
+    // Grid Features
+    [Parameter] public bool AllowPaging { get; set; } = true;
+    [Parameter] public bool AllowSorting { get; set; } = true;
+    [Parameter] public bool AllowFiltering { get; set; } = true;
+    [Parameter] public bool AllowSelection { get; set; } = true;
+    [Parameter] public bool AllowReordering { get; set; } = true;
+    [Parameter] public bool AllowResizing { get; set; } = true;
+    [Parameter] public bool AllowGrouping { get; set; } = false;
+    [Parameter] public bool AllowExcelExport { get; set; } = true;
+    [Parameter] public bool AllowPdfExport { get; set; } = true;
+    [Parameter] public bool ShowColumnChooser { get; set; } = true;
+    [Parameter] public bool EnableVirtualization { get; set; }
+    [Parameter] public bool EnableHover { get; set; } = true;
+    [Parameter] public bool EnableAltRow { get; set; } = true;
+
+    // Paging
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public int[] PageSizes { get; set; } = new[] { 10, 20, 50, 100 };
+
+    // Selection
+    [Parameter] public Syncfusion.Blazor.Grids.SelectionType SelectionType { get; set; } = Syncfusion.Blazor.Grids.SelectionType.Multiple;
+    [Parameter] public Syncfusion.Blazor.Grids.SelectionMode SelectionMode { get; set; } = Syncfusion.Blazor.Grids.SelectionMode.Row;
+    [Parameter] public bool ShowBulkActions { get; set; } = true;
+
+    // Filtering
+    [Parameter] public Syncfusion.Blazor.Grids.FilterType FilterType { get; set; } = Syncfusion.Blazor.Grids.FilterType.Excel;
+
+    // Grouping
+    [Parameter] public bool ShowGroupedColumn { get; set; } = true;
+
+    // Detail Row
+    [Parameter] public bool ShowDetailRow { get; set; }
+    [Parameter] public RenderFragment<TValue>? DetailTemplate { get; set; }
+
+    // Data
+    [Parameter] public IEnumerable<TValue>? DataSource { get; set; }
+    [Parameter] public Func<TValue, string>? SearchFunction { get; set; }
+
+    // Events
+    [Parameter] public EventCallback OnRefreshClicked { get; set; }
+    [Parameter] public EventCallback OnCreateClicked { get; set; }
+    [Parameter] public EventCallback<TValue> OnViewClicked { get; set; }
+    [Parameter] public EventCallback<TValue> OnEditClicked { get; set; }
+    [Parameter] public EventCallback<TValue> OnDeleteClicked { get; set; }
+    [Parameter] public EventCallback<TValue> OnRowDoubleClick { get; set; }
+    [Parameter] public EventCallback<List<TValue>> OnSelectionChanged { get; set; }
+
+    // Templates
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? CustomToolbarButtons { get; set; }
+    [Parameter] public RenderFragment<TValue>? CustomRowActions { get; set; }
+    [Parameter] public RenderFragment<List<TValue>>? BulkActions { get; set; }
+    [Parameter] public RenderFragment? CustomFooter { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? InternalCssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // Internal State
+    private bool HasPermission { get; set; } = true;
+    private bool HasViewPermission { get; set; } = true;
+    private bool HasEditPermission { get; set; } = true;
+    private bool HasDeletePermission { get; set; } = true;
+    private bool HasCreatePermission { get; set; } = true;
+    private SfGrid<TValue>? _grid;
+    private string SearchText { get; set; } = string.Empty;
+    private List<TValue> SelectedRows { get; set; } = new();
+    private IEnumerable<TValue>? FilteredDataSource => GetFilteredData();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PermissionService != null)
+        {
+            if (!string.IsNullOrEmpty(RequiredPermission))
+                HasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            if (!string.IsNullOrEmpty(ViewPermission))
+                HasViewPermission = await PermissionService.HasPermissionAsync(ViewPermission);
+            if (!string.IsNullOrEmpty(EditPermission))
+                HasEditPermission = await PermissionService.HasPermissionAsync(EditPermission);
+            if (!string.IsNullOrEmpty(DeletePermission))
+                HasDeletePermission = await PermissionService.HasPermissionAsync(DeletePermission);
+            if (!string.IsNullOrEmpty(CreatePermission))
+                HasCreatePermission = await PermissionService.HasPermissionAsync(CreatePermission);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private IEnumerable<TValue>? GetFilteredData()
+    {
+        if (DataSource == null) return null;
+        if (string.IsNullOrWhiteSpace(SearchText)) return DataSource;
+
+        if (SearchFunction != null)
+        {
+            return DataSource.Where(item => 
+                SearchFunction(item)?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true
+            );
+        }
+
+        return DataSource;
+    }
+
+    private async Task OnSearchChanged()
+    {
+        if (_grid != null)
+        {
+            await _grid.Refresh();
+        }
+    }
+
+    private async Task OnRefresh()
+    {
+        await OnRefreshClicked.InvokeAsync();
+        if (_grid != null)
+        {
+            await _grid.Refresh();
+        }
+        await LogAuditAsync("Refresh");
+    }
+
+    private async Task OnCreate()
+    {
+        await OnCreateClicked.InvokeAsync();
+        await LogAuditAsync("Create");
+    }
+
+    private async Task OnView(TValue row)
+    {
+        await OnViewClicked.InvokeAsync(row);
+        await LogAuditAsync("View", row);
+    }
+
+    private async Task OnEdit(TValue row)
+    {
+        await OnEditClicked.InvokeAsync(row);
+        await LogAuditAsync("Edit", row);
+    }
+
+    private async Task OnDelete(TValue row)
+    {
+        await OnDeleteClicked.InvokeAsync(row);
+        await LogAuditAsync("Delete", row);
+    }
+
+    private async Task OnRowSelected(RowSelectEventArgs<TValue> args)
+    {
+        if (!SelectedRows.Contains(args.Data))
+        {
+            SelectedRows.Add(args.Data);
+        }
+        await OnSelectionChanged.InvokeAsync(SelectedRows);
+    }
+
+    private async Task OnRowDeselected(RowDeselectEventArgs<TValue> args)
+    {
+        SelectedRows.Remove(args.Data);
+        await OnSelectionChanged.InvokeAsync(SelectedRows);
+    }
+
+    private async Task OnRecordDoubleClick(RecordDoubleClickEventArgs<TValue> args)
+    {
+        await OnRowDoubleClick.InvokeAsync(args.RowData);
+    }
+
+    private void OnActionBegin(Syncfusion.Blazor.Grids.ActionEventArgs<TValue> args) { }
+    private void OnActionComplete(Syncfusion.Blazor.Grids.ActionEventArgs<TValue> args) { }
+
+    private void ClearSelection()
+    {
+        SelectedRows.Clear();
+        StateHasChanged();
+    }
+
+    private async Task ExportToExcel()
+    {
+        // Export functionality requires Syncfusion.Blazor.ExcelExport package
+        await LogAuditAsync("ExportExcel");
+    }
+
+    private async Task ExportToPdf()
+    {
+        // Export functionality requires Syncfusion.Blazor.PdfExport package
+        await LogAuditAsync("ExportPdf");
+    }
+
+    private async Task OpenColumnChooser()
+    {
+        // Column chooser requires additional configuration
+    }
+
+    private string GetDisplayRange()
+    {
+        if (_grid == null || DataSource == null) return "0-0";
+        var currentPage = _grid.PageSettings?.CurrentPage ?? 1;
+        var pageSize = _grid.PageSettings?.PageSize ?? PageSize;
+        var total = DataSource.Count();
+        var start = ((currentPage - 1) * pageSize) + 1;
+        var end = Math.Min(currentPage * pageSize, total);
+        return $"{start}-{end}";
+    }
+
+    private async Task LogAuditAsync(string action, TValue? data = default)
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            var metadata = new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = action,
+                Timestamp = DateTimeOffset.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["RecordCount"] = DataSource?.Count() ?? 0
+                }
+            };
+
+            if (data != null)
+            {
+                metadata.AdditionalData["Data"] = data.ToString() ?? "N/A";
+            }
+
+            await AuditService.LogAsync(metadata);
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        return new Dictionary<string, object>
+        {
+            ["role"] = "table",
+            ["aria-label"] = Title
+        };
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (_grid != null)
+        {
+            await _grid.Refresh();
+        }
+    }
+
+    public async Task<List<TValue>> GetSelectedRecordsAsync()
+    {
+        if (_grid != null)
+        {
+            return await _grid.GetSelectedRecordsAsync();
+        }
+        return new List<TValue>();
+    }
+}

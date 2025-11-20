@@ -1,5 +1,6 @@
 @using Syncfusion.Blazor.Grids
 @using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Data
 @typeparam TValue
 @inject IPermissionService PermissionService
 @inject IAuditService AuditService
@@ -100,6 +101,20 @@
     [Parameter] public bool ShowToolbar { get; set; } = false;
     [Parameter] public List<object>? ToolbarItems { get; set; }
     
+    // Export Parameters
+    [Parameter] public bool AllowExcelExport { get; set; } = false;
+    [Parameter] public bool AllowPdfExport { get; set; } = false;
+    [Parameter] public bool AllowCsvExport { get; set; } = false;
+    [Parameter] public EventCallback OnExcelExport { get; set; }
+    [Parameter] public EventCallback OnPdfExport { get; set; }
+    [Parameter] public EventCallback OnCsvExport { get; set; }
+    
+    // Advanced Features
+    [Parameter] public bool EnableInfiniteScrolling { get; set; } = false;
+    [Parameter] public bool AllowRowDragAndDrop { get; set; } = false;
+    [Parameter] public bool AllowColumnChooser { get; set; } = false;
+    [Parameter] public bool AllowPrint { get; set; } = false;
+    
     // Server-Side Operations
     [Parameter] public bool ServerSideOperations { get; set; } = false;
     [Parameter] public EventCallback<Syncfusion.Blazor.Grids.ActionEventArgs<TValue>> OnActionBegin { get; set; }
@@ -118,6 +133,9 @@
     // Audit Parameters
     [Parameter] public bool EnableAudit { get; set; } = false;
     [Parameter] public string? AuditResource { get; set; }
+    
+    // Custom Aggregates
+    [Parameter] public GridAggregateManager<TValue>? CustomAggregates { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,10 +217,111 @@
         
         var toolbar = ToolbarItems ?? new List<object>();
         
-        // Filter toolbar items based on permissions
-        // This is a simplified example - you'd implement more sophisticated filtering
+        // Add export options if enabled
+        if (AllowExcelExport && string.IsNullOrEmpty(ExportPermission) || 
+            (!string.IsNullOrEmpty(ExportPermission) && _hasPermission))
+        {
+            toolbar.Add("ExcelExport");
+        }
+        
+        if (AllowPdfExport && string.IsNullOrEmpty(ExportPermission) || 
+            (!string.IsNullOrEmpty(ExportPermission) && _hasPermission))
+        {
+            toolbar.Add("PdfExport");
+        }
+        
+        if (AllowCsvExport && string.IsNullOrEmpty(ExportPermission) || 
+            (!string.IsNullOrEmpty(ExportPermission) && _hasPermission))
+        {
+            toolbar.Add("CsvExport");
+        }
+        
+        if (AllowPrint)
+        {
+            toolbar.Add("Print");
+        }
+        
+        if (AllowColumnChooser)
+        {
+            toolbar.Add("ColumnChooser");
+        }
         
         return toolbar;
+    }
+
+    /// <summary>
+    /// Exports grid data to Excel format
+    /// </summary>
+    public async Task ExportToExcelAsync(string? fileName = null)
+    {
+        if (_grid != null && AllowExcelExport)
+        {
+            await _grid.ExportToExcelAsync(new Syncfusion.Blazor.Grids.ExcelExportProperties 
+            { 
+                FileName = fileName ?? "GridData.xlsx" 
+            });
+            await OnExcelExport.InvokeAsync();
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "Grid_ExcelExport",
+                    Resource = AuditResource ?? "DataGrid",
+                    Timestamp = DateTimeOffset.UtcNow
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Exports grid data to PDF format
+    /// </summary>
+    public async Task ExportToPdfAsync(string? fileName = null)
+    {
+        if (_grid != null && AllowPdfExport)
+        {
+            await _grid.ExportToPdfAsync(new Syncfusion.Blazor.Grids.PdfExportProperties 
+            { 
+                FileName = fileName ?? "GridData.pdf" 
+            });
+            await OnPdfExport.InvokeAsync();
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "Grid_PdfExport",
+                    Resource = AuditResource ?? "DataGrid",
+                    Timestamp = DateTimeOffset.UtcNow
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Exports grid data to CSV format
+    /// </summary>
+    public async Task ExportToCsvAsync(string? fileName = null)
+    {
+        if (_grid != null && AllowCsvExport)
+        {
+            await _grid.ExportToCsvAsync(new Syncfusion.Blazor.Grids.ExcelExportProperties 
+            { 
+                FileName = fileName ?? "GridData.csv" 
+            });
+            await OnCsvExport.InvokeAsync();
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "Grid_CsvExport",
+                    Resource = AuditResource ?? "DataGrid",
+                    Timestamp = DateTimeOffset.UtcNow
+                });
+            }
+        }
     }
 
     /// <summary>
@@ -230,5 +349,27 @@
     {
         if (_grid != null)
             await _grid.ClearSelectionAsync();
+    }
+
+    /// <summary>
+    /// Calculates a custom aggregate for a specific field
+    /// </summary>
+    public object? CalculateCustomAggregate(string aggregateName, string fieldName)
+    {
+        if (CustomAggregates == null || DataSource == null)
+            return null;
+
+        return CustomAggregates.Calculate(aggregateName, DataSource, fieldName);
+    }
+
+    /// <summary>
+    /// Calculates multiple custom aggregates for a specific field
+    /// </summary>
+    public Dictionary<string, object?> CalculateMultipleAggregates(string[] aggregateNames, string fieldName)
+    {
+        if (CustomAggregates == null || DataSource == null)
+            return new Dictionary<string, object?>();
+
+        return CustomAggregates.CalculateMultiple(aggregateNames, DataSource, fieldName);
     }
 }

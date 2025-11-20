@@ -1,0 +1,697 @@
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+<div class="n360-gantt-chart @GetThemeClass()">
+    @if (_hasPermission || !HideIfNoPermission)
+    {
+        <!-- Toolbar -->
+        <div class="gantt-toolbar">
+            <div class="toolbar-left">
+                <span class="gantt-title">@Chart.Name</span>
+                <input type="text" 
+                       class="search-input" 
+                       placeholder="Search tasks..." 
+                       @bind="_searchText"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+            
+            <div class="toolbar-right">
+                <button class="toolbar-btn @(_showFilters ? "active" : "")" @onclick="OnToggleFilterAsync">
+                    🔍 Filter
+                </button>
+                
+                <select class="view-mode-select" @bind="Chart.ViewMode" @bind:after="OnViewModeChangedAsync">
+                    <option value="@GanttViewMode.Hours">Hours</option>
+                    <option value="@GanttViewMode.Days">Days</option>
+                    <option value="@GanttViewMode.Weeks">Weeks</option>
+                    <option value="@GanttViewMode.Months">Months</option>
+                    <option value="@GanttViewMode.Quarters">Quarters</option>
+                    <option value="@GanttViewMode.Years">Years</option>
+                </select>
+                
+                <button class="toolbar-btn" @onclick="OnZoomInAsync">🔍+</button>
+                <button class="toolbar-btn" @onclick="OnZoomOutAsync">🔍-</button>
+                <button class="toolbar-btn" @onclick="OnTodayAsync">📅 Today</button>
+                <button class="toolbar-btn" @onclick="OnExpandAllAsync">⬇️ Expand</button>
+                <button class="toolbar-btn" @onclick="OnCollapseAllAsync">⬆️ Collapse</button>
+                <button class="toolbar-btn" @onclick="OnAddTaskAsync">➕ Add Task</button>
+                <button class="toolbar-btn" @onclick="OnExportAsync">📤 Export</button>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        @if (_showFilters)
+        {
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <label>Priority:</label>
+                    <div class="filter-chips">
+                        @foreach (var priority in Enum.GetValues<GanttTaskPriority>())
+                        {
+                            <button class="filter-chip @(_activeFilters.Priorities.Contains(priority) ? "active" : "")"
+                                    @onclick="() => ToggleFilterPriority(priority)">
+                                @priority
+                            </button>
+                        }
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Status:</label>
+                    <div class="filter-chips">
+                        @foreach (var status in Enum.GetValues<GanttTaskStatus>())
+                        {
+                            <button class="filter-chip @(_activeFilters.Statuses.Contains(status) ? "active" : "")"
+                                    @onclick="() => ToggleFilterStatus(status)">
+                                @status
+                            </button>
+                        }
+                    </div>
+                </div>
+                
+                <button class="clear-filters-btn" @onclick="OnClearFiltersAsync">Clear Filters</button>
+            </div>
+        }
+
+        <!-- Gantt Content -->
+        <div class="gantt-content">
+            <!-- Task List Panel -->
+            <div class="task-list-panel" style="width: @(_taskListWidth)px;">
+                <div class="task-list-header">
+                    <div class="task-name-col">Task Name</div>
+                    <div class="task-start-col">Start</div>
+                    <div class="task-end-col">End</div>
+                    <div class="task-progress-col">Progress</div>
+                </div>
+                
+                <div class="task-list-body">
+                    @foreach (var task in GetFilteredTasks())
+                    {
+                        @RenderTaskRow(task, 0)
+                    }
+                </div>
+            </div>
+
+            <!-- Timeline Panel -->
+            <div class="timeline-panel">
+                <div class="timeline-header">
+                    @RenderTimelineHeader()
+                </div>
+                
+                <div class="timeline-body">
+                    @foreach (var task in GetFilteredTasks())
+                    {
+                        @RenderTaskBar(task, 0)
+                    }
+                </div>
+                
+                <!-- Today Indicator -->
+                <div class="today-indicator" style="left: @GetTodayPosition()px;"></div>
+            </div>
+        </div>
+
+        <!-- Task Details Modal -->
+        @if (_selectedTask != null)
+        {
+            <div class="task-modal-overlay" @onclick="CloseTaskDetails">
+                <div class="task-modal" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3>@(_selectedTask.IsMilestone ? "🏁" : "📋") Task Details</h3>
+                        <button class="close-btn" @onclick="CloseTaskDetails">✕</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="modal-section">
+                            <label>Task Name</label>
+                            <input type="text" class="task-name-input" @bind="_selectedTask.Name" />
+                        </div>
+                        
+                        <div class="modal-row">
+                            <div class="modal-section">
+                                <label>Start Date</label>
+                                <input type="date" @bind="_selectedTask.StartDate" />
+                            </div>
+                            
+                            <div class="modal-section">
+                                <label>End Date</label>
+                                <input type="date" @bind="_selectedTask.EndDate" />
+                            </div>
+                        </div>
+                        
+                        <div class="modal-row">
+                            <div class="modal-section">
+                                <label>Priority</label>
+                                <select @bind="_selectedTask.Priority">
+                                    @foreach (var priority in Enum.GetValues<GanttTaskPriority>())
+                                    {
+                                        <option value="@priority">@priority</option>
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div class="modal-section">
+                                <label>Status</label>
+                                <select @bind="_selectedTask.Status">
+                                    @foreach (var status in Enum.GetValues<GanttTaskStatus>())
+                                    {
+                                        <option value="@status">@status</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>Progress</label>
+                            <div class="progress-input-group">
+                                <input type="range" min="0" max="100" @bind="_selectedTask.Progress" @bind:after="StateHasChanged" />
+                                <span class="progress-value">@_selectedTask.Progress%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: @(_selectedTask.Progress)%; background-color: @_selectedTask.GetStatusColor();"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>Assigned To</label>
+                            <input type="text" @bind="_selectedTask.AssignedToName" placeholder="Enter assignee name" />
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>Description</label>
+                            <textarea @bind="_selectedTask.Description" rows="4" placeholder="Enter task description"></textarea>
+                        </div>
+                        
+                        <div class="modal-row">
+                            <div class="modal-section">
+                                <label>Estimated Cost</label>
+                                <input type="number" @bind="_selectedTask.EstimatedCost" placeholder="0.00" />
+                            </div>
+                            
+                            <div class="modal-section">
+                                <label>Actual Cost</label>
+                                <input type="number" @bind="_selectedTask.ActualCost" placeholder="0.00" />
+                            </div>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>
+                                <input type="checkbox" @bind="_selectedTask.IsMilestone" />
+                                Mark as Milestone
+                            </label>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>Resources (@_selectedTask.Resources.Count)</label>
+                            <div class="resources-list">
+                                @foreach (var resource in _selectedTask.Resources)
+                                {
+                                    <div class="resource-item">
+                                        <span class="resource-avatar">@GetUserInitials(resource.Name)</span>
+                                        <span class="resource-name">@resource.Name</span>
+                                        <span class="resource-role">@resource.Role</span>
+                                        <span class="resource-allocation">@resource.AllocationPercentage%</span>
+                                        <button class="remove-resource-btn" @onclick="() => RemoveResource(resource)">✕</button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label>Dependencies (@_selectedTask.Dependencies.Count)</label>
+                            <div class="dependencies-list">
+                                @foreach (var depId in _selectedTask.Dependencies)
+                                {
+                                    var depTask = Chart.GetTask(depId);
+                                    if (depTask != null)
+                                    {
+                                        <div class="dependency-item">
+                                            <span class="dependency-icon">🔗</span>
+                                            <span class="dependency-name">@depTask.Name</span>
+                                            <button class="remove-dependency-btn" @onclick="() => RemoveDependency(depId)">✕</button>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="delete-btn" @onclick="OnDeleteTaskAsync">🗑️ Delete</button>
+                        <button class="save-btn" @onclick="OnSaveTaskAsync">💾 Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public GanttChart Chart { get; set; } = new();
+    [Parameter] public EventCallback<GanttChart> ChartChanged { get; set; }
+    [Parameter] public EventCallback<GanttTaskUpdatedEventArgs> OnTaskUpdated { get; set; }
+    [Parameter] public EventCallback<GanttTaskDraggedEventArgs> OnTaskDragged { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "GanttChart";
+    [Parameter] public string? AuditAction { get; set; }
+
+    private bool _hasPermission = true;
+    private bool _showFilters = false;
+    private GanttFilter _activeFilters = new();
+    private string _searchText = string.Empty;
+    private GanttTask? _selectedTask;
+    private int _taskListWidth = 400;
+    private double _zoomLevel = 1.0;
+    private DateTime _scrollPosition = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (Chart.Tasks.Any() && Chart.ProjectStartDate == default)
+        {
+            Chart.ProjectStartDate = Chart.Tasks.Min(t => t.StartDate);
+            Chart.ProjectEndDate = Chart.Tasks.Max(t => t.EndDate);
+        }
+    }
+
+    private RenderFragment RenderTaskRow(GanttTask task, int level) => __builder =>
+    {
+        var indent = level * 20;
+        var hasChildren = task.HasChildren(Chart.Tasks);
+        
+        <div class="task-row @(task.IsOverdue ? "overdue" : "")">
+            <div class="task-name-col" style="padding-left: @(indent)px;">
+                @if (hasChildren)
+                {
+                    <button class="expand-btn" @onclick="() => ToggleTaskExpand(task)">
+                        @(task.IsExpanded ? "▼" : "▶")
+                    </button>
+                }
+                <span class="task-icon">@(task.IsMilestone ? "🏁" : "📋")</span>
+                <span class="task-name" @onclick="() => OpenTaskDetails(task)">@task.Name</span>
+            </div>
+            <div class="task-start-col">@task.StartDate.ToString("MM/dd")</div>
+            <div class="task-end-col">@task.EndDate.ToString("MM/dd")</div>
+            <div class="task-progress-col">
+                <div class="progress-mini">
+                    <div class="progress-mini-fill" style="width: @(task.Progress)%;"></div>
+                </div>
+                <span class="progress-text">@task.Progress%</span>
+            </div>
+        </div>
+        
+        @if (hasChildren && task.IsExpanded)
+        {
+            @foreach (var child in task.GetChildren(Chart.Tasks))
+            {
+                @RenderTaskRow(child, level + 1)
+            }
+        }
+    };
+
+    private RenderFragment RenderTaskBar(GanttTask task, int level) => __builder =>
+    {
+        var position = GetTaskPosition(task);
+        var width = GetTaskWidth(task);
+        var hasChildren = task.HasChildren(Chart.Tasks);
+        
+        <div class="task-bar-row">
+            <div class="task-bar @(task.IsMilestone ? "milestone" : "")"
+                 style="left: @(position)px; width: @(width)px; background-color: @(task.Color ?? task.GetStatusColor());"
+                 @onclick="() => OpenTaskDetails(task)">
+                
+                @if (!task.IsMilestone)
+                {
+                    <div class="task-bar-progress" style="width: @(task.Progress)%;"></div>
+                    <span class="task-bar-label">@task.Name</span>
+                }
+                else
+                {
+                    <div class="milestone-marker">◆</div>
+                }
+            </div>
+            
+            @foreach (var depId in task.Dependencies)
+            {
+                var depTask = Chart.GetTask(depId);
+                if (depTask != null)
+                {
+                    var depPosition = GetTaskPosition(depTask);
+                    var depWidth = GetTaskWidth(depTask);
+                    <svg class="dependency-arrow" style="position: absolute;">
+                        <line x1="@(depPosition + depWidth)" y1="15" 
+                              x2="@position" y2="15" 
+                              stroke="#999" stroke-width="2" marker-end="url(#arrowhead)" />
+                    </svg>
+                }
+            }
+        </div>
+        
+        @if (hasChildren && task.IsExpanded)
+        {
+            @foreach (var child in task.GetChildren(Chart.Tasks))
+            {
+                @RenderTaskBar(child, level + 1)
+            }
+        }
+    };
+
+    private RenderFragment RenderTimelineHeader() => __builder =>
+    {
+        var dates = GetTimelineDates();
+        var cellWidth = GetCellWidth();
+        
+        <div class="timeline-scale">
+            @foreach (var date in dates)
+            {
+                <div class="timeline-cell" style="width: @(cellWidth)px;">
+                    @FormatTimelineDate(date)
+                </div>
+            }
+        </div>
+        
+        <svg width="0" height="0">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#999" />
+                </marker>
+            </defs>
+        </svg>
+    };
+
+    private List<GanttTask> GetFilteredTasks()
+    {
+        var tasks = Chart.GetRootTasks();
+        
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            tasks = tasks.Where(t => t.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        
+        if (_activeFilters.Priorities.Any())
+        {
+            tasks = tasks.Where(t => _activeFilters.Priorities.Contains(t.Priority)).ToList();
+        }
+        
+        if (_activeFilters.Statuses.Any())
+        {
+            tasks = tasks.Where(t => _activeFilters.Statuses.Contains(t.Status)).ToList();
+        }
+        
+        if (_activeFilters.ShowOnlyOverdue == true)
+        {
+            tasks = tasks.Where(t => t.IsOverdue).ToList();
+        }
+        
+        if (_activeFilters.ShowOnlyMilestones == true)
+        {
+            tasks = tasks.Where(t => t.IsMilestone).ToList();
+        }
+        
+        return tasks;
+    }
+
+    private List<DateTime> GetTimelineDates()
+    {
+        var dates = new List<DateTime>();
+        var current = Chart.ProjectStartDate;
+        
+        while (current <= Chart.ProjectEndDate)
+        {
+            dates.Add(current);
+            current = Chart.ViewMode switch
+            {
+                GanttViewMode.Hours => current.AddHours(1),
+                GanttViewMode.Days => current.AddDays(1),
+                GanttViewMode.Weeks => current.AddDays(7),
+                GanttViewMode.Months => current.AddMonths(1),
+                GanttViewMode.Quarters => current.AddMonths(3),
+                GanttViewMode.Years => current.AddYears(1),
+                _ => current.AddDays(1)
+            };
+        }
+        
+        return dates;
+    }
+
+    private string FormatTimelineDate(DateTime date) => Chart.ViewMode switch
+    {
+        GanttViewMode.Hours => date.ToString("HH:mm"),
+        GanttViewMode.Days => date.ToString("MMM dd"),
+        GanttViewMode.Weeks => $"Week {GetWeekNumber(date)}",
+        GanttViewMode.Months => date.ToString("MMM yyyy"),
+        GanttViewMode.Quarters => $"Q{(date.Month - 1) / 3 + 1} {date.Year}",
+        GanttViewMode.Years => date.ToString("yyyy"),
+        _ => date.ToString("MMM dd")
+    };
+
+    private int GetWeekNumber(DateTime date)
+    {
+        var jan1 = new DateTime(date.Year, 1, 1);
+        return (date.DayOfYear - 1) / 7 + 1;
+    }
+
+    private double GetTaskPosition(GanttTask task)
+    {
+        var daysDiff = (task.StartDate - Chart.ProjectStartDate).TotalDays;
+        return daysDiff * GetCellWidth() * _zoomLevel;
+    }
+
+    private double GetTaskWidth(GanttTask task)
+    {
+        if (task.IsMilestone) return 20;
+        return task.Duration * GetCellWidth() * _zoomLevel;
+    }
+
+    private double GetCellWidth() => Chart.ViewMode switch
+    {
+        GanttViewMode.Hours => 40,
+        GanttViewMode.Days => 50,
+        GanttViewMode.Weeks => 100,
+        GanttViewMode.Months => 120,
+        GanttViewMode.Quarters => 150,
+        GanttViewMode.Years => 200,
+        _ => 50
+    };
+
+    private double GetTodayPosition()
+    {
+        var daysDiff = (DateTime.Today - Chart.ProjectStartDate).TotalDays;
+        return daysDiff * GetCellWidth() * _zoomLevel;
+    }
+
+    private void ToggleTaskExpand(GanttTask task)
+    {
+        task.IsExpanded = !task.IsExpanded;
+    }
+
+    private void OpenTaskDetails(GanttTask task)
+    {
+        _selectedTask = task;
+    }
+
+    private void CloseTaskDetails()
+    {
+        _selectedTask = null;
+    }
+
+    private void RemoveResource(GanttTaskResource resource)
+    {
+        if (_selectedTask != null)
+        {
+            _selectedTask.Resources.Remove(resource);
+        }
+    }
+
+    private void RemoveDependency(string dependencyId)
+    {
+        if (_selectedTask != null)
+        {
+            _selectedTask.Dependencies.Remove(dependencyId);
+        }
+    }
+
+    private string GetUserInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "??";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "??";
+        if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    private void ToggleFilterPriority(GanttTaskPriority priority)
+    {
+        if (_activeFilters.Priorities.Contains(priority))
+            _activeFilters.Priorities.Remove(priority);
+        else
+            _activeFilters.Priorities.Add(priority);
+    }
+
+    private void ToggleFilterStatus(GanttTaskStatus status)
+    {
+        if (_activeFilters.Statuses.Contains(status))
+            _activeFilters.Statuses.Remove(status);
+        else
+            _activeFilters.Statuses.Add(status);
+    }
+
+    private async Task OnSearchInputAsync(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task OnToggleFilterAsync()
+    {
+        _showFilters = !_showFilters;
+    }
+
+    private async Task OnClearFiltersAsync()
+    {
+        _activeFilters = new GanttFilter();
+        _searchText = string.Empty;
+    }
+
+    private async Task OnViewModeChangedAsync()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "ChangeViewMode",
+                AdditionalData = new Dictionary<string, object> { ["ViewMode"] = Chart.ViewMode.ToString() }
+            });
+        }
+    }
+
+    private async Task OnZoomInAsync()
+    {
+        _zoomLevel = Math.Min(_zoomLevel * 1.2, 3.0);
+    }
+
+    private async Task OnZoomOutAsync()
+    {
+        _zoomLevel = Math.Max(_zoomLevel / 1.2, 0.3);
+    }
+
+    private async Task OnTodayAsync()
+    {
+        _scrollPosition = DateTime.Today;
+    }
+
+    private async Task OnExpandAllAsync()
+    {
+        foreach (var task in Chart.Tasks)
+        {
+            task.IsExpanded = true;
+        }
+    }
+
+    private async Task OnCollapseAllAsync()
+    {
+        foreach (var task in Chart.Tasks)
+        {
+            task.IsExpanded = false;
+        }
+    }
+
+    private async Task OnAddTaskAsync()
+    {
+        var newTask = new GanttTask
+        {
+            Name = $"New Task {Chart.Tasks.Count + 1}",
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(7),
+            Order = Chart.Tasks.Count
+        };
+        
+        Chart.Tasks.Add(newTask);
+        _selectedTask = newTask;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "CreateTask",
+                AdditionalData = new Dictionary<string, object> { ["TaskName"] = newTask.Name }
+            });
+        }
+        
+        await ChartChanged.InvokeAsync(Chart);
+    }
+
+    private async Task OnSaveTaskAsync()
+    {
+        if (_selectedTask != null && EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "UpdateTask",
+                AdditionalData = new Dictionary<string, object> { ["TaskName"] = _selectedTask.Name }
+            });
+        }
+        
+        await OnTaskUpdated.InvokeAsync(new GanttTaskUpdatedEventArgs
+        {
+            Task = _selectedTask!,
+            PropertyName = "Multiple",
+            OldValue = null,
+            NewValue = null
+        });
+        
+        CloseTaskDetails();
+        await ChartChanged.InvokeAsync(Chart);
+    }
+
+    private async Task OnDeleteTaskAsync()
+    {
+        if (_selectedTask != null)
+        {
+            Chart.Tasks.Remove(_selectedTask);
+            
+            if (EnableAudit)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Resource = AuditResource,
+                    Action = AuditAction ?? "DeleteTask",
+                    AdditionalData = new Dictionary<string, object> { ["TaskName"] = _selectedTask.Name }
+                });
+            }
+            
+            CloseTaskDetails();
+            await ChartChanged.InvokeAsync(Chart);
+        }
+    }
+
+    private async Task OnExportAsync()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Resource = AuditResource,
+                Action = AuditAction ?? "Export",
+                AdditionalData = new Dictionary<string, object> { ["ChartName"] = Chart.Name }
+            });
+        }
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+}

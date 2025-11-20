@@ -1,0 +1,1040 @@
+@using Nalam360Enterprise.UI.Models
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-role-manager @CssClass" @attributes="GetHtmlAttributes()">
+    @if (!_hasPermission)
+    {
+        <div class="role-manager-no-permission">
+            <span class="no-permission-icon">🔒</span>
+            <p>You don't have permission to manage roles and permissions.</p>
+        </div>
+        return;
+    }
+
+    @if (_isLoading)
+    {
+        <div class="role-manager-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading roles...</p>
+        </div>
+        return;
+    }
+
+    <!-- Header Section -->
+    <div class="role-manager-header">
+        <div class="header-title">
+            <h2>@Title</h2>
+            @if (ShowStatistics && _statistics != null)
+            {
+                <div class="header-statistics">
+                    <span class="stat-item">
+                        <span class="stat-icon">🛡️</span>
+                        <span class="stat-value">@_statistics.TotalRoles</span>
+                        <span class="stat-label">Total Roles</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">👥</span>
+                        <span class="stat-value">@_statistics.TotalUsers</span>
+                        <span class="stat-label">Users</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-icon">🔑</span>
+                        <span class="stat-value">@_statistics.TotalPermissions</span>
+                        <span class="stat-label">Permissions</span>
+                    </span>
+                </div>
+            }
+        </div>
+
+        <div class="header-actions">
+            @if (AllowExport)
+            {
+                <button class="btn-export" @onclick="OnExportAsync" title="Export roles">
+                    📤 Export
+                </button>
+            }
+            @if (AllowCreateRole)
+            {
+                <button class="btn-create" @onclick="OnCreateRoleAsync" title="Create new role">
+                    ➕ Create Role
+                </button>
+            }
+            <button class="btn-view-mode" @onclick="OnCycleViewMode" title="Change view mode">
+                @GetViewModeIcon(_viewMode)
+            </button>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="role-manager-toolbar">
+        <div class="toolbar-left">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" 
+                       class="search-input" 
+                       placeholder="Search roles..." 
+                       @bind="_filter.SearchQuery"
+                       @bind:event="oninput" />
+            </div>
+
+            @if (ShowFilters)
+            {
+                <div class="filter-group">
+                    <select class="filter-select" @onchange="OnTypeFilterChanged">
+                        <option value="">All Types</option>
+                        @foreach (var type in Enum.GetValues<RoleType>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <select class="filter-select" @onchange="OnStatusFilterChanged">
+                        <option value="">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            }
+
+            @if (AllowBulkActions && _selectedRoleIds.Count > 0)
+            {
+                <div class="bulk-actions">
+                    <span class="selected-count">@_selectedRoleIds.Count selected</span>
+                    <button class="btn-bulk" @onclick="OnBulkGrantAsync">Grant Permissions</button>
+                    <button class="btn-bulk" @onclick="OnBulkRevokeAsync">Revoke Permissions</button>
+                    <button class="btn-bulk" @onclick="OnBulkDeleteAsync">Delete</button>
+                </div>
+            }
+        </div>
+
+        <div class="toolbar-right">
+            <button class="btn-sort" @onclick="OnToggleSortOrder">
+                Sort: @_sortBy @(_sortAscending ? "▲" : "▼")
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="role-manager-content">
+        <!-- List View -->
+        @if (_viewMode == RoleManagerViewMode.List)
+        {
+            <div class="role-list">
+                @if (_filteredRoles.Any())
+                {
+                    @foreach (var role in _filteredRoles)
+                    {
+                        <div class="role-list-item @(role.IsActive ? "" : "inactive")" @onclick="@(() => OnSelectRoleAsync(role.Id))">
+                            @if (AllowBulkActions)
+                            {
+                                <input type="checkbox" 
+                                       checked="@_selectedRoleIds.Contains(role.Id)"
+                                       @onclick="@((e) => OnToggleSelectRole(role.Id, e))"
+                                       @onclick:stopPropagation="true" />
+                            }
+
+                            <div class="role-icon" style="background-color: @(role.Color ?? "#007bff")">
+                                @GetRoleTypeIcon(role.Type)
+                            </div>
+
+                            <div class="role-info">
+                                <div class="role-name-row">
+                                    <h3>@role.Name</h3>
+                                    @if (role.IsSystem)
+                                    {
+                                        <span class="badge system">System</span>
+                                    }
+                                    @if (!role.IsActive)
+                                    {
+                                        <span class="badge inactive">Inactive</span>
+                                    }
+                                </div>
+                                <p class="role-description">@role.Description</p>
+                                <div class="role-meta">
+                                    <span>Type: @role.Type</span>
+                                    <span class="separator">•</span>
+                                    <span>@role.UserCount users</span>
+                                    <span class="separator">•</span>
+                                    <span>@role.Permissions.Count permissions</span>
+                                </div>
+                            </div>
+
+                            <div class="role-actions" @onclick:stopPropagation="true">
+                                <button class="btn-icon" @onclick="@(() => OnEditRoleAsync(role.Id))" title="Edit">✏️</button>
+                                <button class="btn-icon" @onclick="@(() => OnCloneRoleAsync(role.Id))" title="Clone">📋</button>
+                                @if (!role.IsSystem && AllowDeleteRole)
+                                {
+                                    <button class="btn-icon" @onclick="@(() => OnDeleteRoleAsync(role.Id))" title="Delete">🗑️</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="role-manager-empty">
+                        <span class="empty-icon">🛡️</span>
+                        <p>No roles found matching your criteria.</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Grid View -->
+        @if (_viewMode == RoleManagerViewMode.Grid)
+        {
+            <div class="role-grid">
+                @if (_filteredRoles.Any())
+                {
+                    @foreach (var role in _filteredRoles)
+                    {
+                        <div class="role-card @(role.IsActive ? "" : "inactive")" @onclick="@(() => OnSelectRoleAsync(role.Id))">
+                            <div class="card-header">
+                                <div class="role-icon-large" style="background-color: @(role.Color ?? "#007bff")">
+                                    @GetRoleTypeIcon(role.Type)
+                                </div>
+                                @if (AllowBulkActions)
+                                {
+                                    <input type="checkbox" 
+                                           class="card-checkbox"
+                                           checked="@_selectedRoleIds.Contains(role.Id)"
+                                           @onclick="@((e) => OnToggleSelectRole(role.Id, e))"
+                                           @onclick:stopPropagation="true" />
+                                }
+                            </div>
+
+                            <div class="card-body">
+                                <h3>@role.Name</h3>
+                                <p class="card-description">@role.Description</p>
+                                
+                                <div class="card-badges">
+                                    <span class="badge type">@role.Type</span>
+                                    @if (role.IsSystem)
+                                    {
+                                        <span class="badge system">System</span>
+                                    }
+                                    @if (!role.IsActive)
+                                    {
+                                        <span class="badge inactive">Inactive</span>
+                                    }
+                                </div>
+
+                                <div class="card-stats">
+                                    <div class="stat">
+                                        <span class="stat-icon">👥</span>
+                                        <span class="stat-value">@role.UserCount</span>
+                                        <span class="stat-label">Users</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-icon">🔑</span>
+                                        <span class="stat-value">@role.Permissions.Count</span>
+                                        <span class="stat-label">Permissions</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                <button class="btn-card" @onclick="@(() => OnEditRoleAsync(role.Id))" @onclick:stopPropagation="true">✏️ Edit</button>
+                                <button class="btn-card" @onclick="@(() => OnCloneRoleAsync(role.Id))" @onclick:stopPropagation="true">📋 Clone</button>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="role-manager-empty">
+                        <span class="empty-icon">🛡️</span>
+                        <p>No roles found matching your criteria.</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Matrix View -->
+        @if (_viewMode == RoleManagerViewMode.Matrix && _permissionCategories.Any())
+        {
+            <div class="permission-matrix">
+                <div class="matrix-header">
+                    <div class="matrix-corner">Permissions / Roles</div>
+                    @foreach (var role in _filteredRoles.Take(10))
+                    {
+                        <div class="matrix-role-header" title="@role.Name">
+                            <span>@role.Name</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="matrix-body">
+                    @foreach (var category in _permissionCategories)
+                    {
+                        <div class="matrix-category">
+                            <div class="category-header" @onclick="@(() => OnToggleCategoryAsync(category.Name))">
+                                <span class="category-icon">@(category.IsExpanded ? "▼" : "▶")</span>
+                                <span class="category-name">@(category.DisplayName ?? category.Name)</span>
+                                <span class="category-count">(@category.Permissions.Count)</span>
+                            </div>
+
+                            @if (category.IsExpanded)
+                            {
+                                @foreach (var permission in category.Permissions)
+                                {
+                                    <div class="matrix-row">
+                                        <div class="matrix-permission-name" title="@permission.Description">
+                                            @(permission.DisplayName ?? permission.Name)
+                                        </div>
+                                        @foreach (var role in _filteredRoles.Take(10))
+                                        {
+                                            var isGranted = role.Permissions.Any(p => p.Id == permission.Id && p.IsGranted);
+                                            var isDenied = role.Permissions.Any(p => p.Id == permission.Id && p.IsDenied);
+                                            var isInherited = role.Permissions.Any(p => p.Id == permission.Id && p.IsInherited);
+
+                                            <div class="matrix-cell @(isGranted ? "granted" : "") @(isDenied ? "denied" : "") @(isInherited ? "inherited" : "")"
+                                                 @onclick="@(() => OnTogglePermissionAsync(role.Id, permission.Id))">
+                                                @if (isGranted)
+                                                {
+                                                    <span title="@(isInherited ? "Inherited" : "Granted")">✓</span>
+                                                }
+                                                else if (isDenied)
+                                                {
+                                                    <span title="Denied">✕</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Hierarchy View -->
+        @if (_viewMode == RoleManagerViewMode.Hierarchy && _hierarchyRoot != null)
+        {
+            <div class="role-hierarchy">
+                <div class="hierarchy-controls">
+                    <button class="btn-control" @onclick="OnExpandAllAsync">Expand All</button>
+                    <button class="btn-control" @onclick="OnCollapseAllAsync">Collapse All</button>
+                </div>
+
+                <div class="hierarchy-tree">
+                    @RenderHierarchyNode(_hierarchyRoot)
+                </div>
+            </div>
+        }
+
+        <!-- Comparison View -->
+        @if (_viewMode == RoleManagerViewMode.Comparison)
+        {
+            <div class="role-comparison">
+                <div class="comparison-selector">
+                    <div class="selector-group">
+                        <label>Select first role:</label>
+                        <select @bind="_comparisonRole1Id">
+                            <option value="">-- Select Role --</option>
+                            @foreach (var role in Roles)
+                            {
+                                <option value="@role.Id">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="selector-group">
+                        <label>Select second role:</label>
+                        <select @bind="_comparisonRole2Id">
+                            <option value="">-- Select Role --</option>
+                            @foreach (var role in Roles)
+                            {
+                                <option value="@role.Id">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <button class="btn-compare" @onclick="OnCompareRolesAsync" disabled="@(string.IsNullOrEmpty(_comparisonRole1Id) || string.IsNullOrEmpty(_comparisonRole2Id))">
+                        Compare Roles
+                    </button>
+                </div>
+
+                @if (_comparisonResult != null)
+                {
+                    <div class="comparison-result">
+                        <div class="comparison-header">
+                            <h3>Comparison Results</h3>
+                            <span class="similarity-score">Similarity: @(_comparisonResult.SimilarityPercentage.ToString("F1"))%</span>
+                        </div>
+
+                        <div class="comparison-grid">
+                            <div class="comparison-column">
+                                <h4>@_comparisonResult.Role1.Name Only</h4>
+                                <div class="permission-list">
+                                    @foreach (var perm in _comparisonResult.UniqueToRole1)
+                                    {
+                                        <div class="permission-item">@(perm.DisplayName ?? perm.Name)</div>
+                                    }
+                                    @if (!_comparisonResult.UniqueToRole1.Any())
+                                    {
+                                        <p class="empty-text">No unique permissions</p>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="comparison-column common">
+                                <h4>Common Permissions</h4>
+                                <div class="permission-list">
+                                    @foreach (var perm in _comparisonResult.CommonPermissions)
+                                    {
+                                        <div class="permission-item">@(perm.DisplayName ?? perm.Name)</div>
+                                    }
+                                    @if (!_comparisonResult.CommonPermissions.Any())
+                                    {
+                                        <p class="empty-text">No common permissions</p>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="comparison-column">
+                                <h4>@_comparisonResult.Role2.Name Only</h4>
+                                <div class="permission-list">
+                                    @foreach (var perm in _comparisonResult.UniqueToRole2)
+                                    {
+                                        <div class="permission-item">@(perm.DisplayName ?? perm.Name)</div>
+                                    }
+                                    @if (!_comparisonResult.UniqueToRole2.Any())
+                                    {
+                                        <p class="empty-text">No unique permissions</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Role Details Panel -->
+    @if (_showRoleDetails && _selectedRole != null)
+    {
+        <div class="role-details-overlay" @onclick="OnCloseRoleDetails">
+            <div class="role-details-panel" @onclick:stopPropagation="true">
+                <div class="details-header">
+                    <h3>Role Details</h3>
+                    <button class="btn-close" @onclick="OnCloseRoleDetails">✕</button>
+                </div>
+
+                <div class="details-content">
+                    <div class="details-section">
+                        <div class="role-icon-xlarge" style="background-color: @(_selectedRole.Color ?? "#007bff")">
+                            @GetRoleTypeIcon(_selectedRole.Type)
+                        </div>
+                        <h2>@_selectedRole.Name</h2>
+                        <p class="details-description">@_selectedRole.Description</p>
+                        
+                        <div class="details-badges">
+                            <span class="badge type">@_selectedRole.Type</span>
+                            @if (_selectedRole.IsSystem)
+                            {
+                                <span class="badge system">System</span>
+                            }
+                            @if (!_selectedRole.IsActive)
+                            {
+                                <span class="badge inactive">Inactive</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Role Information</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Type:</span>
+                                <span class="info-value">@_selectedRole.Type</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Level:</span>
+                                <span class="info-value">@_selectedRole.Level</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Category:</span>
+                                <span class="info-value">@(_selectedRole.Category ?? "N/A")</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Users:</span>
+                                <span class="info-value">@_selectedRole.UserCount</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Permissions:</span>
+                                <span class="info-value">@_selectedRole.Permissions.Count</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Created:</span>
+                                <span class="info-value">@_selectedRole.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_selectedRole.ParentRoleName != null)
+                    {
+                        <div class="details-section">
+                            <h4>Inheritance</h4>
+                            <p>Inherits from: <strong>@_selectedRole.ParentRoleName</strong></p>
+                        </div>
+                    }
+
+                    <div class="details-section">
+                        <h4>Permissions (@_selectedRole.Permissions.Count)</h4>
+                        <div class="permissions-list">
+                            @foreach (var permission in _selectedRole.Permissions.OrderBy(p => p.Category).ThenBy(p => p.Name))
+                            {
+                                <div class="permission-detail-item @(permission.IsInherited ? "inherited" : "")">
+                                    <span class="permission-icon">@(permission.IsGranted ? "✓" : permission.IsDenied ? "✕" : "−")</span>
+                                    <span class="permission-name">@(permission.DisplayName ?? permission.Name)</span>
+                                    @if (permission.IsInherited)
+                                    {
+                                        <span class="permission-inherited-badge">Inherited</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-footer">
+                    @if (!_selectedRole.IsSystem)
+                    {
+                        <button class="btn-action edit" @onclick="@(() => OnEditRoleAsync(_selectedRole.Id))">✏️ Edit</button>
+                        <button class="btn-action clone" @onclick="@(() => OnCloneRoleAsync(_selectedRole.Id))">📋 Clone</button>
+                        @if (AllowDeleteRole)
+                        {
+                            <button class="btn-action delete" @onclick="@(() => OnDeleteRoleAsync(_selectedRole.Id))">🗑️ Delete</button>
+                        }
+                    }
+                    <button class="btn-action" @onclick="@(() => OnAssignUsersAsync(_selectedRole.Id))">👥 Assign Users</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string Title { get; set; } = "Role Manager";
+    [Parameter] public List<Role> Roles { get; set; } = new();
+    [Parameter] public List<Permission> AllPermissions { get; set; } = new();
+    [Parameter] public RoleStatistics? Statistics { get; set; }
+    [Parameter] public RoleManagerViewMode InitialViewMode { get; set; } = RoleManagerViewMode.List;
+    [Parameter] public bool ShowStatistics { get; set; } = true;
+    [Parameter] public bool ShowFilters { get; set; } = true;
+    [Parameter] public bool AllowCreateRole { get; set; } = true;
+    [Parameter] public bool AllowEditRole { get; set; } = true;
+    [Parameter] public bool AllowDeleteRole { get; set; } = true;
+    [Parameter] public bool AllowExport { get; set; } = true;
+    [Parameter] public bool AllowBulkActions { get; set; } = true;
+
+    // Events
+    [Parameter] public EventCallback<Guid> OnRoleSelected { get; set; }
+    [Parameter] public EventCallback<Role> OnRoleCreated { get; set; }
+    [Parameter] public EventCallback<Role> OnRoleUpdated { get; set; }
+    [Parameter] public EventCallback<Guid> OnRoleDeleted { get; set; }
+    [Parameter] public EventCallback<(Guid RoleId, Guid PermissionId, bool IsGranted)> OnPermissionToggled { get; set; }
+    [Parameter] public EventCallback<RoleExportFormat> OnExport { get; set; }
+
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isLoading = false;
+    private bool _showRoleDetails = false;
+    private RoleManagerViewMode _viewMode = RoleManagerViewMode.List;
+    private RoleFilter _filter = new();
+    private List<Role> _filteredRoles = new();
+    private Role? _selectedRole;
+    private RoleStatistics? _statistics;
+    private List<PermissionCategory> _permissionCategories = new();
+    private RoleHierarchyNode? _hierarchyRoot;
+    private RoleSortBy _sortBy = RoleSortBy.Name;
+    private bool _sortAscending = true;
+    private List<Guid> _selectedRoleIds = new();
+    private string? _comparisonRole1Id;
+    private string? _comparisonRole2Id;
+    private RoleComparison? _comparisonResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            if (!_hasPermission && HideIfNoPermission)
+            {
+                return;
+            }
+        }
+
+        _viewMode = InitialViewMode;
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        await Task.Delay(100);
+
+        _filteredRoles = Roles ?? new();
+        _statistics = Statistics ?? new RoleStatistics();
+        
+        ApplyFilters();
+        ApplySorting();
+        GroupPermissionsByCategory();
+        BuildRoleHierarchy();
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredRoles = Roles.Where(r =>
+        {
+            if (!string.IsNullOrEmpty(_filter.SearchQuery))
+            {
+                var query = _filter.SearchQuery.ToLower();
+                if (!r.Name.ToLower().Contains(query) &&
+                    !(r.Description?.ToLower().Contains(query) ?? false))
+                {
+                    return false;
+                }
+            }
+
+            if (_filter.Types.Any() && !_filter.Types.Contains(r.Type))
+                return false;
+
+            if (_filter.IsActive.HasValue && r.IsActive != _filter.IsActive.Value)
+                return false;
+
+            if (_filter.IsSystem.HasValue && r.IsSystem != _filter.IsSystem.Value)
+                return false;
+
+            return true;
+        }).ToList();
+    }
+
+    private void ApplySorting()
+    {
+        _filteredRoles = _sortBy switch
+        {
+            RoleSortBy.Name => _sortAscending 
+                ? _filteredRoles.OrderBy(r => r.Name).ToList()
+                : _filteredRoles.OrderByDescending(r => r.Name).ToList(),
+            RoleSortBy.Type => _sortAscending
+                ? _filteredRoles.OrderBy(r => r.Type).ToList()
+                : _filteredRoles.OrderByDescending(r => r.Type).ToList(),
+            RoleSortBy.UserCount => _sortAscending
+                ? _filteredRoles.OrderBy(r => r.UserCount).ToList()
+                : _filteredRoles.OrderByDescending(r => r.UserCount).ToList(),
+            RoleSortBy.PermissionCount => _sortAscending
+                ? _filteredRoles.OrderBy(r => r.Permissions.Count).ToList()
+                : _filteredRoles.OrderByDescending(r => r.Permissions.Count).ToList(),
+            RoleSortBy.CreatedAt => _sortAscending
+                ? _filteredRoles.OrderBy(r => r.CreatedAt).ToList()
+                : _filteredRoles.OrderByDescending(r => r.CreatedAt).ToList(),
+            _ => _filteredRoles
+        };
+    }
+
+    private void GroupPermissionsByCategory()
+    {
+        _permissionCategories = AllPermissions
+            .GroupBy(p => p.Category ?? "Other")
+            .Select(g => new PermissionCategory
+            {
+                Name = g.Key,
+                DisplayName = g.Key,
+                Permissions = g.ToList(),
+                IsExpanded = true
+            })
+            .OrderBy(c => c.Name)
+            .ToList();
+    }
+
+    private void BuildRoleHierarchy()
+    {
+        var topLevelRoles = Roles.Where(r => r.ParentRoleId == null || r.ParentRoleId == Guid.Empty).ToList();
+        if (topLevelRoles.Any())
+        {
+            _hierarchyRoot = new RoleHierarchyNode
+            {
+                RoleName = "Root",
+                Children = topLevelRoles.Select(r => CreateHierarchyNode(r, 0)).ToList()
+            };
+        }
+    }
+
+    private RoleHierarchyNode CreateHierarchyNode(Role role, int level)
+    {
+        return new RoleHierarchyNode
+        {
+            RoleId = role.Id,
+            RoleName = role.Name,
+            Description = role.Description,
+            Type = role.Type,
+            Level = level,
+            UserCount = role.UserCount,
+            PermissionCount = role.Permissions.Count,
+            IsActive = role.IsActive,
+            Children = Roles
+                .Where(r => r.ParentRoleId == role.Id)
+                .Select(r => CreateHierarchyNode(r, level + 1))
+                .ToList()
+        };
+    }
+
+    private RenderFragment RenderHierarchyNode(RoleHierarchyNode node) => builder =>
+    {
+        if (node.RoleName == "Root")
+        {
+            foreach (var child in node.Children)
+            {
+                builder.AddContent(0, RenderHierarchyNode(child));
+            }
+            return;
+        }
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "hierarchy-node");
+
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", $"hierarchy-card {(node.IsActive ? "" : "inactive")}");
+        builder.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => OnSelectRoleAsync(node.RoleId)));
+
+        builder.OpenElement(5, "div");
+        builder.AddAttribute(6, "class", "hierarchy-icon");
+        builder.AddContent(7, GetRoleTypeIcon(node.Type));
+        builder.CloseElement();
+
+        builder.OpenElement(8, "div");
+        builder.AddAttribute(9, "class", "hierarchy-info");
+        builder.OpenElement(10, "h4");
+        builder.AddContent(11, node.RoleName);
+        builder.CloseElement();
+        if (!string.IsNullOrEmpty(node.Description))
+        {
+            builder.OpenElement(12, "p");
+            builder.AddContent(13, node.Description);
+            builder.CloseElement();
+        }
+        builder.OpenElement(14, "div");
+        builder.AddAttribute(15, "class", "hierarchy-stats");
+        builder.AddContent(16, $"{node.UserCount} users • {node.PermissionCount} permissions");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        if (node.Children.Any())
+        {
+            builder.OpenElement(17, "button");
+            builder.AddAttribute(18, "class", "hierarchy-toggle");
+            builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, () => ToggleNodeExpansion(node)));
+            builder.AddContent(20, node.IsExpanded ? "▼" : "▶");
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+
+        if (node.IsExpanded && node.Children.Any())
+        {
+            builder.OpenElement(21, "div");
+            builder.AddAttribute(22, "class", "hierarchy-children");
+            foreach (var child in node.Children)
+            {
+                builder.AddContent(23, RenderHierarchyNode(child));
+            }
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+    };
+
+    // Event Handlers
+    private async Task OnSelectRoleAsync(Guid roleId)
+    {
+        _selectedRole = Roles.FirstOrDefault(r => r.Id == roleId);
+        _showRoleDetails = true;
+
+        if (OnRoleSelected.HasDelegate)
+        {
+            await OnRoleSelected.InvokeAsync(roleId);
+        }
+    }
+
+    private void OnCloseRoleDetails()
+    {
+        _showRoleDetails = false;
+        _selectedRole = null;
+    }
+
+    private async Task OnCreateRoleAsync()
+    {
+        var newRole = new Role { Id = Guid.NewGuid(), Name = "New Role" };
+        if (OnRoleCreated.HasDelegate)
+        {
+            await OnRoleCreated.InvokeAsync(newRole);
+        }
+    }
+
+    private async Task OnEditRoleAsync(Guid roleId)
+    {
+        var role = Roles.FirstOrDefault(r => r.Id == roleId);
+        if (role != null && OnRoleUpdated.HasDelegate)
+        {
+            await OnRoleUpdated.InvokeAsync(role);
+        }
+    }
+
+    private async Task OnCloneRoleAsync(Guid roleId)
+    {
+        var role = Roles.FirstOrDefault(r => r.Id == roleId);
+        if (role != null)
+        {
+            var clonedRole = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = $"{role.Name} (Copy)",
+                Description = role.Description,
+                Type = role.Type,
+                Permissions = new List<Permission>(role.Permissions)
+            };
+            if (OnRoleCreated.HasDelegate)
+            {
+                await OnRoleCreated.InvokeAsync(clonedRole);
+            }
+        }
+    }
+
+    private async Task OnDeleteRoleAsync(Guid roleId)
+    {
+        if (OnRoleDeleted.HasDelegate)
+        {
+            await OnRoleDeleted.InvokeAsync(roleId);
+        }
+    }
+
+    private async Task OnTogglePermissionAsync(Guid roleId, Guid permissionId)
+    {
+        var role = Roles.FirstOrDefault(r => r.Id == roleId);
+        if (role != null)
+        {
+            var permission = role.Permissions.FirstOrDefault(p => p.Id == permissionId);
+            var isGranted = permission == null || !permission.IsGranted;
+
+            if (OnPermissionToggled.HasDelegate)
+            {
+                await OnPermissionToggled.InvokeAsync((roleId, permissionId, isGranted));
+            }
+        }
+    }
+
+    private void OnToggleSelectRole(Guid roleId, MouseEventArgs e)
+    {
+        if (_selectedRoleIds.Contains(roleId))
+            _selectedRoleIds.Remove(roleId);
+        else
+            _selectedRoleIds.Add(roleId);
+    }
+
+    private void OnCycleViewMode()
+    {
+        _viewMode = _viewMode switch
+        {
+            RoleManagerViewMode.List => RoleManagerViewMode.Grid,
+            RoleManagerViewMode.Grid => RoleManagerViewMode.Matrix,
+            RoleManagerViewMode.Matrix => RoleManagerViewMode.Hierarchy,
+            RoleManagerViewMode.Hierarchy => RoleManagerViewMode.Comparison,
+            RoleManagerViewMode.Comparison => RoleManagerViewMode.List,
+            _ => RoleManagerViewMode.List
+        };
+    }
+
+    private void OnToggleSortOrder()
+    {
+        _sortAscending = !_sortAscending;
+        ApplySorting();
+    }
+
+    private void OnTypeFilterChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        ApplyFilters();
+    }
+
+    private void OnStatusFilterChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        ApplyFilters();
+    }
+
+    private async Task OnToggleCategoryAsync(string categoryName)
+    {
+        var category = _permissionCategories.FirstOrDefault(c => c.Name == categoryName);
+        if (category != null)
+        {
+            category.IsExpanded = !category.IsExpanded;
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task OnExpandAllAsync()
+    {
+        ExpandAllNodes(_hierarchyRoot);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnCollapseAllAsync()
+    {
+        CollapseAllNodes(_hierarchyRoot);
+        await Task.CompletedTask;
+    }
+
+    private void ExpandAllNodes(RoleHierarchyNode? node)
+    {
+        if (node == null) return;
+        node.IsExpanded = true;
+        foreach (var child in node.Children)
+        {
+            ExpandAllNodes(child);
+        }
+    }
+
+    private void CollapseAllNodes(RoleHierarchyNode? node)
+    {
+        if (node == null) return;
+        node.IsExpanded = false;
+        foreach (var child in node.Children)
+        {
+            CollapseAllNodes(child);
+        }
+    }
+
+    private void ToggleNodeExpansion(RoleHierarchyNode node)
+    {
+        node.IsExpanded = !node.IsExpanded;
+    }
+
+    private async Task OnCompareRolesAsync()
+    {
+        if (string.IsNullOrEmpty(_comparisonRole1Id) || string.IsNullOrEmpty(_comparisonRole2Id))
+            return;
+
+        var role1 = Roles.FirstOrDefault(r => r.Id.ToString() == _comparisonRole1Id);
+        var role2 = Roles.FirstOrDefault(r => r.Id.ToString() == _comparisonRole2Id);
+
+        if (role1 != null && role2 != null)
+        {
+            var common = role1.Permissions.Where(p1 => role2.Permissions.Any(p2 => p2.Id == p1.Id)).ToList();
+            var unique1 = role1.Permissions.Where(p1 => !role2.Permissions.Any(p2 => p2.Id == p1.Id)).ToList();
+            var unique2 = role2.Permissions.Where(p2 => !role1.Permissions.Any(p1 => p1.Id == p2.Id)).ToList();
+
+            var totalPermissions = role1.Permissions.Count + role2.Permissions.Count - common.Count;
+            var similarity = totalPermissions > 0 ? (double)common.Count / totalPermissions * 100 : 0;
+
+            _comparisonResult = new RoleComparison
+            {
+                Role1 = role1,
+                Role2 = role2,
+                CommonPermissions = common,
+                UniqueToRole1 = unique1,
+                UniqueToRole2 = unique2,
+                SimilarityPercentage = similarity
+            };
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task OnAssignUsersAsync(Guid roleId)
+    {
+        // Implement user assignment logic
+        await Task.CompletedTask;
+    }
+
+    private async Task OnBulkGrantAsync()
+    {
+        // Implement bulk grant logic
+        await Task.CompletedTask;
+    }
+
+    private async Task OnBulkRevokeAsync()
+    {
+        // Implement bulk revoke logic
+        await Task.CompletedTask;
+    }
+
+    private async Task OnBulkDeleteAsync()
+    {
+        // Implement bulk delete logic
+        if (OnRoleDeleted.HasDelegate)
+        {
+            foreach (var roleId in _selectedRoleIds)
+            {
+                await OnRoleDeleted.InvokeAsync(roleId);
+            }
+        }
+        _selectedRoleIds.Clear();
+    }
+
+    private async Task OnExportAsync()
+    {
+        if (OnExport.HasDelegate)
+        {
+            await OnExport.InvokeAsync(RoleExportFormat.Excel);
+        }
+    }
+
+    // Helper Methods
+    private string GetRoleTypeIcon(RoleType type) => type switch
+    {
+        RoleType.System => "⚙️",
+        RoleType.Administrator => "👑",
+        RoleType.Manager => "📊",
+        RoleType.User => "👤",
+        RoleType.Custom => "🛠️",
+        RoleType.Service => "🤖",
+        RoleType.API => "🔌",
+        _ => "🛡️"
+    };
+
+    private string GetViewModeIcon(RoleManagerViewMode mode) => mode switch
+    {
+        RoleManagerViewMode.List => "☰",
+        RoleManagerViewMode.Grid => "⊞",
+        RoleManagerViewMode.Matrix => "▦",
+        RoleManagerViewMode.Hierarchy => "🏢",
+        RoleManagerViewMode.Comparison => "⚖️",
+        _ => "☰"
+    };
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>
+        {
+            ["role"] = "region",
+            ["aria-label"] = "Role Manager"
+        };
+        return attrs;
+    }
+}

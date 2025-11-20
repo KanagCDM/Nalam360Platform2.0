@@ -1,39 +1,39 @@
 {
   "Files": [
     {
-      "Id": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/obj/Debug/net9.0/scopedcss/projectbundle/Nalam360Enterprise.UI.bundle.scp.css",
-      "PackagePath": "staticwebassets/Nalam360Enterprise.UI.agg6wgo1ac.bundle.scp.css"
+      "Id": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\Debug\\net9.0\\scopedcss\\projectbundle\\Nalam360Enterprise.UI.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Nalam360Enterprise.UI.awo5zrksui.bundle.scp.css"
     },
     {
-      "Id": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/wwwroot/background.png",
-      "PackagePath": "staticwebassets/background.png"
+      "Id": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
     },
     {
-      "Id": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/wwwroot/exampleJsInterop.js",
-      "PackagePath": "staticwebassets/exampleJsInterop.js"
+      "Id": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
     },
     {
-      "Id": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360Enterprise.UI/Nalam360Enterprise.UI/wwwroot/styles/design-tokens.css",
-      "PackagePath": "staticwebassets/styles/design-tokens.css"
+      "Id": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\styles\\design-tokens.css",
+      "PackagePath": "staticwebassets\\styles\\design-tokens.css"
     },
     {
-      "Id": "obj/Debug/net9.0/staticwebassets/msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },
     {
-      "Id": "obj/Debug/net9.0/staticwebassets/msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssets.props",
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },
     {
-      "Id": "obj/Debug/net9.0/staticwebassets/msbuild.build.Nalam360Enterprise.UI.props",
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.build.Nalam360Enterprise.UI.props",
       "PackagePath": "build\\Nalam360Enterprise.UI.props"
     },
     {
-      "Id": "obj/Debug/net9.0/staticwebassets/msbuild.buildMultiTargeting.Nalam360Enterprise.UI.props",
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.buildMultiTargeting.Nalam360Enterprise.UI.props",
       "PackagePath": "buildMultiTargeting\\Nalam360Enterprise.UI.props"
     },
     {
-      "Id": "obj/Debug/net9.0/staticwebassets/msbuild.buildTransitive.Nalam360Enterprise.UI.props",
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.buildTransitive.Nalam360Enterprise.UI.props",
       "PackagePath": "buildTransitive\\Nalam360Enterprise.UI.props"
     }
   ],

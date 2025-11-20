@@ -1,0 +1,332 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<div class="n360-page-header @ThemeClass @(ShowBackground ? "with-background" : "") @CssClass" style="@Style">
+    <div class="page-header-container @(IsFluid ? "fluid" : "")">
+        @if (ShowBreadcrumb && BreadcrumbItems != null && BreadcrumbItems.Any())
+        {
+            <nav class="page-breadcrumb" aria-label="Breadcrumb">
+                <ol class="breadcrumb-list">
+                    @foreach (var (item, index) in BreadcrumbItems.Select((item, i) => (item, i)))
+                    {
+                        @if (HasPermission(item.RequiredPermission))
+                        {
+                            <li class="breadcrumb-item @(index == BreadcrumbItems.Count - 1 ? "active" : "")">
+                                @if (index < BreadcrumbItems.Count - 1 && !string.IsNullOrEmpty(item.Href))
+                                {
+                                    <a href="@item.Href" 
+                                       class="breadcrumb-link"
+                                       @onclick="() => OnBreadcrumbClick(item)"
+                                       @onclick:preventDefault="item.PreventDefault">
+                                        @if (!string.IsNullOrEmpty(item.Icon))
+                                        {
+                                            <span class="breadcrumb-icon">@item.Icon</span>
+                                        }
+                                        <span class="breadcrumb-text">@item.Label</span>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="breadcrumb-text">@item.Label</span>
+                                }
+                                @if (index < BreadcrumbItems.Count - 1)
+                                {
+                                    <span class="breadcrumb-separator">@BreadcrumbSeparator</span>
+                                }
+                            </li>
+                        }
+                    }
+                </ol>
+            </nav>
+        }
+
+        <div class="page-header-main">
+            <div class="page-header-left">
+                @if (ShowBackButton)
+                {
+                    <button class="back-button" @onclick="OnBackButtonClick" aria-label="Go back">
+                        <span class="back-icon">@BackButtonIcon</span>
+                    </button>
+                }
+
+                <div class="page-header-content">
+                    @if (!string.IsNullOrEmpty(IconUrl))
+                    {
+                        <div class="page-icon">
+                            <img src="@IconUrl" alt="@Title" class="icon-image" />
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <div class="page-icon icon-placeholder">
+                            <span class="icon-emoji">@Icon</span>
+                        </div>
+                    }
+
+                    <div class="page-header-text">
+                        <div class="page-title-row">
+                            <h1 class="page-title">@Title</h1>
+                            @if (!string.IsNullOrEmpty(Badge))
+                            {
+                                <span class="page-badge @BadgeType">@Badge</span>
+                            }
+                            @if (ShowStatus && !string.IsNullOrEmpty(StatusText))
+                            {
+                                <span class="page-status @StatusType">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">@StatusText</span>
+                                </span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Description))
+                        {
+                            <p class="page-description">@Description</p>
+                        }
+
+                        @if (MetadataItems != null && MetadataItems.Any())
+                        {
+                            <div class="page-metadata">
+                                @foreach (var meta in MetadataItems)
+                                {
+                                    <div class="metadata-item">
+                                        @if (!string.IsNullOrEmpty(meta.Icon))
+                                        {
+                                            <span class="metadata-icon">@meta.Icon</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(meta.Label))
+                                        {
+                                            <span class="metadata-label">@meta.Label:</span>
+                                        }
+                                        <span class="metadata-value">@meta.Value</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-header-right">
+                @if (ActionButtons != null && ActionButtons.Any())
+                {
+                    <div class="page-actions">
+                        @foreach (var button in ActionButtons)
+                        {
+                            @if (HasPermission(button.RequiredPermission))
+                            {
+                                <button class="action-button @button.Type @(button.IsPrimary ? "primary" : "")"
+                                        @onclick="() => OnActionClick(button)"
+                                        disabled="@button.IsDisabled"
+                                        title="@button.Tooltip">
+                                    @if (!string.IsNullOrEmpty(button.Icon))
+                                    {
+                                        <span class="button-icon">@button.Icon</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(button.Label))
+                                    {
+                                        <span class="button-text">@button.Label</span>
+                                    }
+                                </button>
+                            }
+                        }
+                    </div>
+                }
+
+                @if (CustomActions != null)
+                {
+                    <div class="page-custom-actions">
+                        @CustomActions
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (ShowTabs && TabItems != null && TabItems.Any())
+        {
+            <div class="page-tabs">
+                <nav class="tabs-nav">
+                    @foreach (var tab in TabItems)
+                    {
+                        @if (HasPermission(tab.RequiredPermission))
+                        {
+                            <button class="tab-item @(tab.IsActive ? "active" : "")"
+                                    @onclick="() => OnTabClick(tab)"
+                                    disabled="@tab.IsDisabled">
+                                @if (!string.IsNullOrEmpty(tab.Icon))
+                                {
+                                    <span class="tab-icon">@tab.Icon</span>
+                                }
+                                <span class="tab-text">@tab.Label</span>
+                                @if (tab.Count > 0)
+                                {
+                                    <span class="tab-count">@tab.Count</span>
+                                }
+                            </button>
+                        }
+                    }
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Content
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? IconUrl { get; set; }
+    [Parameter] public string? Badge { get; set; }
+    [Parameter] public string BadgeType { get; set; } = "default"; // default, success, warning, danger, info
+
+    // Status
+    [Parameter] public bool ShowStatus { get; set; } = false;
+    [Parameter] public string StatusText { get; set; } = string.Empty;
+    [Parameter] public string StatusType { get; set; } = "active"; // active, inactive, pending, error
+
+    // Configuration
+    [Parameter] public bool ShowBreadcrumb { get; set; } = true;
+    [Parameter] public bool ShowBackButton { get; set; } = false;
+    [Parameter] public bool ShowTabs { get; set; } = false;
+    [Parameter] public bool ShowBackground { get; set; } = true;
+    [Parameter] public bool IsFluid { get; set; } = false;
+
+    // Breadcrumb
+    [Parameter] public string BreadcrumbSeparator { get; set; } = "/";
+    [Parameter] public List<BreadcrumbItem>? BreadcrumbItems { get; set; }
+
+    // Back Button
+    [Parameter] public string BackButtonIcon { get; set; } = "←";
+
+    // Metadata
+    [Parameter] public List<MetadataItem>? MetadataItems { get; set; }
+
+    // Actions
+    [Parameter] public List<ActionButton>? ActionButtons { get; set; }
+    [Parameter] public RenderFragment? CustomActions { get; set; }
+
+    // Tabs
+    [Parameter] public List<TabItem>? TabItems { get; set; }
+
+    // Theme & Style
+    [Parameter] public string ThemeClass { get; set; } = "light";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+
+    // Events
+    [Parameter] public EventCallback OnBackClicked { get; set; }
+    [Parameter] public EventCallback<BreadcrumbItem> OnBreadcrumbClicked { get; set; }
+    [Parameter] public EventCallback<ActionButton> OnActionClicked { get; set; }
+    [Parameter] public EventCallback<TabItem> OnTabClicked { get; set; }
+
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+
+    private Dictionary<string, bool> _permissionCache = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _permissionCache.Clear();
+        
+        if (BreadcrumbItems != null)
+        {
+            foreach (var item in BreadcrumbItems.Where(i => !string.IsNullOrEmpty(i.RequiredPermission)))
+            {
+                _permissionCache[item.RequiredPermission!] = await PermissionService.HasPermissionAsync(item.RequiredPermission!);
+            }
+        }
+        
+        if (ActionButtons != null)
+        {
+            foreach (var button in ActionButtons.Where(b => !string.IsNullOrEmpty(b.RequiredPermission)))
+            {
+                _permissionCache[button.RequiredPermission!] = await PermissionService.HasPermissionAsync(button.RequiredPermission!);
+            }
+        }
+        
+        if (TabItems != null)
+        {
+            foreach (var tab in TabItems.Where(t => !string.IsNullOrEmpty(t.RequiredPermission)))
+            {
+                _permissionCache[tab.RequiredPermission!] = await PermissionService.HasPermissionAsync(tab.RequiredPermission!);
+            }
+        }
+    }
+
+    private bool HasPermission(string? permission)
+    {
+        if (string.IsNullOrEmpty(permission)) return true;
+        return _permissionCache.TryGetValue(permission, out var hasPermission) && hasPermission;
+    }
+
+    private async Task OnBackButtonClick()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "BackButtonClicked",
+                Resource = "PageHeader",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        await OnBackClicked.InvokeAsync();
+    }
+
+    private async Task OnBreadcrumbClick(BreadcrumbItem item)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "BreadcrumbClicked",
+                Resource = "PageHeader",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = item.Label
+                }
+            });
+        }
+        await OnBreadcrumbClicked.InvokeAsync(item);
+    }
+
+    private async Task OnActionClick(ActionButton button)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "ActionButtonClicked",
+                Resource = "PageHeader",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = button.Label ?? ""
+                }
+            });
+        }
+        await OnActionClicked.InvokeAsync(button);
+    }
+
+    private async Task OnTabClick(TabItem tab)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "TabClicked",
+                Resource = "PageHeader",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = tab.Label
+                }
+            });
+        }
+        await OnTabClicked.InvokeAsync(tab);
+    }
+}

@@ -1,0 +1,473 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Data</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Data.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering data services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.DependencyInjection.ServiceCollectionExtensions.AddPlatformData(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds Platform.Data services to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.DependencyInjection.ServiceCollectionExtensions.AddPlatformData``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds Platform.Data services with a specific DbContext.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.BaseDbContext">
+            <summary>
+            Base DbContext with domain event dispatch and audit support.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.BaseDbContext.SaveChangesAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.BaseDbContext.UpdateAuditableEntities">
+            <summary>
+            Updates audit fields (CreatedAt, ModifiedAt) on entities.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.BaseDbContext.DispatchDomainEventsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Dispatches domain events from aggregate roots.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.IAuditable">
+            <summary>
+            Interface for auditable entities.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.EntityFramework.IAuditable.CreatedAt">
+            <summary>
+            Gets or sets when the entity was created.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.EntityFramework.IAuditable.ModifiedAt">
+            <summary>
+            Gets or sets when the entity was last modified.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.EfRepository`2">
+            <summary>
+            Entity Framework implementation of the repository pattern.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+            <typeparam name="TId">The entity identifier type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.GetByIdAsync(`1,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.GetAllAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.GetAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.FindAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.FirstOrDefaultAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.FirstOrDefaultAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.AnyAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.AnyAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.CountAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.CountAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.GetPagedAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.AddAsync(`0,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.AddRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.UpdateAsync(`0,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.RemoveAsync(`0,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.RemoveRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfRepository`2.ApplySpecification(Nalam360.Platform.Data.Specifications.ISpecification{`0})">
+            <summary>
+            Applies a specification to a queryable.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.EfRepository`1">
+            <summary>
+            Entity Framework repository with Guid identifier.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork">
+            <summary>
+            Entity Framework implementation of Unit of Work pattern.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.HasActiveTransaction">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.BeginTransactionAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.CommitTransactionAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.RollbackTransactionAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.EfUnitOfWork.DisposeAsync">
+            <inheritdoc />
+        </member>
+        <member name="T:Nalam360.Platform.Data.EntityFramework.SpecificationEvaluator">
+            <summary>
+            Evaluates specifications and applies them to queryables.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.EntityFramework.SpecificationEvaluator.GetQuery``1(System.Linq.IQueryable{``0},Nalam360.Platform.Data.Specifications.ISpecification{``0})">
+            <summary>
+            Applies a specification to a queryable.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Repositories.IReadRepository`2">
+            <summary>
+            Read-only repository interface for query operations.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+            <typeparam name="TId">The entity identifier type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.GetByIdAsync(`1,System.Threading.CancellationToken)">
+            <summary>
+            Gets an entity by its identifier.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all entities.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.GetAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <summary>
+            Gets entities matching a specification.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.FindAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <summary>
+            Finds entities matching the predicate.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.FirstOrDefaultAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <summary>
+            Gets the first entity matching the specification or null.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.AnyAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <summary>
+            Checks if any entity matches the specification.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.CountAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Threading.CancellationToken)">
+            <summary>
+            Counts entities matching the specification.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IReadRepository`2.GetPagedAsync(Nalam360.Platform.Data.Specifications.ISpecification{`0},System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Gets paginated results matching the specification.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Repositories.IReadRepository`1">
+            <summary>
+            Non-generic read repository interface.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Repositories.PagedResult`1">
+            <summary>
+            Represents a paginated result.
+            </summary>
+            <typeparam name="T">The item type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.PagedResult`1.#ctor(System.Collections.Generic.IReadOnlyList{`0},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Represents a paginated result.
+            </summary>
+            <typeparam name="T">The item type.</typeparam>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Repositories.PagedResult`1.TotalPages">
+            <summary>
+            Gets the total number of pages.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Repositories.PagedResult`1.HasPreviousPage">
+            <summary>
+            Gets whether there is a previous page.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Repositories.PagedResult`1.HasNextPage">
+            <summary>
+            Gets whether there is a next page.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Repositories.IRepository`2">
+            <summary>
+            Generic repository interface for data access operations.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+            <typeparam name="TId">The entity identifier type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.GetByIdAsync(`1,System.Threading.CancellationToken)">
+            <summary>
+            Gets an entity by its identifier.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all entities.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.FindAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <summary>
+            Finds entities matching the predicate.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.FirstOrDefaultAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <summary>
+            Gets the first entity matching the predicate or null.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.AnyAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <summary>
+            Checks if any entity matches the predicate.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.CountAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}},System.Threading.CancellationToken)">
+            <summary>
+            Counts entities matching the predicate.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.AddAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            Adds a new entity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.AddRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <summary>
+            Adds multiple entities.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.UpdateAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            Updates an existing entity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.RemoveAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            Removes an entity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Repositories.IRepository`2.RemoveRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <summary>
+            Removes multiple entities.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Repositories.IRepository`1">
+            <summary>
+            Non-generic repository interface.
+            </summary>
+            <typeparam name="TEntity">The entity type.</typeparam>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Specifications.ISpecification`1">
+            <summary>
+            Specification pattern interface for building complex queries.
+            </summary>
+            <typeparam name="T">The entity type.</typeparam>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.Criteria">
+            <summary>
+            Gets the filter criteria.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.Includes">
+            <summary>
+            Gets the include expressions for eager loading.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.IncludeStrings">
+            <summary>
+            Gets the include string expressions for eager loading.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.OrderBy">
+            <summary>
+            Gets the order by expression.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.OrderByDescending">
+            <summary>
+            Gets the order by descending expression.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.GroupBy">
+            <summary>
+            Gets the group by expression.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.Take">
+            <summary>
+            Gets the number of items to take.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.Skip">
+            <summary>
+            Gets the number of items to skip.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.AsNoTracking">
+            <summary>
+            Gets whether to disable change tracking.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.ISpecification`1.AsSplitQuery">
+            <summary>
+            Gets whether to split queries.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.Specifications.Specification`1">
+            <summary>
+            Base class for implementing specifications.
+            </summary>
+            <typeparam name="T">The entity type.</typeparam>
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.Criteria">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.Includes">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.IncludeStrings">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.OrderBy">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.OrderByDescending">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.GroupBy">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.Take">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.Skip">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.AsNoTracking">
+            <inheritdoc />
+        </member>
+        <member name="P:Nalam360.Platform.Data.Specifications.Specification`1.AsSplitQuery">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.AddCriteria(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
+            <summary>
+            Adds filter criteria.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.AddInclude(System.Linq.Expressions.Expression{System.Func{`0,System.Object}})">
+            <summary>
+            Adds an include expression for eager loading.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.AddInclude(System.String)">
+            <summary>
+            Adds an include string for eager loading.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplyOrderBy(System.Linq.Expressions.Expression{System.Func{`0,System.Object}})">
+            <summary>
+            Adds ordering expression.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplyOrderByDescending(System.Linq.Expressions.Expression{System.Func{`0,System.Object}})">
+            <summary>
+            Adds descending ordering expression.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplyGroupBy(System.Linq.Expressions.Expression{System.Func{`0,System.Object}})">
+            <summary>
+            Adds group by expression.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplyPaging(System.Int32,System.Int32)">
+            <summary>
+            Applies paging.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplyNoTracking">
+            <summary>
+            Disables change tracking for queries.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.Specifications.Specification`1.ApplySplitQuery">
+            <summary>
+            Enables split query mode.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork">
+            <summary>
+            Unit of Work pattern interface for managing database transactions.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Saves all changes made in this unit of work.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork.BeginTransactionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Begins a new database transaction.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork.CommitTransactionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Commits the current transaction.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork.RollbackTransactionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Rolls back the current transaction.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Data.UnitOfWork.IUnitOfWork.HasActiveTransaction">
+            <summary>
+            Gets whether a transaction is currently active.
+            </summary>
+        </member>
+    </members>
+</doc>

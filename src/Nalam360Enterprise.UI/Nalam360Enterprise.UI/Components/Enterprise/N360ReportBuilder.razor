@@ -1,0 +1,1341 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+@if (_hasPermission)
+{
+    <div class="n360-report-builder @GetThemeClass()">
+        <!-- Toolbar -->
+        <div class="report-toolbar">
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnNewAsync" title="New Report">
+                    <span class="btn-icon">📄</span>
+                    <span class="btn-text">New</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnOpenAsync" title="Open Report">
+                    <span class="btn-icon">📂</span>
+                    <span class="btn-text">Open</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnSaveAsync" title="Save Report" disabled="@(!HasUnsavedChanges)">
+                    <span class="btn-icon">💾</span>
+                    <span class="btn-text">Save</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnUndoAsync" disabled="@(!CanUndo)" title="Undo">
+                    <span class="btn-icon">↶</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnRedoAsync" disabled="@(!CanRedo)" title="Redo">
+                    <span class="btn-icon">↷</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnAlignLeftAsync" disabled="@(_selectedElements.Count < 2)" title="Align Left">
+                    <span class="btn-icon">⫷</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnAlignCenterAsync" disabled="@(_selectedElements.Count < 2)" title="Align Center">
+                    <span class="btn-icon">⫶</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnAlignRightAsync" disabled="@(_selectedElements.Count < 2)" title="Align Right">
+                    <span class="btn-icon">⫸</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnAlignTopAsync" disabled="@(_selectedElements.Count < 2)" title="Align Top">
+                    <span class="btn-icon">⤒</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnAlignMiddleAsync" disabled="@(_selectedElements.Count < 2)" title="Align Middle">
+                    <span class="btn-icon">↕</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnAlignBottomAsync" disabled="@(_selectedElements.Count < 2)" title="Align Bottom">
+                    <span class="btn-icon">⤓</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnBringForwardAsync" disabled="@(_selectedElements.Count == 0)" title="Bring Forward">
+                    <span class="btn-icon">⬆</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnSendBackwardAsync" disabled="@(_selectedElements.Count == 0)" title="Send Backward">
+                    <span class="btn-icon">⬇</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnZoomInAsync" title="Zoom In">
+                    <span class="btn-icon">🔍+</span>
+                </button>
+                <span class="zoom-level">@($"{_zoomLevel:P0}")</span>
+                <button class="toolbar-btn" @onclick="OnZoomOutAsync" title="Zoom Out">
+                    <span class="btn-icon">🔍-</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnZoomResetAsync" title="Reset Zoom">
+                    <span class="btn-icon">⊡</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" @onclick="OnPreviewAsync" title="Preview Report">
+                    <span class="btn-icon">👁</span>
+                    <span class="btn-text">Preview</span>
+                </button>
+                <button class="toolbar-btn" @onclick="OnExportAsync" title="Export Report">
+                    <span class="btn-icon">⬇</span>
+                    <span class="btn-text">Export</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-spacer"></div>
+            
+            <div class="toolbar-section">
+                <span class="report-name">@CurrentReport.Name</span>
+                @if (HasUnsavedChanges)
+                {
+                    <span class="unsaved-indicator" title="Unsaved changes">●</span>
+                }
+            </div>
+        </div>
+
+        <div class="report-content">
+            <!-- Element Toolbox -->
+            <div class="report-toolbox @(_isToolboxCollapsed ? "collapsed" : "")">
+                <div class="toolbox-header" @onclick="() => _isToolboxCollapsed = !_isToolboxCollapsed">
+                    <span class="toolbox-title">Elements</span>
+                    <span class="collapse-icon">@(_isToolboxCollapsed ? "▶" : "◀")</span>
+                </div>
+                
+                @if (!_isToolboxCollapsed)
+                {
+                    <div class="toolbox-content">
+                        <div class="toolbox-search">
+                            <input type="text" 
+                                   class="search-input" 
+                                   placeholder="Search elements..."
+                                   @bind="_toolboxSearchText"
+                                   @bind:event="oninput" />
+                        </div>
+                        
+                        <div class="toolbox-category">
+                            <div class="category-header">Basic Elements</div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Text)">
+                                <span class="element-icon">📝</span>
+                                <span class="element-label">Text</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Image)">
+                                <span class="element-icon">🖼️</span>
+                                <span class="element-label">Image</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Line)">
+                                <span class="element-icon">➖</span>
+                                <span class="element-label">Line</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Rectangle)">
+                                <span class="element-icon">▭</span>
+                                <span class="element-label">Rectangle</span>
+                            </div>
+                        </div>
+                        
+                        <div class="toolbox-category">
+                            <div class="category-header">Data Elements</div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Table)">
+                                <span class="element-icon">📊</span>
+                                <span class="element-label">Table</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Chart)">
+                                <span class="element-icon">📈</span>
+                                <span class="element-label">Chart</span>
+                            </div>
+                        </div>
+                        
+                        <div class="toolbox-category">
+                            <div class="category-header">Barcodes</div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Barcode)">
+                                <span class="element-icon">⊞</span>
+                                <span class="element-label">Barcode</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.QRCode)">
+                                <span class="element-icon">⊡</span>
+                                <span class="element-label">QR Code</span>
+                            </div>
+                        </div>
+                        
+                        <div class="toolbox-category">
+                            <div class="category-header">Page Elements</div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Header)">
+                                <span class="element-icon">⬆️</span>
+                                <span class="element-label">Header</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.Footer)">
+                                <span class="element-icon">⬇️</span>
+                                <span class="element-label">Footer</span>
+                            </div>
+                            <div class="element-item" draggable="true" @ondragstart="(e) => OnElementDragStart(e, ReportElementType.PageBreak)">
+                                <span class="element-icon">✂️</span>
+                                <span class="element-label">Page Break</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Report Canvas -->
+            <div class="report-canvas-container"
+                 @ondragover="OnCanvasDragOver"
+                 @ondragover:preventDefault="true"
+                 @ondrop="OnCanvasDrop">
+                <div class="canvas-controls">
+                    <button class="canvas-control-btn" @onclick="OnToggleGridAsync" title="Toggle Grid">
+                        <span>@(CurrentReport.PageSettings.ShowGrid ? "🔲" : "⬜")</span>
+                    </button>
+                    <button class="canvas-control-btn" @onclick="OnToggleRulersAsync" title="Toggle Rulers">
+                        <span>📏</span>
+                    </button>
+                    <button class="canvas-control-btn" @onclick="OnToggleGuidesAsync" title="Toggle Guides">
+                        <span>┼</span>
+                    </button>
+                </div>
+                
+                <div class="canvas-wrapper" 
+                     style="transform: scale(@_zoomLevel);"
+                     @onmousedown="OnCanvasMouseDown"
+                     @onmousemove="OnCanvasMouseMove"
+                     @onmouseup="OnCanvasMouseUp">
+                    <div class="report-page" 
+                         style="width: @(CurrentReport.PageSettings.Width)mm; 
+                                height: @(CurrentReport.PageSettings.Height)mm;
+                                background-color: @CurrentReport.PageSettings.BackgroundColor;">
+                        
+                        @if (CurrentReport.PageSettings.ShowGrid)
+                        {
+                            <div class="page-grid" 
+                                 style="background-size: @(CurrentReport.PageSettings.GridSize)px @(CurrentReport.PageSettings.GridSize)px;"></div>
+                        }
+                        
+                        @foreach (var element in CurrentReport.Elements.OrderBy(e => e.ZIndex))
+                        {
+                            <div class="report-element @(element.IsSelected ? "selected" : "") @(element.IsLocked ? "locked" : "")"
+                                 style="left: @(element.X)px; 
+                                        top: @(element.Y)px; 
+                                        width: @(element.Width)px; 
+                                        height: @(element.Height)px;
+                                        z-index: @element.ZIndex;
+                                        display: @(element.IsVisible ? "block" : "none");"
+                                 @onmousedown="(e) => OnElementMouseDown(e, element)"
+                                 @onmousedown:stopPropagation="true">
+                                
+                                @if (element.Type == ReportElementType.Text)
+                                {
+                                    <div class="element-text"
+                                         style="font-family: @element.FontFamily;
+                                                font-size: @(element.FontSize)px;
+                                                font-weight: @(element.IsBold ? "bold" : "normal");
+                                                font-style: @(element.IsItalic ? "italic" : "normal");
+                                                text-decoration: @(element.IsUnderline ? "underline" : "none");
+                                                color: @element.TextColor;
+                                                text-align: @element.TextAlign.ToString().ToLower();
+                                                padding: @(element.PaddingTop)px @(element.PaddingRight)px @(element.PaddingBottom)px @(element.PaddingLeft)px;
+                                                border: @(element.BorderWidth)px @element.BorderStyle @element.BorderColor;
+                                                background-color: @element.BackgroundColor;">
+                                        @element.Text
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Rectangle)
+                                {
+                                    <div class="element-rectangle"
+                                         style="border: @(element.BorderWidth)px @element.BorderStyle @element.BorderColor;
+                                                background-color: @element.BackgroundColor;">
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Line)
+                                {
+                                    <div class="element-line"
+                                         style="border-top: @(element.BorderWidth)px @element.BorderStyle @element.BorderColor;">
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Image)
+                                {
+                                    <div class="element-image">
+                                        @if (!string.IsNullOrEmpty(element.ImageUrl))
+                                        {
+                                            <img src="@element.ImageUrl" 
+                                                 style="object-fit: @element.ImageFit; width: 100%; height: 100%;" 
+                                                 alt="@element.Label" />
+                                        }
+                                        else
+                                        {
+                                            <div class="image-placeholder">🖼️</div>
+                                        }
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Table)
+                                {
+                                    <div class="element-table">
+                                        <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                                            @if (element.TableData != null && element.TableData.Any())
+                                            {
+                                                @for (int i = 0; i < element.TableData.Count; i++)
+                                                {
+                                                    <tr>
+                                                        @foreach (var cell in element.TableData[i])
+                                                        {
+                                                            @if (i == 0 && element.HasHeader)
+                                                            {
+                                                                <th style="border: 1px solid #ddd; padding: 4px;">@cell</th>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td style="border: 1px solid #ddd; padding: 4px;">@cell</td>
+                                                            }
+                                                        }
+                                                    </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td style="text-align: center; padding: 20px;">Table Placeholder</td>
+                                                </tr>
+                                            }
+                                        </table>
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Chart)
+                                {
+                                    <div class="element-chart">
+                                        <div class="chart-placeholder">
+                                            📈 @element.ChartType Chart
+                                        </div>
+                                    </div>
+                                }
+                                else if (element.Type == ReportElementType.Barcode || element.Type == ReportElementType.QRCode)
+                                {
+                                    <div class="element-barcode">
+                                        <div class="barcode-placeholder">
+                                            @element.GetIcon() @element.Type
+                                        </div>
+                                    </div>
+                                }
+                                
+                                @if (element.IsSelected && !element.IsLocked)
+                                {
+                                    <div class="resize-handle resize-nw" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.NorthWest)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-n" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.North)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-ne" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.NorthEast)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-e" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.East)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-se" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.SouthEast)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-s" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.South)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-sw" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.SouthWest)" @onmousedown:stopPropagation="true"></div>
+                                    <div class="resize-handle resize-w" @onmousedown="(e) => OnResizeStart(e, element, ResizeDirection.West)" @onmousedown:stopPropagation="true"></div>
+                                }
+                            </div>
+                        }
+                        
+                        @if (_isSelecting && _selectionStart != null && _currentMousePos != null)
+                        {
+                            <div class="selection-rectangle"
+                                 style="left: @(Math.Min(_selectionStart.X, _currentMousePos.X))px;
+                                        top: @(Math.Min(_selectionStart.Y, _currentMousePos.Y))px;
+                                        width: @(Math.Abs(_currentMousePos.X - _selectionStart.X))px;
+                                        height: @(Math.Abs(_currentMousePos.Y - _selectionStart.Y))px;">
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Properties Panel -->
+            <div class="report-properties @(_isPropertiesCollapsed ? "collapsed" : "")">
+                <div class="properties-header" @onclick="() => _isPropertiesCollapsed = !_isPropertiesCollapsed">
+                    <span class="properties-title">Properties</span>
+                    <span class="collapse-icon">@(_isPropertiesCollapsed ? "◀" : "▶")</span>
+                </div>
+                
+                @if (!_isPropertiesCollapsed)
+                {
+                    <div class="properties-content">
+                        @if (_selectedElements.Count == 1)
+                        {
+                            var element = _selectedElements.First();
+                            
+                            <div class="property-group">
+                                <div class="property-group-header">Element</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Type</label>
+                                    <span class="property-value">@element.Type</span>
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Label</label>
+                                    <input type="text" 
+                                           class="property-input" 
+                                           @bind="element.Label" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Visible</label>
+                                    <input type="checkbox" 
+                                           class="property-checkbox" 
+                                           @bind="element.IsVisible" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Locked</label>
+                                    <input type="checkbox" 
+                                           class="property-checkbox" 
+                                           @bind="element.IsLocked" />
+                                </div>
+                            </div>
+                            
+                            <div class="property-group">
+                                <div class="property-group-header">Position & Size</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">X</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.X" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Y</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.Y" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Width</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.Width" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Height</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.Height" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Z-Index</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.ZIndex" />
+                                </div>
+                            </div>
+                            
+                            @if (element.Type == ReportElementType.Text)
+                            {
+                                <div class="property-group">
+                                    <div class="property-group-header">Text</div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Content</label>
+                                        <textarea class="property-textarea" 
+                                                  rows="3"
+                                                  @bind="element.Text"></textarea>
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Font</label>
+                                        <select class="property-select" @bind="element.FontFamily">
+                                            <option value="Arial">Arial</option>
+                                            <option value="Times New Roman">Times New Roman</option>
+                                            <option value="Courier New">Courier New</option>
+                                            <option value="Georgia">Georgia</option>
+                                            <option value="Verdana">Verdana</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Size</label>
+                                        <input type="number" 
+                                               class="property-input" 
+                                               @bind="element.FontSize" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Color</label>
+                                        <input type="color" 
+                                               class="property-color" 
+                                               @bind="element.TextColor" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Style</label>
+                                        <div class="property-buttons">
+                                            <button class="property-btn @(element.IsBold ? "active" : "")" 
+                                                    @onclick="() => element.IsBold = !element.IsBold">B</button>
+                                            <button class="property-btn @(element.IsItalic ? "active" : "")" 
+                                                    @onclick="() => element.IsItalic = !element.IsItalic">I</button>
+                                            <button class="property-btn @(element.IsUnderline ? "active" : "")" 
+                                                    @onclick="() => element.IsUnderline = !element.IsUnderline">U</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Align</label>
+                                        <select class="property-select" @bind="element.TextAlign">
+                                            <option value="@TextAlignment.Left">Left</option>
+                                            <option value="@TextAlignment.Center">Center</option>
+                                            <option value="@TextAlignment.Right">Right</option>
+                                            <option value="@TextAlignment.Justify">Justify</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (element.Type == ReportElementType.Chart)
+                            {
+                                <div class="property-group">
+                                    <div class="property-group-header">Chart</div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Type</label>
+                                        <select class="property-select" @bind="element.ChartType">
+                                            <option value="@ChartType.Bar">Bar</option>
+                                            <option value="@ChartType.Column">Column</option>
+                                            <option value="@ChartType.Line">Line</option>
+                                            <option value="@ChartType.Pie">Pie</option>
+                                            <option value="@ChartType.Doughnut">Doughnut</option>
+                                            <option value="@ChartType.Area">Area</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Data Source</label>
+                                        <input type="text" 
+                                               class="property-input" 
+                                               @bind="element.DataSource" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">X Field</label>
+                                        <input type="text" 
+                                               class="property-input" 
+                                               @bind="element.XAxisField" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Y Field</label>
+                                        <input type="text" 
+                                               class="property-input" 
+                                               @bind="element.YAxisField" />
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (element.Type == ReportElementType.Table)
+                            {
+                                <div class="property-group">
+                                    <div class="property-group-header">Table</div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Columns</label>
+                                        <input type="number" 
+                                               class="property-input" 
+                                               @bind="element.Columns" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Rows</label>
+                                        <input type="number" 
+                                               class="property-input" 
+                                               @bind="element.Rows" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Has Header</label>
+                                        <input type="checkbox" 
+                                               class="property-checkbox" 
+                                               @bind="element.HasHeader" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Data Source</label>
+                                        <input type="text" 
+                                               class="property-input" 
+                                               @bind="element.DataSource" />
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (element.Type == ReportElementType.Image)
+                            {
+                                <div class="property-group">
+                                    <div class="property-group-header">Image</div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">URL</label>
+                                        <input type="text" 
+                                               class="property-input" 
+                                               @bind="element.ImageUrl" />
+                                    </div>
+                                    
+                                    <div class="property-row">
+                                        <label class="property-label">Fit</label>
+                                        <select class="property-select" @bind="element.ImageFit">
+                                            <option value="contain">Contain</option>
+                                            <option value="cover">Cover</option>
+                                            <option value="fill">Fill</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            }
+                            
+                            <div class="property-group">
+                                <div class="property-group-header">Border</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Width</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="element.BorderWidth" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Color</label>
+                                    <input type="color" 
+                                           class="property-color" 
+                                           @bind="element.BorderColor" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Style</label>
+                                    <select class="property-select" @bind="element.BorderStyle">
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                        <option value="double">Double</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="property-group">
+                                <div class="property-group-header">Background</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Color</label>
+                                    <input type="color" 
+                                           class="property-color" 
+                                           @bind="element.BackgroundColor" />
+                                </div>
+                            </div>
+                            
+                            <div class="property-group">
+                                <div class="property-group-header">Data Binding</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Field</label>
+                                    <input type="text" 
+                                           class="property-input" 
+                                           @bind="element.DataField" 
+                                           placeholder="e.g., CustomerName" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Expression</label>
+                                    <input type="text" 
+                                           class="property-input" 
+                                           @bind="element.Expression" 
+                                           placeholder="e.g., {FirstName} {LastName}" />
+                                </div>
+                            </div>
+                            
+                            <div class="property-actions">
+                                <button class="property-action-btn danger" @onclick="() => OnDeleteElementAsync(element)">
+                                    Delete Element
+                                </button>
+                            </div>
+                        }
+                        else if (_selectedElements.Count > 1)
+                        {
+                            <div class="property-group">
+                                <div class="property-group-header">Multiple Selection</div>
+                                <p class="property-info">@_selectedElements.Count elements selected</p>
+                                
+                                <div class="property-actions">
+                                    <button class="property-action-btn" @onclick="OnGroupAsync">
+                                        Group Elements
+                                    </button>
+                                    <button class="property-action-btn danger" @onclick="OnDeleteSelectedAsync">
+                                        Delete Selected
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="property-group">
+                                <div class="property-group-header">Page Settings</div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Size</label>
+                                    <select class="property-select" @bind="CurrentReport.PageSettings.Size">
+                                        <option value="@PageSize.A4">A4</option>
+                                        <option value="@PageSize.Letter">Letter</option>
+                                        <option value="@PageSize.Legal">Legal</option>
+                                        <option value="@PageSize.A3">A3</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Orientation</label>
+                                    <select class="property-select" @bind="CurrentReport.PageSettings.Orientation">
+                                        <option value="@PageOrientation.Portrait">Portrait</option>
+                                        <option value="@PageOrientation.Landscape">Landscape</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Grid Size</label>
+                                    <input type="number" 
+                                           class="property-input" 
+                                           @bind="CurrentReport.PageSettings.GridSize" />
+                                </div>
+                                
+                                <div class="property-row">
+                                    <label class="property-label">Show Grid</label>
+                                    <input type="checkbox" 
+                                           class="property-checkbox" 
+                                           @bind="CurrentReport.PageSettings.ShowGrid" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (HideIfNoPermission)
+{
+    <!-- Component hidden due to insufficient permissions -->
+}
+else
+{
+    <div class="n360-report-builder-no-permission">
+        <p>You do not have permission to access the Report Builder.</p>
+    </div>
+}
+
+@code {
+    [Parameter] public ReportDefinition? Report { get; set; }
+    [Parameter] public EventCallback<ReportDefinition> ReportChanged { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "ReportBuilder";
+
+    private ReportDefinition CurrentReport { get; set; } = new();
+    private bool _hasPermission = true;
+    private bool HasUnsavedChanges { get; set; }
+
+    // UI State
+    private bool _isToolboxCollapsed;
+    private bool _isPropertiesCollapsed;
+    private string _toolboxSearchText = string.Empty;
+    private double _zoomLevel = 1.0;
+
+    // Selection and interaction
+    private List<ReportElement> _selectedElements = new();
+    private ReportElement? _draggingElement;
+    private Point? _dragOffset;
+    private Point? _dragStartPos;
+    private bool _isSelecting;
+    private Point? _selectionStart;
+    private Point? _currentMousePos;
+    private ReportElementType? _draggingElementType;
+
+    // Resize
+    private bool _isResizing;
+    private ResizeDirection _resizeDirection;
+    private ReportElement? _resizingElement;
+    private Point? _resizeStartPos;
+    private double _resizeStartWidth;
+    private double _resizeStartHeight;
+    private double _resizeStartX;
+    private double _resizeStartY;
+
+    // Undo/Redo
+    private Stack<string> _undoStack = new();
+    private Stack<string> _redoStack = new();
+    private const int MaxUndoLevels = 50;
+
+    private bool CanUndo => _undoStack.Count > 0;
+    private bool CanRedo => _redoStack.Count > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (Report != null)
+        {
+            CurrentReport = Report;
+        }
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+
+    // Toolbar actions
+    private async Task OnNewAsync()
+    {
+        CurrentReport = new ReportDefinition { Name = "New Report" };
+        _selectedElements.Clear();
+        HasUnsavedChanges = false;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ReportId"] = CurrentReport.Id,
+                    ["ReportName"] = CurrentReport.Name
+                }
+            });
+        }
+        
+        await ReportChanged.InvokeAsync(CurrentReport);
+    }
+
+    private async Task OnOpenAsync()
+    {
+        // Implement open dialog
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Open",
+                Resource = AuditResource
+            });
+        }
+    }
+
+    private async Task OnSaveAsync()
+    {
+        HasUnsavedChanges = false;
+        CurrentReport.ModifiedAt = DateTime.UtcNow;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Save",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ReportId"] = CurrentReport.Id,
+                    ["ElementCount"] = CurrentReport.Elements.Count
+                }
+            });
+        }
+        
+        await ReportChanged.InvokeAsync(CurrentReport);
+    }
+
+    private async Task OnUndoAsync()
+    {
+        if (_undoStack.Count > 0)
+        {
+            var currentState = System.Text.Json.JsonSerializer.Serialize(CurrentReport);
+            _redoStack.Push(currentState);
+            
+            var previousState = _undoStack.Pop();
+            CurrentReport = System.Text.Json.JsonSerializer.Deserialize<ReportDefinition>(previousState) ?? new();
+            
+            HasUnsavedChanges = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnRedoAsync()
+    {
+        if (_redoStack.Count > 0)
+        {
+            var currentState = System.Text.Json.JsonSerializer.Serialize(CurrentReport);
+            _undoStack.Push(currentState);
+            
+            var nextState = _redoStack.Pop();
+            CurrentReport = System.Text.Json.JsonSerializer.Deserialize<ReportDefinition>(nextState) ?? new();
+            
+            HasUnsavedChanges = true;
+            StateHasChanged();
+        }
+    }
+
+    private void SaveState()
+    {
+        var state = System.Text.Json.JsonSerializer.Serialize(CurrentReport);
+        _undoStack.Push(state);
+        
+        if (_undoStack.Count > MaxUndoLevels)
+        {
+            var items = _undoStack.ToList();
+            items.RemoveAt(items.Count - 1);
+            _undoStack = new Stack<string>(items.Reverse<string>());
+        }
+        
+        _redoStack.Clear();
+        HasUnsavedChanges = true;
+    }
+
+    // Alignment actions
+    private async Task OnAlignLeftAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var minX = _selectedElements.Min(e => e.X);
+        foreach (var element in _selectedElements)
+        {
+            element.X = minX;
+        }
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Align",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Direction"] = "Left",
+                    ["ElementCount"] = _selectedElements.Count
+                }
+            });
+        }
+    }
+
+    private async Task OnAlignCenterAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var avgX = _selectedElements.Average(e => e.X + e.Width / 2);
+        foreach (var element in _selectedElements)
+        {
+            element.X = avgX - element.Width / 2;
+        }
+    }
+
+    private async Task OnAlignRightAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var maxX = _selectedElements.Max(e => e.X + e.Width);
+        foreach (var element in _selectedElements)
+        {
+            element.X = maxX - element.Width;
+        }
+    }
+
+    private async Task OnAlignTopAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var minY = _selectedElements.Min(e => e.Y);
+        foreach (var element in _selectedElements)
+        {
+            element.Y = minY;
+        }
+    }
+
+    private async Task OnAlignMiddleAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var avgY = _selectedElements.Average(e => e.Y + e.Height / 2);
+        foreach (var element in _selectedElements)
+        {
+            element.Y = avgY - element.Height / 2;
+        }
+    }
+
+    private async Task OnAlignBottomAsync()
+    {
+        if (_selectedElements.Count < 2) return;
+        
+        SaveState();
+        var maxY = _selectedElements.Max(e => e.Y + e.Height);
+        foreach (var element in _selectedElements)
+        {
+            element.Y = maxY - element.Height;
+        }
+    }
+
+    private async Task OnBringForwardAsync()
+    {
+        if (_selectedElements.Count == 0) return;
+        
+        SaveState();
+        foreach (var element in _selectedElements)
+        {
+            element.ZIndex++;
+        }
+    }
+
+    private async Task OnSendBackwardAsync()
+    {
+        if (_selectedElements.Count == 0) return;
+        
+        SaveState();
+        foreach (var element in _selectedElements)
+        {
+            if (element.ZIndex > 0)
+                element.ZIndex--;
+        }
+    }
+
+    // Zoom actions
+    private async Task OnZoomInAsync()
+    {
+        _zoomLevel = Math.Min(_zoomLevel + 0.1, 3.0);
+    }
+
+    private async Task OnZoomOutAsync()
+    {
+        _zoomLevel = Math.Max(_zoomLevel - 0.1, 0.1);
+    }
+
+    private async Task OnZoomResetAsync()
+    {
+        _zoomLevel = 1.0;
+    }
+
+    private async Task OnPreviewAsync()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Preview",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ReportId"] = CurrentReport.Id
+                }
+            });
+        }
+    }
+
+    private async Task OnExportAsync()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Export",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ReportId"] = CurrentReport.Id
+                }
+            });
+        }
+    }
+
+    private async Task OnToggleGridAsync()
+    {
+        CurrentReport.PageSettings.ShowGrid = !CurrentReport.PageSettings.ShowGrid;
+        HasUnsavedChanges = true;
+    }
+
+    private async Task OnToggleRulersAsync()
+    {
+        // Implement rulers toggle
+    }
+
+    private async Task OnToggleGuidesAsync()
+    {
+        // Implement guides toggle
+    }
+
+    // Drag and drop
+    private void OnElementDragStart(Microsoft.AspNetCore.Components.Web.DragEventArgs e, ReportElementType type)
+    {
+        _draggingElementType = type;
+    }
+
+    private void OnCanvasDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        // Allow drop
+    }
+
+    private async Task OnCanvasDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (_draggingElementType == null) return;
+        
+        SaveState();
+        
+        var newElement = new ReportElement
+        {
+            Type = _draggingElementType.Value,
+            Label = $"{_draggingElementType} {CurrentReport.Elements.Count + 1}",
+            X = e.OffsetX / _zoomLevel,
+            Y = e.OffsetY / _zoomLevel,
+            Width = 200,
+            Height = 100,
+            ZIndex = CurrentReport.Elements.Count
+        };
+        
+        CurrentReport.Elements.Add(newElement);
+        _draggingElementType = null;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ElementId"] = newElement.Id,
+                    ["ElementType"] = newElement.Type.ToString()
+                }
+            });
+        }
+    }
+
+    // Element interaction
+    private void OnElementMouseDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, ReportElement element)
+    {
+        if (element.IsLocked) return;
+        
+        if (!e.CtrlKey && !e.ShiftKey)
+        {
+            _selectedElements.Clear();
+        }
+        
+        if (!element.IsSelected)
+        {
+            element.IsSelected = true;
+            _selectedElements.Add(element);
+        }
+        
+        _draggingElement = element;
+        _dragStartPos = new Point { X = e.OffsetX, Y = e.OffsetY };
+        _dragOffset = new Point { X = e.OffsetX - element.X, Y = e.OffsetY - element.Y };
+    }
+
+    private void OnCanvasMouseDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (e.Button == 0) // Left click
+        {
+            _isSelecting = true;
+            _selectionStart = new Point { X = e.OffsetX / _zoomLevel, Y = e.OffsetY / _zoomLevel };
+            
+            if (!e.CtrlKey && !e.ShiftKey)
+            {
+                foreach (var element in CurrentReport.Elements)
+                {
+                    element.IsSelected = false;
+                }
+                _selectedElements.Clear();
+            }
+        }
+    }
+
+    private void OnCanvasMouseMove(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        _currentMousePos = new Point { X = e.OffsetX / _zoomLevel, Y = e.OffsetY / _zoomLevel };
+        
+        if (_isResizing && _resizingElement != null && _resizeStartPos != null)
+        {
+            var deltaX = _currentMousePos.X - _resizeStartPos.X;
+            var deltaY = _currentMousePos.Y - _resizeStartPos.Y;
+            
+            switch (_resizeDirection)
+            {
+                case ResizeDirection.East:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth + deltaX);
+                    break;
+                case ResizeDirection.West:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth - deltaX);
+                    _resizingElement.X = _resizeStartX + deltaX;
+                    break;
+                case ResizeDirection.South:
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight + deltaY);
+                    break;
+                case ResizeDirection.North:
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight - deltaY);
+                    _resizingElement.Y = _resizeStartY + deltaY;
+                    break;
+                case ResizeDirection.SouthEast:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth + deltaX);
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight + deltaY);
+                    break;
+                case ResizeDirection.SouthWest:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth - deltaX);
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight + deltaY);
+                    _resizingElement.X = _resizeStartX + deltaX;
+                    break;
+                case ResizeDirection.NorthEast:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth + deltaX);
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight - deltaY);
+                    _resizingElement.Y = _resizeStartY + deltaY;
+                    break;
+                case ResizeDirection.NorthWest:
+                    _resizingElement.Width = Math.Max(20, _resizeStartWidth - deltaX);
+                    _resizingElement.Height = Math.Max(20, _resizeStartHeight - deltaY);
+                    _resizingElement.X = _resizeStartX + deltaX;
+                    _resizingElement.Y = _resizeStartY + deltaY;
+                    break;
+            }
+        }
+        else if (_draggingElement != null && _dragOffset != null)
+        {
+            _draggingElement.X = _currentMousePos.X - _dragOffset.X;
+            _draggingElement.Y = _currentMousePos.Y - _dragOffset.Y;
+            
+            // Snap to grid
+            if (CurrentReport.PageSettings.ShowGrid)
+            {
+                var gridSize = CurrentReport.PageSettings.GridSize;
+                _draggingElement.X = Math.Round(_draggingElement.X / gridSize) * gridSize;
+                _draggingElement.Y = Math.Round(_draggingElement.Y / gridSize) * gridSize;
+            }
+        }
+        else if (_isSelecting && _selectionStart != null)
+        {
+            // Update selection rectangle
+            var rect = new
+            {
+                X = Math.Min(_selectionStart.X, _currentMousePos.X),
+                Y = Math.Min(_selectionStart.Y, _currentMousePos.Y),
+                Width = Math.Abs(_currentMousePos.X - _selectionStart.X),
+                Height = Math.Abs(_currentMousePos.Y - _selectionStart.Y)
+            };
+            
+            // Select elements within rectangle
+            foreach (var element in CurrentReport.Elements)
+            {
+                var isInRect = element.X >= rect.X &&
+                               element.Y >= rect.Y &&
+                               element.X + element.Width <= rect.X + rect.Width &&
+                               element.Y + element.Height <= rect.Y + rect.Height;
+                
+                if (isInRect && !element.IsSelected)
+                {
+                    element.IsSelected = true;
+                    _selectedElements.Add(element);
+                }
+                else if (!isInRect && element.IsSelected && !e.CtrlKey)
+                {
+                    element.IsSelected = false;
+                    _selectedElements.Remove(element);
+                }
+            }
+        }
+    }
+
+    private void OnCanvasMouseUp(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (_draggingElement != null || _isResizing)
+        {
+            SaveState();
+        }
+        
+        _draggingElement = null;
+        _dragOffset = null;
+        _isSelecting = false;
+        _selectionStart = null;
+        _isResizing = false;
+        _resizingElement = null;
+    }
+
+    // Resize
+    private void OnResizeStart(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, ReportElement element, ResizeDirection direction)
+    {
+        _isResizing = true;
+        _resizeDirection = direction;
+        _resizingElement = element;
+        _resizeStartPos = new Point { X = e.OffsetX / _zoomLevel, Y = e.OffsetY / _zoomLevel };
+        _resizeStartWidth = element.Width;
+        _resizeStartHeight = element.Height;
+        _resizeStartX = element.X;
+        _resizeStartY = element.Y;
+    }
+
+    // Element operations
+    private async Task OnDeleteElementAsync(ReportElement element)
+    {
+        SaveState();
+        CurrentReport.Elements.Remove(element);
+        _selectedElements.Remove(element);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Delete",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ElementId"] = element.Id,
+                    ["ElementType"] = element.Type.ToString()
+                }
+            });
+        }
+    }
+
+    private async Task OnDeleteSelectedAsync()
+    {
+        SaveState();
+        foreach (var element in _selectedElements.ToList())
+        {
+            CurrentReport.Elements.Remove(element);
+        }
+        _selectedElements.Clear();
+    }
+
+    private async Task OnGroupAsync()
+    {
+        // Implement grouping
+    }
+
+    private enum ResizeDirection
+    {
+        North,
+        NorthEast,
+        East,
+        SouthEast,
+        South,
+        SouthWest,
+        West,
+        NorthWest
+    }
+
+    private class Point
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+}

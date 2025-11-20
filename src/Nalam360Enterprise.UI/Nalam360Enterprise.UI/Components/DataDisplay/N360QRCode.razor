@@ -1,0 +1,162 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetQRCodeClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (!string.IsNullOrEmpty(_qrCodeDataUrl))
+        {
+            <img src="@_qrCodeDataUrl" 
+                 alt="QR Code"
+                 width="@Size"
+                 height="@Size"
+                 class="n360-qrcode__image" />
+        }
+        else
+        {
+            <div class="n360-qrcode__placeholder" style="width: @(Size)px; height: @(Size)px;">
+                <span>QR Code</span>
+            </div>
+        }
+        
+        @if (ShowLogo && !string.IsNullOrEmpty(LogoUrl))
+        {
+            <img src="@LogoUrl" 
+                 alt="Logo"
+                 class="n360-qrcode__logo"
+                 style="@GetLogoStyle()" />
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public int Size { get; set; } = 160;
+    [Parameter] public QRCodeErrorLevel ErrorLevel { get; set; } = QRCodeErrorLevel.M;
+    [Parameter] public string ForegroundColor { get; set; } = "#000000";
+    [Parameter] public string BackgroundColor { get; set; } = "#FFFFFF";
+    [Parameter] public bool ShowLogo { get; set; }
+    [Parameter] public string? LogoUrl { get; set; }
+    [Parameter] public int LogoSize { get; set; } = 40;
+    [Parameter] public bool Bordered { get; set; } = true;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    private bool _hasPermission = true;
+    private string? _qrCodeDataUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        await GenerateQRCodeAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GenerateQRCodeAsync();
+    }
+
+    private async Task GenerateQRCodeAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Value))
+            {
+                _qrCodeDataUrl = null;
+                return;
+            }
+            
+            await Task.Run(() =>
+            {
+                using var qrGenerator = new QRCoder.QRCodeGenerator();
+                using var qrCodeData = qrGenerator.CreateQrCode(Value, MapErrorLevel(ErrorLevel));
+                using var qrCode = new QRCoder.PngByteQRCode(qrCodeData);
+                
+                var pixelsPerModule = Math.Max(1, Size / 25); // Estimate modules
+                var qrCodeImage = qrCode.GetGraphic(pixelsPerModule, 
+                    HexToRgb(ForegroundColor), 
+                    HexToRgb(BackgroundColor));
+                
+                _qrCodeDataUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeImage)}";
+            });
+        }
+        catch (Exception ex)
+        {
+            // Fallback to placeholder on error
+            Console.WriteLine($"QR Code generation error: {ex.Message}");
+            _qrCodeDataUrl = null;
+        }
+    }
+    
+    private QRCoder.QRCodeGenerator.ECCLevel MapErrorLevel(QRCodeErrorLevel level)
+    {
+        return level switch
+        {
+            QRCodeErrorLevel.L => QRCoder.QRCodeGenerator.ECCLevel.L,
+            QRCodeErrorLevel.M => QRCoder.QRCodeGenerator.ECCLevel.M,
+            QRCodeErrorLevel.Q => QRCoder.QRCodeGenerator.ECCLevel.Q,
+            QRCodeErrorLevel.H => QRCoder.QRCodeGenerator.ECCLevel.H,
+            _ => QRCoder.QRCodeGenerator.ECCLevel.M
+        };
+    }
+    
+    private byte[] HexToRgb(string hex)
+    {
+        hex = hex.Replace("#", "");
+        return new byte[]
+        {
+            Convert.ToByte(hex.Substring(0, 2), 16),
+            Convert.ToByte(hex.Substring(2, 2), 16),
+            Convert.ToByte(hex.Substring(4, 2), 16)
+        };
+    }
+
+    private string GetQRCodeClass()
+    {
+        var classes = new List<string> 
+        { 
+            "n360-qrcode"
+        };
+        
+        if (Bordered)
+        {
+            classes.Add("n360-qrcode--bordered");
+        }
+        
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetLogoStyle()
+    {
+        return $"width: {LogoSize}px; height: {LogoSize}px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);";
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>();
+
+        if (IsRtl)
+        {
+            attributes["dir"] = "rtl";
+        }
+
+        return attributes;
+    }
+}

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Nalam360Enterprise.UI.Core.AI.Services;
 using Nalam360Enterprise.UI.Core.Security;
 using Nalam360Enterprise.UI.Core.Theming;
 using Syncfusion.Blazor;
@@ -22,6 +24,9 @@ public static class ServiceCollectionExtensions
         Action<ThemeConfiguration>? configureTheme = null,
         Action<RbacConfiguration>? configureRbac = null)
     {
+        // Register Syncfusion license
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtfdXZWRmRcUkxyX0RZYUA=");
+        
         // Register Syncfusion services
         services.AddSyncfusionBlazor();
 
@@ -39,6 +44,13 @@ public static class ServiceCollectionExtensions
         // Register security services
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IPermissionService, DefaultPermissionService>();
+
+        // Register AI services
+        services.AddSingleton<IMLModelService, MLNetModelService>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MLNetModelService>>();
+            return new MLNetModelService(logger, "ML/Models");
+        });
 
         return services;
     }

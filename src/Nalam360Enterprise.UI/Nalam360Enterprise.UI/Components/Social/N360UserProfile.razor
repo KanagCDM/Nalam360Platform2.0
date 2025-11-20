@@ -1,0 +1,492 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService? AuditService
+
+<div class="n360-user-profile @(IsDark ? "dark" : "") @Variant.ToString().ToLower() @(IsEditable && _isEditing ? "editing" : "") @CssClass" @attributes="GetHtmlAttributes()">
+    <!-- Cover Image -->
+    @if (ShowCover)
+    {
+        <div class="profile-cover" style="@GetCoverStyle()">
+            @if (IsEditable && _isEditing)
+            {
+                <button class="edit-cover-button" @onclick="() => HandleCoverChange()">
+                    <i class="fas fa-camera"></i>
+                    Change Cover
+                </button>
+            }
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="profile-header">
+        <div class="avatar-section">
+            <div class="avatar-wrapper">
+                @if (!string.IsNullOrEmpty(AvatarUrl))
+                {
+                    <img src="@AvatarUrl" alt="@Name" class="avatar-image" />
+                }
+                else
+                {
+                    <div class="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                }
+                @if (ShowStatus)
+                {
+                    <span class="status-indicator @Status.ToString().ToLower()" title="@Status"></span>
+                }
+                @if (IsEditable && _isEditing)
+                {
+                    <button class="edit-avatar-button" @onclick="() => HandleAvatarChange()">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="header-info">
+            <div class="name-section">
+                @if (_isEditing)
+                {
+                    <input type="text" class="name-input" @bind="_editedName" placeholder="Name" />
+                }
+                else
+                {
+                    <h2 class="profile-name">@Name</h2>
+                }
+                @if (IsVerified)
+                {
+                    <span class="verified-badge" title="Verified Account">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                @if (_isEditing)
+                {
+                    <input type="text" class="title-input" @bind="_editedTitle" placeholder="Title" />
+                }
+                else
+                {
+                    <p class="profile-title">@Title</p>
+                }
+            }
+
+            @if (Tags?.Any() == true && !_isEditing)
+            {
+                <div class="profile-tags">
+                    @foreach (var tag in Tags.Take(5))
+                    {
+                        <span class="profile-tag">
+                            <i class="fas fa-tag"></i>
+                            @tag
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="header-actions">
+            @if (IsEditable)
+            {
+                @if (_isEditing)
+                {
+                    <button class="action-button primary" @onclick="SaveProfile">
+                        <i class="fas fa-save"></i>
+                        Save
+                    </button>
+                    <button class="action-button secondary" @onclick="CancelEdit">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                }
+                else
+                {
+                    <button class="action-button secondary" @onclick="StartEdit">
+                        <i class="fas fa-edit"></i>
+                        Edit Profile
+                    </button>
+                }
+            }
+            @if (Actions?.Any() == true && !_isEditing)
+            {
+                @foreach (var action in Actions)
+                {
+                    <button class="action-button @action.Variant.ToString().ToLower()"
+                            @onclick="() => ExecuteAction(action)">
+                        <i class="@action.Icon"></i>
+                        @action.Label
+                    </button>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Stats -->
+    @if (ShowStats && Stats?.Any() == true)
+    {
+        <div class="profile-stats">
+            @foreach (var stat in Stats)
+            {
+                <div class="stat-item @(stat.IsClickable ? "clickable" : "")"
+                     @onclick="() => HandleStatClick(stat)">
+                    <div class="stat-value">@stat.Value</div>
+                    <div class="stat-label">@stat.Label</div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Contact Info -->
+    @if (ShowContactInfo && ContactMethods?.Any() == true)
+    {
+        <div class="contact-info">
+            <h3 class="section-title">
+                <i class="fas fa-address-card"></i>
+                Contact Information
+            </h3>
+            <div class="contact-list">
+                @foreach (var contact in ContactMethods)
+                {
+                    <div class="contact-item">
+                        <i class="@contact.Icon contact-icon"></i>
+                        <span class="contact-value">@contact.Value</span>
+                        @if (!string.IsNullOrEmpty(contact.Link))
+                        {
+                            <a href="@contact.Link" target="_blank" class="contact-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Bio -->
+    @if (!string.IsNullOrEmpty(Bio) || _isEditing)
+    {
+        <div class="profile-section bio-section">
+            <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                About
+            </h3>
+            @if (_isEditing)
+            {
+                <textarea class="bio-textarea" @bind="_editedBio" placeholder="Tell us about yourself..." rows="4"></textarea>
+            }
+            else
+            {
+                <p class="bio-text">@Bio</p>
+            }
+        </div>
+    }
+
+    <!-- Skills/Interests -->
+    @if (ShowSkills && Skills?.Any() == true)
+    {
+        <div class="profile-section skills-section">
+            <h3 class="section-title">
+                <i class="fas fa-lightbulb"></i>
+                @SkillsLabel
+            </h3>
+            <div class="skills-grid">
+                @foreach (var skill in Skills)
+                {
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">@skill.Name</span>
+                            @if (skill.ShowLevel)
+                            {
+                                <span class="skill-level">@skill.Level%</span>
+                            }
+                        </div>
+                        @if (skill.ShowLevel)
+                        {
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: @(skill.Level)%"></div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Recent Activity -->
+    @if (ShowRecentActivity && RecentActivities?.Any() == true)
+    {
+        <div class="profile-section activity-section">
+            <h3 class="section-title">
+                <i class="fas fa-clock"></i>
+                Recent Activity
+            </h3>
+            <div class="activity-list">
+                @foreach (var activity in RecentActivities.Take(5))
+                {
+                    <div class="activity-item">
+                        <i class="@activity.Icon activity-icon"></i>
+                        <div class="activity-content">
+                            <p class="activity-text">@activity.Text</p>
+                            <span class="activity-time">@GetRelativeTime(activity.Timestamp)</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Achievements/Badges -->
+    @if (ShowAchievements && Achievements?.Any() == true)
+    {
+        <div class="profile-section achievements-section">
+            <h3 class="section-title">
+                <i class="fas fa-trophy"></i>
+                Achievements
+            </h3>
+            <div class="achievements-grid">
+                @foreach (var achievement in Achievements)
+                {
+                    <div class="achievement-item" title="@achievement.Description">
+                        <i class="@achievement.Icon achievement-icon"></i>
+                        <span class="achievement-name">@achievement.Name</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Parameters
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Bio { get; set; }
+    [Parameter] public string? AvatarUrl { get; set; }
+    [Parameter] public string? CoverUrl { get; set; }
+    [Parameter] public UserStatus Status { get; set; } = UserStatus.Offline;
+    [Parameter] public bool IsVerified { get; set; } = false;
+    [Parameter] public bool ShowStatus { get; set; } = true;
+    [Parameter] public bool ShowCover { get; set; } = true;
+    [Parameter] public bool ShowStats { get; set; } = true;
+    [Parameter] public bool ShowContactInfo { get; set; } = true;
+    [Parameter] public bool ShowSkills { get; set; } = true;
+    [Parameter] public bool ShowRecentActivity { get; set; } = true;
+    [Parameter] public bool ShowAchievements { get; set; } = true;
+    [Parameter] public bool IsEditable { get; set; } = false;
+    [Parameter] public string SkillsLabel { get; set; } = "Skills & Expertise";
+    [Parameter] public ProfileVariant Variant { get; set; } = ProfileVariant.Default;
+    [Parameter] public bool IsDark { get; set; } = false;
+    [Parameter] public List<string> Tags { get; set; } = new();
+    [Parameter] public List<ProfileStat> Stats { get; set; } = new();
+    [Parameter] public List<ContactMethod> ContactMethods { get; set; } = new();
+    [Parameter] public List<Skill> Skills { get; set; } = new();
+    [Parameter] public List<RecentActivity> RecentActivities { get; set; } = new();
+    [Parameter] public List<Achievement> Achievements { get; set; } = new();
+    [Parameter] public List<ProfileAction> Actions { get; set; } = new();
+
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = false;
+
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+    [Parameter] public string? UserId { get; set; }
+
+    // Styling
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool IsRTL { get; set; } = false;
+
+    // Events
+    [Parameter] public EventCallback<ProfileData> OnSave { get; set; }
+    [Parameter] public EventCallback<ProfileStat> OnStatClicked { get; set; }
+    [Parameter] public EventCallback<ProfileAction> OnActionExecuted { get; set; }
+    [Parameter] public EventCallback OnAvatarChange { get; set; }
+    [Parameter] public EventCallback OnCoverChange { get; set; }
+
+    // State
+    private bool _isEditing = false;
+    private string _editedName = string.Empty;
+    private string _editedTitle = string.Empty;
+    private string _editedBio = string.Empty;
+
+    // Enums
+    public enum ProfileVariant { Default, Compact, Card }
+    public enum UserStatus { Online, Away, Busy, Offline }
+    public enum ActionVariant { Primary, Secondary, Success, Warning, Danger }
+
+    // Models
+    public class ProfileData
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Bio { get; set; }
+    }
+
+    public class ProfileStat
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public bool IsClickable { get; set; } = false;
+        public Func<Task>? OnClick { get; set; }
+    }
+
+    public class ContactMethod
+    {
+        public string Icon { get; set; } = "fas fa-envelope";
+        public string Value { get; set; } = string.Empty;
+        public string? Link { get; set; }
+    }
+
+    public class Skill
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Level { get; set; } = 80;
+        public bool ShowLevel { get; set; } = true;
+    }
+
+    public class RecentActivity
+    {
+        public string Icon { get; set; } = "fas fa-circle";
+        public string Text { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    }
+
+    public class Achievement
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = "fas fa-award";
+    }
+
+    public class ProfileAction
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Icon { get; set; } = "fas fa-check";
+        public ActionVariant Variant { get; set; } = ActionVariant.Secondary;
+        public Func<Task>? OnExecute { get; set; }
+    }
+
+    // Methods
+    private string GetCoverStyle()
+    {
+        if (!string.IsNullOrEmpty(CoverUrl))
+        {
+            return $"background-image: url('{CoverUrl}');";
+        }
+        return string.Empty;
+    }
+
+    private void StartEdit()
+    {
+        _isEditing = true;
+        _editedName = Name;
+        _editedTitle = Title ?? string.Empty;
+        _editedBio = Bio ?? string.Empty;
+        LogAudit("ProfileEditStarted", "User started editing profile");
+    }
+
+    private async Task SaveProfile()
+    {
+        var data = new ProfileData
+        {
+            Name = _editedName,
+            Title = _editedTitle,
+            Bio = _editedBio
+        };
+
+        await OnSave.InvokeAsync(data);
+        _isEditing = false;
+        LogAudit("ProfileSaved", $"Profile updated: {data.Name}");
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        LogAudit("ProfileEditCancelled", "User cancelled profile editing");
+    }
+
+    private async Task HandleStatClick(ProfileStat stat)
+    {
+        if (stat.IsClickable)
+        {
+            if (stat.OnClick != null)
+            {
+                await stat.OnClick.Invoke();
+            }
+            await OnStatClicked.InvokeAsync(stat);
+            LogAudit("ProfileStatClicked", $"Clicked stat: {stat.Label}");
+        }
+    }
+
+    private async Task ExecuteAction(ProfileAction action)
+    {
+        if (action.OnExecute != null)
+        {
+            await action.OnExecute.Invoke();
+        }
+        await OnActionExecuted.InvokeAsync(action);
+        LogAudit("ProfileActionExecuted", $"Executed action: {action.Label}");
+    }
+
+    private async Task HandleAvatarChange()
+    {
+        await OnAvatarChange.InvokeAsync();
+        LogAudit("AvatarChangeInitiated", "User initiated avatar change");
+    }
+
+    private async Task HandleCoverChange()
+    {
+        await OnCoverChange.InvokeAsync();
+        LogAudit("CoverChangeInitiated", "User initiated cover change");
+    }
+
+    private string GetRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        
+        return timestamp.ToString("MMM dd");
+    }
+
+    private void LogAudit(string action, string details)
+    {
+        if (AuditService != null)
+        {
+            _ = AuditService.LogAsync(new AuditMetadata
+            {
+                Timestamp = DateTime.UtcNow,
+                UserId = UserId,
+                Resource = AuditResource ?? "UserProfile",
+                Action = action,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Details"] = details
+                }
+            });
+        }
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            { "role", "region" },
+            { "aria-label", $"Profile for {Name}" }
+        };
+
+        if (IsRTL)
+        {
+            attributes.Add("dir", "rtl");
+        }
+
+        return attributes;
+    }
+}

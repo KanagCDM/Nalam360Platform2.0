@@ -1,0 +1,1597 @@
+@using Nalam360Enterprise.UI.Components.Enterprise
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+<div class="n360-workflow-designer @GetThemeClass()" @ref="_containerRef">
+    @if (!_hasPermission && HideIfNoPermission)
+    {
+        return;
+    }
+    
+    @if (!_hasPermission)
+    {
+        <div class="n360-workflow-designer-no-permission">
+            <span class="no-permission-icon">🔒</span>
+            <p>You don't have permission to access the workflow designer.</p>
+        </div>
+        return;
+    }
+
+    <!-- Toolbar -->
+    <div class="n360-workflow-designer-toolbar">
+        <div class="toolbar-left">
+            <button class="toolbar-button" @onclick="OnNewAsync" title="New Workflow">
+                <span class="button-icon">📄</span>
+                <span class="button-text">New</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnSaveAsync" disabled="@(!HasUnsavedChanges)" title="Save Workflow">
+                <span class="button-icon">💾</span>
+                <span class="button-text">Save</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnValidateAsync" title="Validate Workflow">
+                <span class="button-icon">✓</span>
+                <span class="button-text">Validate</span>
+            </button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button" @onclick="OnRunAsync" disabled="@(!CanRunWorkflow())" title="Run Workflow">
+                <span class="button-icon">▶️</span>
+                <span class="button-text">Run</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnStopAsync" disabled="@(!IsRunning)" title="Stop Execution">
+                <span class="button-icon">⏹️</span>
+                <span class="button-text">Stop</span>
+            </button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button" @onclick="OnUndoAsync" disabled="@(!CanUndo())" title="Undo">
+                <span class="button-icon">↶</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnRedoAsync" disabled="@(!CanRedo())" title="Redo">
+                <span class="button-icon">↷</span>
+            </button>
+        </div>
+        <div class="toolbar-center">
+            <span class="workflow-name">@(CurrentWorkflow?.Name ?? "Untitled Workflow")</span>
+            @if (HasUnsavedChanges)
+            {
+                <span class="unsaved-indicator" title="Unsaved changes">●</span>
+            }
+        </div>
+        <div class="toolbar-right">
+            <button class="toolbar-button" @onclick="OnZoomInAsync" title="Zoom In">
+                <span class="button-icon">🔍+</span>
+            </button>
+            <span class="zoom-level">@($"{_zoomLevel:P0}")</span>
+            <button class="toolbar-button" @onclick="OnZoomOutAsync" title="Zoom Out">
+                <span class="button-icon">🔍-</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnZoomResetAsync" title="Reset Zoom">
+                <span class="button-icon">⊙</span>
+            </button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button" @onclick="OnFitToScreenAsync" title="Fit to Screen">
+                <span class="button-icon">⛶</span>
+            </button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-button" @onclick="OnExportAsync" title="Export">
+                <span class="button-icon">⤓</span>
+            </button>
+            <button class="toolbar-button" @onclick="OnImportAsync" title="Import">
+                <span class="button-icon">⤒</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="n360-workflow-designer-content">
+        <!-- Node Palette -->
+        <div class="n360-workflow-designer-palette @(_isPaletteCollapsed ? "collapsed" : "")">
+            <div class="palette-header">
+                <h3>Nodes</h3>
+                <button class="palette-toggle" @onclick="TogglePalette">
+                    @(_isPaletteCollapsed ? "▶" : "◀")
+                </button>
+            </div>
+            @if (!_isPaletteCollapsed)
+            {
+                <div class="palette-search">
+                    <input type="text" 
+                           placeholder="Search nodes..." 
+                           @bind="_paletteSearchQuery"
+                           @bind:event="oninput"
+                           class="palette-search-input" />
+                </div>
+                <div class="palette-categories">
+                    @foreach (var category in GetNodeCategories())
+                    {
+                        <div class="palette-category">
+                            <div class="category-header" @onclick="() => ToggleCategory(category.Name)">
+                                <span class="category-icon">@(IsCategoryExpanded(category.Name) ? "▼" : "▶")</span>
+                                <span class="category-name">@category.Name</span>
+                            </div>
+                            @if (IsCategoryExpanded(category.Name))
+                            {
+                                <div class="category-nodes">
+                                    @foreach (var nodeType in category.NodeTypes)
+                                    {
+                                        if (FilterNode(nodeType))
+                                        {
+                                            <div class="palette-node" 
+                                                 draggable="true"
+                                                 @ondragstart="@(e => OnNodeDragStart(nodeType))"
+                                                 @ondragend="OnNodeDragEnd"
+                                                 title="@GetNodeDescription(nodeType)">
+                                                <span class="node-icon">@GetNodeIcon(nodeType)</span>
+                                                <span class="node-label">@GetNodeLabel(nodeType)</span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Canvas -->
+        <div class="n360-workflow-designer-canvas-container"
+             @ref="_canvasContainerRef"
+             @onmousedown="OnCanvasMouseDown"
+             @onmousemove="OnCanvasMouseMove"
+             @onmouseup="OnCanvasMouseUp"
+             @onwheel="OnCanvasWheel"
+             @ondrop="OnCanvasDrop"
+             @ondragover:preventDefault
+             @ondragover="OnCanvasDragOver">
+            
+            <div class="n360-workflow-designer-canvas" 
+                 style="transform: translate(@(_panOffset.X)px, @(_panOffset.Y)px) scale(@_zoomLevel);">
+                
+                <!-- Grid Background -->
+                <svg class="canvas-grid" width="100%" height="100%">
+                    <defs>
+                        <pattern id="grid" width="@_gridSize" height="@_gridSize" patternUnits="userSpaceOnUse">
+                            <circle cx="1" cy="1" r="1" fill="currentColor" opacity="0.2"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                </svg>
+
+                <!-- Edges -->
+                <svg class="canvas-edges" width="100%" height="100%">
+                    @foreach (var edge in CurrentWorkflow?.Edges ?? new List<WorkflowEdge>())
+                    {
+                        var sourceNode = GetNodeById(edge.SourceNodeId);
+                        var targetNode = GetNodeById(edge.TargetNodeId);
+                        if (sourceNode != null && targetNode != null)
+                        {
+                            var path = CalculateEdgePath(sourceNode, targetNode, edge);
+                            var isSelected = _selectedEdge == edge;
+                            
+                            <g class="edge @GetEdgeClass(edge, isSelected)" 
+                               @onclick="@(() => OnEdgeClick(edge))"
+                               @oncontextmenu:preventDefault
+                               @oncontextmenu="@((e) => OnEdgeContextMenu(e, edge))">
+                                <path d="@path" 
+                                      class="edge-path" 
+                                      stroke="@(edge.Color ?? GetEdgeColor(edge.Type))"
+                                      stroke-dasharray="@GetEdgeDashArray(edge.Style)"
+                                      marker-end="url(#arrowhead)" />
+                                @if (edge.IsAnimated)
+                                {
+                                    <path d="@path" 
+                                          class="edge-path-animated" 
+                                          stroke="@(edge.Color ?? GetEdgeColor(edge.Type))"
+                                          stroke-dasharray="5,5" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(edge.Label))
+                                {
+                                    var labelPos = CalculateEdgeLabelPosition(sourceNode, targetNode);
+                                    var labelX = labelPos.X;
+                                    var labelY = labelPos.Y;
+                                    var labelText = edge.Label;
+                                    <g class="edge-label-group">
+                                        <text x="@labelX" y="@labelY" class="edge-label"><tspan>@labelText</tspan></text>
+                                    </g>
+                                }
+                            </g>
+                        }
+                    }
+                    <!-- Temporary Edge (while dragging) -->
+                    @if (_isConnecting && _connectionStart != null && _currentMousePos != null)
+                    {
+                        var startPos = GetNodePortPosition(_connectionStart.Value.NodeId, _connectionStart.Value.PortName, isOutput: true);
+                        <line x1="@startPos.X" y1="@startPos.Y"
+                              x2="@_currentMousePos.X" y2="@_currentMousePos.Y"
+                              class="edge-path edge-path-temporary"
+                              stroke="#666"
+                              stroke-width="2"
+                              stroke-dasharray="5,5" />
+                    }
+                    
+                    <!-- Arrow marker definition -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" 
+                                refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="currentColor" />
+                        </marker>
+                    </defs>
+                </svg>
+
+                <!-- Nodes -->
+                <div class="canvas-nodes">
+                    @foreach (var node in CurrentWorkflow?.Nodes ?? new List<WorkflowNode>())
+                    {
+                        var isSelected = _selectedNodes.Contains(node);
+                        <div class="workflow-node @GetNodeClass(node, isSelected)"
+                             style="left: @(node.X)px; top: @(node.Y)px; width: @(node.Width)px; height: @(node.Height)px; background-color: @(node.Color ?? node.GetDefaultColor());"
+                             @onmousedown="@((e) => OnNodeMouseDown(e, node))"
+                             @onmousedown:stopPropagation
+                             @onclick="@((e) => OnNodeClick(e, node))"
+                             @ondblclick="@(() => OnNodeDoubleClick(node))"
+                             @oncontextmenu:preventDefault
+                             @oncontextmenu="@((e) => OnNodeContextMenu(e, node))">
+                            
+                            <!-- Node Header -->
+                            <div class="node-header">
+                                <span class="node-icon">@(node.Icon ?? node.GetDefaultIcon())</span>
+                                <span class="node-label">@node.Label</span>
+                                @if (node.Status != NodeStatus.Pending)
+                                {
+                                    <span class="node-status-badge @GetStatusClass(node.Status)">
+                                        @GetStatusIcon(node.Status)
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Input Ports -->
+                            @if (node.Type != NodeType.Start && node.InputPorts.Any())
+                            {
+                                <div class="node-input-ports">
+                                    @foreach (var port in node.InputPorts)
+                                    {
+                                        <div class="node-port node-port-input"
+                                             data-port="@port"
+                                             @onmousedown:stopPropagation
+                                             @onmouseup="@((e) => OnPortMouseUp(node, port, false))"
+                                             title="@port">
+                                            <span class="port-dot"></span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Output Ports -->
+                            @if (node.Type != NodeType.End && node.OutputPorts.Any())
+                            {
+                                <div class="node-output-ports">
+                                    @foreach (var port in node.OutputPorts)
+                                    {
+                                        <div class="node-port node-port-output"
+                                             data-port="@port"
+                                             @onmousedown:stopPropagation
+                                             @onmousedown="@((e) => OnPortMouseDown(node, port))"
+                                             title="@port">
+                                            <span class="port-dot"></span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Validation Errors -->
+                            @if (node.ValidationErrors.Any())
+                            {
+                                <div class="node-validation-errors" title="@string.Join(", ", node.ValidationErrors)">
+                                    <span class="validation-icon">⚠️</span>
+                                </div>
+                            }
+
+                            <!-- Execution Progress -->
+                            @if (node.Status == NodeStatus.Running && ShowExecutionProgress)
+                            {
+                                <div class="node-execution-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Selection Rectangle -->
+                @if (_isSelecting && _selectionStart != null && _selectionEnd != null)
+                {
+                    var rect = GetSelectionRectangle();
+                    <div class="selection-rectangle"
+                         style="left: @(rect.X)px; top: @(rect.Y)px; width: @(rect.Width)px; height: @(rect.Height)px;">
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <div class="n360-workflow-designer-properties @(_isPropertiesCollapsed ? "collapsed" : "")">
+            <div class="properties-header">
+                <h3>Properties</h3>
+                <button class="properties-toggle" @onclick="ToggleProperties">
+                    @(_isPropertiesCollapsed ? "◀" : "▶")
+                </button>
+            </div>
+            @if (!_isPropertiesCollapsed)
+            {
+                @if (_selectedNodes.Count == 1)
+                {
+                    var node = _selectedNodes.First();
+                    <div class="properties-content">
+                        <div class="property-group">
+                            <label class="property-label">Node Type</label>
+                            <div class="property-value">@node.Type</div>
+                        </div>
+                        <div class="property-group">
+                            <label class="property-label">Label</label>
+                            <input type="text" 
+                                   class="property-input" 
+                                   @bind="node.Label"
+                                   @bind:event="oninput" />
+                        </div>
+                        <div class="property-group">
+                            <label class="property-label">Description</label>
+                            <textarea class="property-textarea" 
+                                      @bind="node.Description"
+                                      @bind:event="oninput"
+                                      rows="3"></textarea>
+                        </div>
+                        <div class="property-group">
+                            <label class="property-label">Position</label>
+                            <div class="property-row">
+                                <input type="number" 
+                                       class="property-input property-input-small" 
+                                       @bind="node.X"
+                                       @bind:event="oninput"
+                                       placeholder="X" />
+                                <input type="number" 
+                                       class="property-input property-input-small" 
+                                       @bind="node.Y"
+                                       @bind:event="oninput"
+                                       placeholder="Y" />
+                            </div>
+                        </div>
+                        <div class="property-group">
+                            <label class="property-label">Size</label>
+                            <div class="property-row">
+                                <input type="number" 
+                                       class="property-input property-input-small" 
+                                       @bind="node.Width"
+                                       @bind:event="oninput"
+                                       placeholder="Width" />
+                                <input type="number" 
+                                       class="property-input property-input-small" 
+                                       @bind="node.Height"
+                                       @bind:event="oninput"
+                                       placeholder="Height" />
+                            </div>
+                        </div>
+                        
+                        @if (NodePropertyTemplate != null)
+                        {
+                            <div class="property-group">
+                                <label class="property-label">Custom Properties</label>
+                                @NodePropertyTemplate(node)
+                            </div>
+                        }
+
+                        @if (node.ValidationErrors.Any())
+                        {
+                            <div class="property-group property-group-errors">
+                                <label class="property-label">Validation Errors</label>
+                                <ul class="validation-errors-list">
+                                    @foreach (var error in node.ValidationErrors)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        @if (node.ExecutionMetadata != null)
+                        {
+                            <div class="property-group">
+                                <label class="property-label">Execution</label>
+                                <div class="execution-metadata">
+                                    @if (node.ExecutionMetadata.StartedAt != null)
+                                    {
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Started:</span>
+                                            <span class="metadata-value">@node.ExecutionMetadata.StartedAt.Value.ToString("g")</span>
+                                        </div>
+                                    }
+                                    @if (node.ExecutionMetadata.CompletedAt != null)
+                                    {
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Completed:</span>
+                                            <span class="metadata-value">@node.ExecutionMetadata.CompletedAt.Value.ToString("g")</span>
+                                        </div>
+                                    }
+                                    @if (node.ExecutionMetadata.DurationMs != null)
+                                    {
+                                        <div class="metadata-item">
+                                            <span class="metadata-label">Duration:</span>
+                                            <span class="metadata-value">@(node.ExecutionMetadata.DurationMs)ms</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(node.ExecutionMetadata.ErrorMessage))
+                                    {
+                                        <div class="metadata-item metadata-item-error">
+                                            <span class="metadata-label">Error:</span>
+                                            <span class="metadata-value">@node.ExecutionMetadata.ErrorMessage</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="property-actions">
+                            <button class="property-button property-button-danger" @onclick="OnDeleteNodeAsync">
+                                Delete Node
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (_selectedEdge != null)
+                {
+                    <div class="properties-content">
+                        <div class="property-group">
+                            <label class="property-label">Edge Type</label>
+                            <select class="property-select" 
+                                    @bind="_selectedEdge.Type">
+                                @foreach (EdgeType edgeType in Enum.GetValues(typeof(EdgeType)))
+                                {
+                                    <option value="@edgeType">@edgeType</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="property-group">
+                            <label class="property-label">Label</label>
+                            <input type="text" 
+                                   class="property-input" 
+                                   @bind="_selectedEdge.Label"
+                                   @bind:event="oninput" />
+                        </div>
+                        @if (_selectedEdge.Type == EdgeType.Conditional)
+                        {
+                            <div class="property-group">
+                                <label class="property-label">Condition</label>
+                                <textarea class="property-textarea" 
+                                          @bind="_selectedEdge.Condition"
+                                          @bind:event="oninput"
+                                          rows="3"
+                                          placeholder="Enter condition expression..."></textarea>
+                            </div>
+                        }
+                        <div class="property-group">
+                            <label class="property-label">Animated</label>
+                            <input type="checkbox" 
+                                   class="property-checkbox" 
+                                   @bind="_selectedEdge.IsAnimated" />
+                        </div>
+                        <div class="property-actions">
+                            <button class="property-button property-button-danger" @onclick="OnDeleteEdgeAsync">
+                                Delete Edge
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (_selectedNodes.Count > 1)
+                {
+                    <div class="properties-content">
+                        <div class="property-group">
+                            <label class="property-label">Multiple Selection</label>
+                            <div class="property-value">@_selectedNodes.Count nodes selected</div>
+                        </div>
+                        <div class="property-actions">
+                            <button class="property-button" @onclick="OnAlignLeftAsync">Align Left</button>
+                            <button class="property-button" @onclick="OnAlignCenterAsync">Align Center</button>
+                            <button class="property-button" @onclick="OnAlignRightAsync">Align Right</button>
+                            <button class="property-button" @onclick="OnDistributeHorizontallyAsync">Distribute H</button>
+                            <button class="property-button" @onclick="OnDistributeVerticallyAsync">Distribute V</button>
+                            <button class="property-button property-button-danger" @onclick="OnDeleteSelectedAsync">
+                                Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="properties-content properties-empty">
+                        <p>Select a node or edge to view properties</p>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Validation Results Dialog -->
+    @if (_showValidationResults)
+    {
+        <div class="n360-workflow-designer-modal">
+            <div class="modal-backdrop" @onclick="CloseValidationResults"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Workflow Validation</h3>
+                    <button class="modal-close" @onclick="CloseValidationResults">×</button>
+                </div>
+                <div class="modal-body">
+                    @if (_validationErrors.Any())
+                    {
+                        <div class="validation-results validation-results-error">
+                            <h4>❌ Validation Failed (@_validationErrors.Count errors)</h4>
+                            <ul>
+                                @foreach (var error in _validationErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="validation-results validation-results-success">
+                            <h4>✅ Workflow is valid!</h4>
+                            <p>All nodes are properly connected and configured.</p>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-button" @onclick="CloseValidationResults">Close</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public WorkflowDefinition? CurrentWorkflow { get; set; }
+    [Parameter] public EventCallback<WorkflowDefinition> CurrentWorkflowChanged { get; set; }
+    [Parameter] public EventCallback<WorkflowDefinition> OnWorkflowSaved { get; set; }
+    [Parameter] public EventCallback<WorkflowDefinition> OnWorkflowRun { get; set; }
+    [Parameter] public EventCallback<WorkflowNode> OnNodeAdded { get; set; }
+    [Parameter] public EventCallback<WorkflowNode> OnNodeRemoved { get; set; }
+    [Parameter] public EventCallback<WorkflowEdge> OnEdgeAdded { get; set; }
+    [Parameter] public EventCallback<WorkflowEdge> OnEdgeRemoved { get; set; }
+    [Parameter] public RenderFragment<WorkflowNode>? NodePropertyTemplate { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string AuditResource { get; set; } = "WorkflowDesigner";
+    [Parameter] public bool ShowExecutionProgress { get; set; } = true;
+    [Parameter] public bool EnableAutoSave { get; set; }
+    [Parameter] public int AutoSaveIntervalSeconds { get; set; } = 30;
+    [Parameter] public bool SnapToGrid { get; set; } = true;
+    [Parameter] public int GridSize { get; set; } = 20;
+
+    private ElementReference _containerRef;
+    private ElementReference _canvasContainerRef;
+    private bool _hasPermission = true;
+    private bool _isPaletteCollapsed;
+    private bool _isPropertiesCollapsed;
+    private string _paletteSearchQuery = string.Empty;
+    private HashSet<string> _expandedCategories = new() { "Flow Control", "Actions", "Integrations" };
+    
+    // Canvas state
+    private double _zoomLevel = 1.0;
+    private Point _panOffset = new(0, 0);
+    private int _gridSize = 20;
+    private bool _isPanning;
+    private Point? _panStartPos;
+    private Point? _lastMousePos;
+    
+    // Selection state
+    private List<WorkflowNode> _selectedNodes = new();
+    private WorkflowEdge? _selectedEdge;
+    private bool _isSelecting;
+    private Point? _selectionStart;
+    private Point? _selectionEnd;
+    
+    // Node interaction state
+    private WorkflowNode? _draggingNode;
+    private Point? _dragOffset;
+    private NodeType? _draggingNodeType;
+    
+    // Connection state
+    private bool _isConnecting;
+    private (string NodeId, string PortName)? _connectionStart;
+    private Point? _currentMousePos;
+    
+    // Undo/Redo
+    private Stack<WorkflowDefinition> _undoStack = new();
+    private Stack<WorkflowDefinition> _redoStack = new();
+    
+    // Validation
+    private bool _showValidationResults;
+    private List<string> _validationErrors = new();
+    
+    // Execution
+    private bool IsRunning => CurrentWorkflow?.Status == WorkflowStatus.Active;
+    private bool HasUnsavedChanges { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (CurrentWorkflow == null)
+        {
+            CurrentWorkflow = new WorkflowDefinition
+            {
+                Name = "New Workflow",
+                Status = WorkflowStatus.Draft
+            };
+        }
+
+        _gridSize = GridSize;
+        await base.OnInitializedAsync();
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+
+    #region Node Palette
+
+    private record NodeCategory(string Name, List<NodeType> NodeTypes);
+
+    private List<NodeCategory> GetNodeCategories()
+    {
+        return new List<NodeCategory>
+        {
+            new("Flow Control", new List<NodeType> { NodeType.Start, NodeType.End, NodeType.Decision, NodeType.Parallel, NodeType.Subprocess }),
+            new("Actions", new List<NodeType> { NodeType.Task, NodeType.Wait, NodeType.Trigger, NodeType.Notification, NodeType.Script, NodeType.Approval }),
+            new("Integrations", new List<NodeType> { NodeType.Api, NodeType.Database, NodeType.Email })
+        };
+    }
+
+    private bool IsCategoryExpanded(string categoryName) => _expandedCategories.Contains(categoryName);
+
+    private void ToggleCategory(string categoryName)
+    {
+        if (_expandedCategories.Contains(categoryName))
+            _expandedCategories.Remove(categoryName);
+        else
+            _expandedCategories.Add(categoryName);
+    }
+
+    private bool FilterNode(NodeType nodeType)
+    {
+        if (string.IsNullOrWhiteSpace(_paletteSearchQuery))
+            return true;
+        
+        return GetNodeLabel(nodeType).Contains(_paletteSearchQuery, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetNodeLabel(NodeType nodeType) => nodeType.ToString();
+
+    private string GetNodeIcon(NodeType nodeType)
+    {
+        var tempNode = new WorkflowNode { Type = nodeType };
+        return tempNode.GetDefaultIcon();
+    }
+
+    private string GetNodeDescription(NodeType nodeType) => nodeType switch
+    {
+        NodeType.Start => "Starting point of the workflow",
+        NodeType.End => "Ending point of the workflow",
+        NodeType.Task => "Execute a specific task",
+        NodeType.Decision => "Conditional branch based on criteria",
+        NodeType.Parallel => "Execute multiple paths in parallel",
+        NodeType.Subprocess => "Execute another workflow",
+        NodeType.Wait => "Wait for a specified duration",
+        NodeType.Trigger => "Trigger an event or webhook",
+        NodeType.Notification => "Send a notification",
+        NodeType.Script => "Execute custom script code",
+        NodeType.Api => "Make an API call",
+        NodeType.Database => "Query or update database",
+        NodeType.Email => "Send an email",
+        NodeType.Approval => "Wait for manual approval",
+        _ => ""
+    };
+
+    private void OnNodeDragStart(NodeType nodeType)
+    {
+        _draggingNodeType = nodeType;
+    }
+
+    private void OnNodeDragEnd()
+    {
+        _draggingNodeType = null;
+    }
+
+    #endregion
+
+    #region Canvas Interaction
+
+    private async Task OnCanvasMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 1) // Middle mouse button for panning
+        {
+            _isPanning = true;
+            _panStartPos = new Point(e.ClientX, e.ClientY);
+            _lastMousePos = _panStartPos;
+        }
+        else if (e.Button == 0 && !e.CtrlKey) // Left click without Ctrl - start selection
+        {
+            _isSelecting = true;
+            var canvasPos = ScreenToCanvasCoordinates(new Point(e.ClientX, e.ClientY));
+            _selectionStart = canvasPos;
+            _selectionEnd = canvasPos;
+            
+            if (!e.ShiftKey)
+            {
+                _selectedNodes.Clear();
+                _selectedEdge = null;
+            }
+        }
+    }
+
+    private void OnCanvasMouseMove(MouseEventArgs e)
+    {
+        var currentPos = new Point(e.ClientX, e.ClientY);
+        _currentMousePos = ScreenToCanvasCoordinates(currentPos);
+
+        if (_isPanning && _lastMousePos != null)
+        {
+            _panOffset = new Point(
+                _panOffset.X + (currentPos.X - _lastMousePos.X),
+                _panOffset.Y + (currentPos.Y - _lastMousePos.Y)
+            );
+            _lastMousePos = currentPos;
+        }
+        else if (_isSelecting && _selectionStart != null)
+        {
+            _selectionEnd = _currentMousePos;
+            UpdateSelectionRectangle();
+        }
+        else if (_draggingNode != null && _dragOffset != null && _currentMousePos != null)
+        {
+            var newX = _currentMousePos.X - _dragOffset.X;
+            var newY = _currentMousePos.Y - _dragOffset.Y;
+
+            if (SnapToGrid)
+            {
+                newX = Math.Round(newX / _gridSize) * _gridSize;
+                newY = Math.Round(newY / _gridSize) * _gridSize;
+            }
+
+            _draggingNode.X = newX;
+            _draggingNode.Y = newY;
+            MarkAsChanged();
+        }
+    }
+
+    private void OnCanvasMouseUp(MouseEventArgs e)
+    {
+        _isPanning = false;
+        _panStartPos = null;
+        _lastMousePos = null;
+
+        if (_isSelecting)
+        {
+            _isSelecting = false;
+            _selectionStart = null;
+            _selectionEnd = null;
+        }
+
+        if (_draggingNode != null)
+        {
+            SaveToUndoStack();
+            _draggingNode.IsDragging = false;
+            _draggingNode = null;
+            _dragOffset = null;
+        }
+    }
+
+    private void OnCanvasWheel(WheelEventArgs e)
+    {
+        var zoomDelta = e.DeltaY > 0 ? 0.9 : 1.1;
+        _zoomLevel = Math.Clamp(_zoomLevel * zoomDelta, 0.1, 3.0);
+    }
+
+    private void OnCanvasDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        // Allow drop
+    }
+
+    private async Task OnCanvasDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (_draggingNodeType == null) return;
+
+        var dropPos = ScreenToCanvasCoordinates(new Point(e.ClientX, e.ClientY));
+        var newNode = new WorkflowNode
+        {
+            Type = _draggingNodeType.Value,
+            Label = GetNodeLabel(_draggingNodeType.Value),
+            X = SnapToGrid ? Math.Round(dropPos.X / _gridSize) * _gridSize : dropPos.X,
+            Y = SnapToGrid ? Math.Round(dropPos.Y / _gridSize) * _gridSize : dropPos.Y
+        };
+
+        // Configure default ports based on node type
+        if (newNode.Type == NodeType.Start)
+        {
+            newNode.InputPorts.Clear();
+        }
+        else if (newNode.Type == NodeType.End)
+        {
+            newNode.OutputPorts.Clear();
+        }
+        else if (newNode.Type == NodeType.Decision)
+        {
+            newNode.OutputPorts = new List<string> { "true", "false" };
+        }
+
+        CurrentWorkflow?.Nodes.Add(newNode);
+        SaveToUndoStack();
+        MarkAsChanged();
+
+        await OnNodeAdded.InvokeAsync(newNode);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["NodeId"] = newNode.Id,
+                    ["NodeType"] = newNode.Type.ToString(),
+                    ["Label"] = newNode.Label
+                }
+            });
+        }
+
+        _draggingNodeType = null;
+    }
+
+    #endregion
+
+    #region Node Interaction
+
+    private void OnNodeMouseDown(MouseEventArgs e, WorkflowNode node)
+    {
+        if (e.Button == 0) // Left mouse button
+        {
+            _draggingNode = node;
+            _dragOffset = new Point(e.OffsetX, e.OffsetY);
+            node.IsDragging = true;
+        }
+    }
+
+    private void OnNodeClick(MouseEventArgs e, WorkflowNode node)
+    {
+        if (e.CtrlKey)
+        {
+            if (_selectedNodes.Contains(node))
+                _selectedNodes.Remove(node);
+            else
+                _selectedNodes.Add(node);
+        }
+        else if (e.ShiftKey)
+        {
+            if (!_selectedNodes.Contains(node))
+                _selectedNodes.Add(node);
+        }
+        else
+        {
+            _selectedNodes.Clear();
+            _selectedNodes.Add(node);
+        }
+        
+        node.IsSelected = _selectedNodes.Contains(node);
+        _selectedEdge = null;
+    }
+
+    private async Task OnNodeDoubleClick(WorkflowNode node)
+    {
+        // Could open a detailed editor dialog
+        await Task.CompletedTask;
+    }
+
+    private void OnNodeContextMenu(MouseEventArgs e, WorkflowNode node)
+    {
+        // Could show context menu
+    }
+
+    private string GetNodeClass(WorkflowNode node, bool isSelected)
+    {
+        var classes = new List<string>();
+        
+        if (isSelected) classes.Add("selected");
+        if (node.IsDragging) classes.Add("dragging");
+        if (!node.IsValid) classes.Add("invalid");
+        classes.Add($"node-type-{node.Type.ToString().ToLower()}");
+        classes.Add($"node-status-{node.Status.ToString().ToLower()}");
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetStatusClass(NodeStatus status) => status.ToString().ToLower();
+
+    private string GetStatusIcon(NodeStatus status) => status switch
+    {
+        NodeStatus.Running => "⟳",
+        NodeStatus.Completed => "✓",
+        NodeStatus.Failed => "✗",
+        NodeStatus.Skipped => "⊘",
+        NodeStatus.Cancelled => "⊗",
+        _ => ""
+    };
+
+    #endregion
+
+    #region Port and Edge Interaction
+
+    private void OnPortMouseDown(WorkflowNode node, string port)
+    {
+        _isConnecting = true;
+        _connectionStart = (node.Id, port);
+    }
+
+    private async Task OnPortMouseUp(WorkflowNode targetNode, string targetPort, bool isInput)
+    {
+        if (_isConnecting && _connectionStart != null)
+        {
+            var sourceNode = GetNodeById(_connectionStart.Value.NodeId);
+            if (sourceNode != null && sourceNode != targetNode)
+            {
+                var newEdge = new WorkflowEdge
+                {
+                    SourceNodeId = sourceNode.Id,
+                    SourcePort = _connectionStart.Value.PortName,
+                    TargetNodeId = targetNode.Id,
+                    TargetPort = targetPort,
+                    Type = EdgeType.Default
+                };
+
+                CurrentWorkflow?.Edges.Add(newEdge);
+                SaveToUndoStack();
+                MarkAsChanged();
+
+                await OnEdgeAdded.InvokeAsync(newEdge);
+
+                if (EnableAudit)
+                {
+                    await AuditService.LogAsync(new AuditMetadata
+                    {
+                        Action = "Create",
+                        Resource = AuditResource,
+                        AdditionalData = new Dictionary<string, object>
+                        {
+                            ["EdgeId"] = newEdge.Id,
+                            ["SourceNode"] = sourceNode.Label,
+                            ["TargetNode"] = targetNode.Label
+                        }
+                    });
+                }
+            }
+
+            _isConnecting = false;
+            _connectionStart = null;
+        }
+    }
+
+    private Point GetNodePortPosition(string nodeId, string portName, bool isOutput)
+    {
+        var node = GetNodeById(nodeId);
+        if (node == null) return new Point(0, 0);
+
+        var centerX = node.X + node.Width / 2;
+        var centerY = node.Y + node.Height / 2;
+
+        if (isOutput)
+        {
+            return new Point(node.X + node.Width, centerY);
+        }
+        else
+        {
+            return new Point(node.X, centerY);
+        }
+    }
+
+    private void OnEdgeClick(WorkflowEdge edge)
+    {
+        _selectedEdge = edge;
+        _selectedNodes.Clear();
+        edge.IsSelected = true;
+    }
+
+    private void OnEdgeContextMenu(MouseEventArgs e, WorkflowEdge edge)
+    {
+        // Could show context menu
+    }
+
+    private string GetEdgeClass(WorkflowEdge edge, bool isSelected)
+    {
+        var classes = new List<string>();
+        if (isSelected) classes.Add("selected");
+        classes.Add($"edge-type-{edge.Type.ToString().ToLower()}");
+        return string.Join(" ", classes);
+    }
+
+    private string GetEdgeColor(EdgeType type) => type switch
+    {
+        EdgeType.Success => "#4caf50",
+        EdgeType.Error => "#f44336",
+        EdgeType.Conditional => "#ff9800",
+        EdgeType.Parallel => "#2196f3",
+        _ => "#666"
+    };
+
+    private string GetEdgeDashArray(string style) => style switch
+    {
+        "dashed" => "10,5",
+        "dotted" => "2,5",
+        _ => "0"
+    };
+
+    private string CalculateEdgePath(WorkflowNode source, WorkflowNode target, WorkflowEdge edge)
+    {
+        var start = GetNodePortPosition(source.Id, edge.SourcePort, true);
+        var end = GetNodePortPosition(target.Id, edge.TargetPort, false);
+
+        // Bezier curve for smooth connections
+        var dx = end.X - start.X;
+        var controlPoint1X = start.X + dx * 0.5;
+        var controlPoint2X = end.X - dx * 0.5;
+
+        return $"M {start.X} {start.Y} C {controlPoint1X} {start.Y}, {controlPoint2X} {end.Y}, {end.X} {end.Y}";
+    }
+
+    private Point CalculateEdgeLabelPosition(WorkflowNode source, WorkflowNode target)
+    {
+        var start = GetNodePortPosition(source.Id, "output", true);
+        var end = GetNodePortPosition(target.Id, "input", false);
+        return new Point((start.X + end.X) / 2, (start.Y + end.Y) / 2);
+    }
+
+    #endregion
+
+    #region Selection
+
+    private void UpdateSelectionRectangle()
+    {
+        if (_selectionStart == null || _selectionEnd == null || CurrentWorkflow == null)
+            return;
+
+        var rect = GetSelectionRectangle();
+        _selectedNodes = CurrentWorkflow.Nodes
+            .Where(n => IsNodeInRectangle(n, rect))
+            .ToList();
+
+        foreach (var node in CurrentWorkflow.Nodes)
+        {
+            node.IsSelected = _selectedNodes.Contains(node);
+        }
+    }
+
+    private (double X, double Y, double Width, double Height) GetSelectionRectangle()
+    {
+        if (_selectionStart == null || _selectionEnd == null)
+            return (0, 0, 0, 0);
+
+        var x = Math.Min(_selectionStart.X, _selectionEnd.X);
+        var y = Math.Min(_selectionStart.Y, _selectionEnd.Y);
+        var width = Math.Abs(_selectionEnd.X - _selectionStart.X);
+        var height = Math.Abs(_selectionEnd.Y - _selectionStart.Y);
+
+        return (x, y, width, height);
+    }
+
+    private bool IsNodeInRectangle(WorkflowNode node, (double X, double Y, double Width, double Height) rect)
+    {
+        return node.X >= rect.X &&
+               node.Y >= rect.Y &&
+               node.X + node.Width <= rect.X + rect.Width &&
+               node.Y + node.Height <= rect.Y + rect.Height;
+    }
+
+    #endregion
+
+    #region Coordinate Conversion
+
+    private Point ScreenToCanvasCoordinates(Point screenPos)
+    {
+        return new Point(
+            (screenPos.X - _panOffset.X) / _zoomLevel,
+            (screenPos.Y - _panOffset.Y) / _zoomLevel
+        );
+    }
+
+    #endregion
+
+    #region Toolbar Actions
+
+    private async Task OnNewAsync()
+    {
+        CurrentWorkflow = new WorkflowDefinition
+        {
+            Name = "New Workflow",
+            Status = WorkflowStatus.Draft
+        };
+        _selectedNodes.Clear();
+        _selectedEdge = null;
+        _undoStack.Clear();
+        _redoStack.Clear();
+        HasUnsavedChanges = false;
+
+        await CurrentWorkflowChanged.InvokeAsync(CurrentWorkflow);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["WorkflowId"] = CurrentWorkflow.Id,
+                    ["Name"] = CurrentWorkflow.Name
+                }
+            });
+        }
+    }
+
+    private async Task OnSaveAsync()
+    {
+        if (CurrentWorkflow == null) return;
+
+        CurrentWorkflow.ModifiedAt = DateTime.UtcNow;
+        HasUnsavedChanges = false;
+
+        await OnWorkflowSaved.InvokeAsync(CurrentWorkflow);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Update",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["WorkflowId"] = CurrentWorkflow.Id,
+                    ["Name"] = CurrentWorkflow.Name,
+                    ["NodeCount"] = CurrentWorkflow.Nodes.Count,
+                    ["EdgeCount"] = CurrentWorkflow.Edges.Count
+                }
+            });
+        }
+    }
+
+    private async Task OnValidateAsync()
+    {
+        if (CurrentWorkflow == null) return;
+
+        _validationErrors = CurrentWorkflow.Validate();
+        _showValidationResults = true;
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Validate",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["WorkflowId"] = CurrentWorkflow.Id,
+                    ["IsValid"] = !_validationErrors.Any(),
+                    ["ErrorCount"] = _validationErrors.Count
+                }
+            });
+        }
+    }
+
+    private async Task OnRunAsync()
+    {
+        if (CurrentWorkflow == null || !CanRunWorkflow()) return;
+
+        // Validate first
+        _validationErrors = CurrentWorkflow.Validate();
+        if (_validationErrors.Any())
+        {
+            _showValidationResults = true;
+            return;
+        }
+
+        CurrentWorkflow.Status = WorkflowStatus.Active;
+        await OnWorkflowRun.InvokeAsync(CurrentWorkflow);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Execute",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["WorkflowId"] = CurrentWorkflow.Id,
+                    ["Action"] = "Start"
+                }
+            });
+        }
+    }
+
+    private async Task OnStopAsync()
+    {
+        if (CurrentWorkflow == null) return;
+
+        CurrentWorkflow.Status = WorkflowStatus.Paused;
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Execute",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["WorkflowId"] = CurrentWorkflow.Id,
+                    ["Action"] = "Stop"
+                }
+            });
+        }
+    }
+
+    private bool CanRunWorkflow()
+    {
+        return CurrentWorkflow != null &&
+               CurrentWorkflow.Status != WorkflowStatus.Active &&
+               CurrentWorkflow.Nodes.Any(n => n.Type == NodeType.Start);
+    }
+
+    private async Task OnZoomInAsync()
+    {
+        _zoomLevel = Math.Min(_zoomLevel * 1.2, 3.0);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnZoomOutAsync()
+    {
+        _zoomLevel = Math.Max(_zoomLevel * 0.8, 0.1);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnZoomResetAsync()
+    {
+        _zoomLevel = 1.0;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnFitToScreenAsync()
+    {
+        // Calculate bounding box of all nodes and adjust zoom/pan
+        await Task.CompletedTask;
+    }
+
+    private async Task OnExportAsync()
+    {
+        // Export workflow as JSON
+        await Task.CompletedTask;
+    }
+
+    private async Task OnImportAsync()
+    {
+        // Import workflow from JSON
+        await Task.CompletedTask;
+    }
+
+    private async Task OnUndoAsync()
+    {
+        if (!CanUndo()) return;
+
+        if (CurrentWorkflow != null)
+        {
+            _redoStack.Push(CloneWorkflow(CurrentWorkflow));
+        }
+
+        CurrentWorkflow = _undoStack.Pop();
+        await CurrentWorkflowChanged.InvokeAsync(CurrentWorkflow);
+    }
+
+    private async Task OnRedoAsync()
+    {
+        if (!CanRedo()) return;
+
+        if (CurrentWorkflow != null)
+        {
+            _undoStack.Push(CloneWorkflow(CurrentWorkflow));
+        }
+
+        CurrentWorkflow = _redoStack.Pop();
+        await CurrentWorkflowChanged.InvokeAsync(CurrentWorkflow);
+    }
+
+    private bool CanUndo() => _undoStack.Any();
+    private bool CanRedo() => _redoStack.Any();
+
+    #endregion
+
+    #region Properties Panel
+
+    private void TogglePalette()
+    {
+        _isPaletteCollapsed = !_isPaletteCollapsed;
+    }
+
+    private void ToggleProperties()
+    {
+        _isPropertiesCollapsed = !_isPropertiesCollapsed;
+    }
+
+    private void OnNodePropertyChanged()
+    {
+        SaveToUndoStack();
+        MarkAsChanged();
+    }
+
+    private void OnEdgePropertyChanged()
+    {
+        SaveToUndoStack();
+        MarkAsChanged();
+    }
+
+    private async Task OnDeleteNodeAsync()
+    {
+        if (_selectedNodes.Count != 1 || CurrentWorkflow == null) return;
+
+        var node = _selectedNodes.First();
+        
+        // Remove connected edges
+        var connectedEdges = CurrentWorkflow.Edges
+            .Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id)
+            .ToList();
+        
+        foreach (var edge in connectedEdges)
+        {
+            CurrentWorkflow.Edges.Remove(edge);
+        }
+
+        CurrentWorkflow.Nodes.Remove(node);
+        _selectedNodes.Clear();
+        SaveToUndoStack();
+        MarkAsChanged();
+
+        await OnNodeRemoved.InvokeAsync(node);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Delete",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["NodeId"] = node.Id,
+                    ["Label"] = node.Label
+                }
+            });
+        }
+    }
+
+    private async Task OnDeleteEdgeAsync()
+    {
+        if (_selectedEdge == null || CurrentWorkflow == null) return;
+
+        CurrentWorkflow.Edges.Remove(_selectedEdge);
+        var edge = _selectedEdge;
+        _selectedEdge = null;
+        SaveToUndoStack();
+        MarkAsChanged();
+
+        await OnEdgeRemoved.InvokeAsync(edge);
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Delete",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["EdgeId"] = edge.Id
+                }
+            });
+        }
+    }
+
+    private async Task OnDeleteSelectedAsync()
+    {
+        if (!_selectedNodes.Any() || CurrentWorkflow == null) return;
+
+        foreach (var node in _selectedNodes.ToList())
+        {
+            var connectedEdges = CurrentWorkflow.Edges
+                .Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id)
+                .ToList();
+            
+            foreach (var edge in connectedEdges)
+            {
+                CurrentWorkflow.Edges.Remove(edge);
+            }
+
+            CurrentWorkflow.Nodes.Remove(node);
+            await OnNodeRemoved.InvokeAsync(node);
+        }
+
+        _selectedNodes.Clear();
+        SaveToUndoStack();
+        MarkAsChanged();
+    }
+
+    private async Task OnAlignLeftAsync()
+    {
+        if (_selectedNodes.Count < 2) return;
+        
+        var minX = _selectedNodes.Min(n => n.X);
+        foreach (var node in _selectedNodes)
+        {
+            node.X = minX;
+        }
+        SaveToUndoStack();
+        MarkAsChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnAlignCenterAsync()
+    {
+        if (_selectedNodes.Count < 2) return;
+        
+        var avgX = _selectedNodes.Average(n => n.X + n.Width / 2);
+        foreach (var node in _selectedNodes)
+        {
+            node.X = avgX - node.Width / 2;
+        }
+        SaveToUndoStack();
+        MarkAsChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnAlignRightAsync()
+    {
+        if (_selectedNodes.Count < 2) return;
+        
+        var maxX = _selectedNodes.Max(n => n.X + n.Width);
+        foreach (var node in _selectedNodes)
+        {
+            node.X = maxX - node.Width;
+        }
+        SaveToUndoStack();
+        MarkAsChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDistributeHorizontallyAsync()
+    {
+        if (_selectedNodes.Count < 3) return;
+        
+        var sorted = _selectedNodes.OrderBy(n => n.X).ToList();
+        var totalWidth = sorted.Last().X - sorted.First().X;
+        var spacing = totalWidth / (sorted.Count - 1);
+        
+        for (int i = 1; i < sorted.Count - 1; i++)
+        {
+            sorted[i].X = sorted.First().X + spacing * i;
+        }
+        SaveToUndoStack();
+        MarkAsChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDistributeVerticallyAsync()
+    {
+        if (_selectedNodes.Count < 3) return;
+        
+        var sorted = _selectedNodes.OrderBy(n => n.Y).ToList();
+        var totalHeight = sorted.Last().Y - sorted.First().Y;
+        var spacing = totalHeight / (sorted.Count - 1);
+        
+        for (int i = 1; i < sorted.Count - 1; i++)
+        {
+            sorted[i].Y = sorted.First().Y + spacing * i;
+        }
+        SaveToUndoStack();
+        MarkAsChanged();
+        await Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private WorkflowNode? GetNodeById(string id) =>
+        CurrentWorkflow?.Nodes.FirstOrDefault(n => n.Id == id);
+
+    private void MarkAsChanged()
+    {
+        HasUnsavedChanges = true;
+        _redoStack.Clear(); // Clear redo stack on new change
+    }
+
+    private void SaveToUndoStack()
+    {
+        if (CurrentWorkflow != null)
+        {
+            _undoStack.Push(CloneWorkflow(CurrentWorkflow));
+            if (_undoStack.Count > 50) // Limit undo history
+            {
+                var temp = _undoStack.ToList();
+                temp.RemoveAt(0);
+                _undoStack = new Stack<WorkflowDefinition>(temp.AsEnumerable().Reverse());
+            }
+        }
+    }
+
+    private WorkflowDefinition CloneWorkflow(WorkflowDefinition workflow)
+    {
+        // Simple cloning - in production use proper serialization
+        return new WorkflowDefinition
+        {
+            Id = workflow.Id,
+            Name = workflow.Name,
+            Description = workflow.Description,
+            Version = workflow.Version,
+            Status = workflow.Status,
+            Nodes = workflow.Nodes.Select(n => new WorkflowNode
+            {
+                Id = n.Id,
+                Type = n.Type,
+                Label = n.Label,
+                Description = n.Description,
+                X = n.X,
+                Y = n.Y,
+                Width = n.Width,
+                Height = n.Height,
+                InputPorts = new List<string>(n.InputPorts),
+                OutputPorts = new List<string>(n.OutputPorts),
+                Data = new Dictionary<string, object>(n.Data),
+                Icon = n.Icon,
+                Color = n.Color,
+                CssClass = n.CssClass,
+                IsSelected = n.IsSelected,
+                IsDragging = n.IsDragging,
+                Status = n.Status
+            }).ToList(),
+            Edges = workflow.Edges.Select(e => new WorkflowEdge
+            {
+                Id = e.Id,
+                SourceNodeId = e.SourceNodeId,
+                SourcePort = e.SourcePort,
+                TargetNodeId = e.TargetNodeId,
+                TargetPort = e.TargetPort,
+                Type = e.Type,
+                Label = e.Label,
+                Condition = e.Condition,
+                Color = e.Color,
+                Style = e.Style,
+                IsSelected = e.IsSelected,
+                IsAnimated = e.IsAnimated
+            }).ToList(),
+            Metadata = new Dictionary<string, object>(workflow.Metadata),
+            CreatedAt = workflow.CreatedAt,
+            ModifiedAt = workflow.ModifiedAt
+        };
+    }
+
+    private void CloseValidationResults()
+    {
+        _showValidationResults = false;
+    }
+
+    private record Point(double X, double Y);
+
+    #endregion
+}

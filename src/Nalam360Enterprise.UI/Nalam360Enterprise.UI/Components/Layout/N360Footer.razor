@@ -1,0 +1,323 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+<footer class="n360-footer @ThemeClass @(IsFixed ? "fixed" : "") @CssClass" style="@Style">
+    <div class="footer-container @(IsFluid ? "fluid" : "")">
+        @if (ShowTopSection)
+        {
+            <div class="footer-top">
+                @if (Columns != null && Columns.Any())
+                {
+                    <div class="footer-columns">
+                        @foreach (var column in Columns)
+                        {
+                            <div class="footer-column">
+                                <h3 class="column-title">@column.Title</h3>
+                                @if (column.Links != null && column.Links.Any())
+                                {
+                                    <ul class="column-links">
+                                        @foreach (var link in column.Links)
+                                        {
+                                            @if (HasPermission(link.RequiredPermission))
+                                            {
+                                                <li>
+                                                    <a href="@link.Href" 
+                                                       class="footer-link"
+                                                       target="@(link.OpenInNewTab ? "_blank" : "_self")"
+                                                       @onclick="() => OnLinkClick(link)"
+                                                       @onclick:preventDefault="link.PreventDefault">
+                                                        @if (!string.IsNullOrEmpty(link.Icon))
+                                                        {
+                                                            <span class="link-icon">@link.Icon</span>
+                                                        }
+                                                        <span class="link-text">@link.Label</span>
+                                                        @if (link.IsNew)
+                                                        {
+                                                            <span class="link-badge new">NEW</span>
+                                                        }
+                                                        @if (link.OpenInNewTab)
+                                                        {
+                                                            <span class="link-external">↗</span>
+                                                        }
+                                                    </a>
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                }
+                                @if (column.CustomContent != null)
+                                {
+                                    <div class="column-custom">
+                                        @column.CustomContent
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else if (TopContent != null)
+                {
+                    <div class="footer-custom-content">
+                        @TopContent
+                    </div>
+                }
+
+                @if (ShowNewsletter)
+                {
+                    <div class="footer-newsletter">
+                        <div class="newsletter-header">
+                            <h3 class="newsletter-title">@NewsletterTitle</h3>
+                            <p class="newsletter-description">@NewsletterDescription</p>
+                        </div>
+                        <div class="newsletter-form">
+                            <input type="email" 
+                                   class="newsletter-input" 
+                                   placeholder="@NewsletterPlaceholder"
+                                   @bind="_newsletterEmail"
+                                   @bind:event="oninput" />
+                            <button class="newsletter-button" @onclick="OnNewsletterSubscribe">
+                                <span class="button-text">@NewsletterButtonText</span>
+                                <span class="button-icon">→</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="footer-bottom">
+            <div class="footer-bottom-left">
+                @if (ShowLogo)
+                {
+                    <div class="footer-logo">
+                        @if (!string.IsNullOrEmpty(LogoUrl))
+                        {
+                            <img src="@LogoUrl" alt="@BrandName" class="logo-image" />
+                        }
+                        else
+                        {
+                            <span class="logo-icon">@LogoIcon</span>
+                        }
+                        <span class="logo-text">@BrandName</span>
+                    </div>
+                }
+
+                @if (ShowCopyright)
+                {
+                    <p class="footer-copyright">
+                        © @CopyrightYear @CopyrightText
+                    </p>
+                }
+
+                @if (LegalLinks != null && LegalLinks.Any())
+                {
+                    <div class="footer-legal">
+                        @foreach (var link in LegalLinks)
+                        {
+                            @if (HasPermission(link.RequiredPermission))
+                            {
+                                <a href="@link.Href" 
+                                   class="legal-link"
+                                   target="@(link.OpenInNewTab ? "_blank" : "_self")"
+                                   @onclick="() => OnLinkClick(link)"
+                                   @onclick:preventDefault="link.PreventDefault">
+                                    @link.Label
+                                </a>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="footer-bottom-right">
+                @if (ShowSocialLinks && SocialLinks != null && SocialLinks.Any())
+                {
+                    <div class="footer-social">
+                        @foreach (var social in SocialLinks)
+                        {
+                            <a href="@social.Href" 
+                               class="social-link @social.Platform.ToLower()"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               aria-label="@social.Platform"
+                               @onclick="() => OnSocialClick(social)">
+                                <span class="social-icon">@social.Icon</span>
+                            </a>
+                        }
+                    </div>
+                }
+
+                @if (BottomRightContent != null)
+                {
+                    <div class="footer-custom-right">
+                        @BottomRightContent
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (BottomContent != null)
+        {
+            <div class="footer-extra">
+                @BottomContent
+            </div>
+        }
+    </div>
+
+    @if (ShowBackToTop && _showBackToTopButton)
+    {
+        <button class="back-to-top" @onclick="ScrollToTop" aria-label="Back to top">
+            <span class="back-icon">↑</span>
+        </button>
+    }
+</footer>
+
+@code {
+    // Configuration
+    [Parameter] public string? LogoUrl { get; set; }
+    [Parameter] public string LogoIcon { get; set; } = "🏥";
+    [Parameter] public string BrandName { get; set; } = "Enterprise";
+    [Parameter] public bool ShowLogo { get; set; } = true;
+    [Parameter] public bool ShowTopSection { get; set; } = true;
+    [Parameter] public bool ShowCopyright { get; set; } = true;
+    [Parameter] public bool ShowSocialLinks { get; set; } = true;
+    [Parameter] public bool ShowNewsletter { get; set; } = false;
+    [Parameter] public bool ShowBackToTop { get; set; } = true;
+
+    // Layout Options
+    [Parameter] public bool IsFixed { get; set; } = false;
+    [Parameter] public bool IsFluid { get; set; } = false;
+
+    // Theme & Style
+    [Parameter] public string ThemeClass { get; set; } = "light";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
+
+    // Copyright
+    [Parameter] public int CopyrightYear { get; set; } = DateTime.Now.Year;
+    [Parameter] public string CopyrightText { get; set; } = "All rights reserved.";
+
+    // Newsletter
+    [Parameter] public string NewsletterTitle { get; set; } = "Stay Updated";
+    [Parameter] public string NewsletterDescription { get; set; } = "Subscribe to our newsletter for the latest updates.";
+    [Parameter] public string NewsletterPlaceholder { get; set; } = "Enter your email";
+    [Parameter] public string NewsletterButtonText { get; set; } = "Subscribe";
+
+    // Content
+    [Parameter] public List<FooterColumn>? Columns { get; set; }
+    [Parameter] public List<FooterLink>? LegalLinks { get; set; }
+    [Parameter] public List<SocialLink>? SocialLinks { get; set; }
+    [Parameter] public RenderFragment? TopContent { get; set; }
+    [Parameter] public RenderFragment? BottomContent { get; set; }
+    [Parameter] public RenderFragment? BottomRightContent { get; set; }
+
+    // Events
+    [Parameter] public EventCallback<FooterLink> OnLinkClicked { get; set; }
+    [Parameter] public EventCallback<SocialLink> OnSocialClicked { get; set; }
+    [Parameter] public EventCallback<string> OnNewsletterSubscribed { get; set; }
+
+    // Permissions & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+
+    // State
+    private bool _showBackToTopButton = false;
+    private string _newsletterEmail = string.Empty;
+
+    private Dictionary<string, bool> _permissionCache = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _permissionCache.Clear();
+        
+        if (Columns != null)
+        {
+            foreach (var column in Columns)
+            {
+                if (column.Links != null)
+                {
+                    foreach (var link in column.Links.Where(l => !string.IsNullOrEmpty(l.RequiredPermission)))
+                    {
+                        _permissionCache[link.RequiredPermission!] = await PermissionService.HasPermissionAsync(link.RequiredPermission!);
+                    }
+                }
+            }
+        }
+        
+        if (LegalLinks != null)
+        {
+            foreach (var link in LegalLinks.Where(l => !string.IsNullOrEmpty(l.RequiredPermission)))
+            {
+                _permissionCache[link.RequiredPermission!] = await PermissionService.HasPermissionAsync(link.RequiredPermission!);
+            }
+        }
+    }
+
+    private bool HasPermission(string? permission)
+    {
+        if (string.IsNullOrEmpty(permission)) return true;
+        return _permissionCache.TryGetValue(permission, out var hasPermission) && hasPermission;
+    }
+
+    private async Task OnLinkClick(FooterLink link)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "FooterLinkClicked",
+                Resource = "Footer",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Label"] = link.Label,
+                    ["Href"] = link.Href ?? ""
+                }
+            });
+        }
+        await OnLinkClicked.InvokeAsync(link);
+    }
+
+    private async Task OnSocialClick(SocialLink social)
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "SocialLinkClicked",
+                Resource = "Footer",
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Platform"] = social.Platform,
+                    ["Href"] = social.Href ?? ""
+                }
+            });
+        }
+        await OnSocialClicked.InvokeAsync(social);
+    }
+
+    private async Task OnNewsletterSubscribe()
+    {
+        if (string.IsNullOrWhiteSpace(_newsletterEmail)) return;
+
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "NewsletterSubscribed",
+                Resource = "Footer",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        await OnNewsletterSubscribed.InvokeAsync(_newsletterEmail);
+        _newsletterEmail = string.Empty;
+    }
+
+    private void ScrollToTop()
+    {
+        // Will be implemented with JS interop
+    }
+}

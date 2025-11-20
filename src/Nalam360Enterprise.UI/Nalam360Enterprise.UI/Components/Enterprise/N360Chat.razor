@@ -1,0 +1,1013 @@
+@using Nalam360Enterprise.UI.Core.Security
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+
+@if (_hasPermission)
+{
+    <div class="n360-chat @CssClass @(_isRtl ? "rtl" : "")" @attributes="GetHtmlAttributes()">
+        
+        @* Conversation List Sidebar *@
+        @if (ShowConversationList)
+        {
+            <div class="n360-chat__sidebar @(_sidebarCollapsed ? "collapsed" : "")">
+                <div class="n360-chat__sidebar-header">
+                    <h3>@ConversationListTitle</h3>
+                    <div class="n360-chat__sidebar-actions">
+                        @if (AllowNewConversation)
+                        {
+                            <button class="btn btn-icon" @onclick="OnNewConversationAsync" title="New Conversation">
+                                <span class="icon">➕</span>
+                            </button>
+                        }
+                        <button class="btn btn-icon" @onclick="() => _sidebarCollapsed = !_sidebarCollapsed" title="Toggle Sidebar">
+                            <span class="icon">@(_sidebarCollapsed ? "▶" : "◀")</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="n360-chat__search">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Search conversations..." 
+                           @bind="_conversationSearchQuery"
+                           @bind:event="oninput"
+                           @onkeyup="OnSearchConversations" />
+                </div>
+
+                <div class="n360-chat__conversation-list">
+                    @foreach (var conversation in GetFilteredConversations())
+                    {
+                        <div class="n360-chat__conversation-item @(conversation.Id == _selectedConversationId ? "active" : "") @(conversation.IsPinned ? "pinned" : "")"
+                             @onclick="() => OnSelectConversationAsync(conversation.Id)">
+                            <div class="n360-chat__conversation-avatar">
+                                @if (!string.IsNullOrEmpty(conversation.AvatarUrl))
+                                {
+                                    <img src="@conversation.AvatarUrl" alt="@conversation.Name" />
+                                }
+                                else
+                                {
+                                    <div class="avatar-placeholder">@GetInitials(conversation.Name)</div>
+                                }
+                                @if (GetConversationPresence(conversation) == UserPresence.Online)
+                                {
+                                    <span class="presence-indicator online"></span>
+                                }
+                            </div>
+                            <div class="n360-chat__conversation-content">
+                                <div class="n360-chat__conversation-header">
+                                    <span class="conversation-name">@conversation.Name</span>
+                                    <span class="conversation-time">@FormatTimestamp(conversation.LastActivityAt ?? conversation.CreatedAt)</span>
+                                </div>
+                                <div class="n360-chat__conversation-preview">
+                                    <span class="last-message">@GetLastMessagePreview(conversation)</span>
+                                    @if (conversation.UnreadCount > 0)
+                                    {
+                                        <span class="unread-badge">@conversation.UnreadCount</span>
+                                    }
+                                    @if (conversation.IsMuted)
+                                    {
+                                        <span class="muted-icon">🔇</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* Main Chat Area *@
+        <div class="n360-chat__main">
+            @if (!string.IsNullOrEmpty(_selectedConversationId))
+            {
+                var conversation = Conversations.FirstOrDefault(c => c.Id == _selectedConversationId);
+                if (conversation != null)
+                {
+                    @* Chat Header *@
+                    <div class="n360-chat__header">
+                        <div class="n360-chat__header-left">
+                            <div class="n360-chat__conversation-avatar">
+                                @if (!string.IsNullOrEmpty(conversation.AvatarUrl))
+                                {
+                                    <img src="@conversation.AvatarUrl" alt="@conversation.Name" />
+                                }
+                                else
+                                {
+                                    <div class="avatar-placeholder">@GetInitials(conversation.Name)</div>
+                                }
+                            </div>
+                            <div class="n360-chat__header-info">
+                                <h3>@conversation.Name</h3>
+                                <span class="participants-info">@GetParticipantsText(conversation)</span>
+                            </div>
+                        </div>
+                        <div class="n360-chat__header-actions">
+                            @if (AllowSearch)
+                            {
+                                <button class="btn btn-icon" @onclick="() => _showSearchPanel = !_showSearchPanel" title="Search">
+                                    <span class="icon">🔍</span>
+                                </button>
+                            }
+                            @if (AllowVideoCall && OnStartVideoCall.HasDelegate)
+                            {
+                                <button class="btn btn-icon" @onclick="OnStartVideoCallAsync" title="Video Call">
+                                    <span class="icon">📹</span>
+                                </button>
+                            }
+                            @if (ShowSettings)
+                            {
+                                <button class="btn btn-icon" @onclick="() => _showSettingsPanel = !_showSettingsPanel" title="Settings">
+                                    <span class="icon">⚙️</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    @* Search Panel *@
+                    @if (_showSearchPanel)
+                    {
+                        <div class="n360-chat__search-panel">
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Search messages..." 
+                                   @bind="_messageSearchQuery"
+                                   @bind:event="oninput"
+                                   @onkeyup="OnSearchMessages" />
+                            @if (_searchResults.Any())
+                            {
+                                <div class="search-results">
+                                    <p>@_searchResults.Count result(s) found</p>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @* Messages Area with Custom Rendering *@
+                    <div class="n360-chat__messages">
+                        @foreach (var msg in GetConversationMessages())
+                        {
+                            <div class="message-container @(msg.SenderId == CurrentUserId ? "sent" : "received")">
+                                @if (msg.SenderId != CurrentUserId && Settings.ShowAvatars)
+                                {
+                                    <div class="message-avatar">
+                                        @if (!string.IsNullOrEmpty(msg.SenderAvatarUrl))
+                                        {
+                                            <img src="@msg.SenderAvatarUrl" alt="@msg.SenderName" />
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-placeholder">@GetInitials(msg.SenderName)</div>
+                                        }
+                                    </div>
+                                }
+                                <div class="message-bubble">
+                                    @if (msg.SenderId != CurrentUserId)
+                                    {
+                                        <div class="message-sender">@msg.SenderName</div>
+                                    }
+                                    @if (msg.ReplyToMessage != null)
+                                    {
+                                        <div class="message-reply-preview">
+                                            <div class="reply-sender">@msg.ReplyToMessage.SenderName</div>
+                                            <div class="reply-content">@msg.ReplyToMessage.Content</div>
+                                        </div>
+                                    }
+                                    <div class="message-content">@msg.Content</div>
+                                    @if (msg.Attachments.Any())
+                                    {
+                                        <div class="message-attachments">
+                                            @foreach (var attachment in msg.Attachments)
+                                            {
+                                                <div class="attachment-item">
+                                                    @if (attachment.Type == ChatAttachmentType.Image && !string.IsNullOrEmpty(attachment.ThumbnailUrl))
+                                                    {
+                                                        <img src="@attachment.ThumbnailUrl" alt="@attachment.FileName" class="attachment-thumbnail" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="attachment-icon">📎</span>
+                                                        <span class="attachment-name">@attachment.FileName</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @if (msg.Reactions.Any())
+                                    {
+                                        <div class="message-reactions">
+                                            @foreach (var reaction in msg.Reactions)
+                                            {
+                                                <span class="reaction-item">@reaction.Emoji <span class="reaction-count">@reaction.Count</span></span>
+                                            }
+                                        </div>
+                                    }
+                                    @if (Settings.ShowTimestamps)
+                                    {
+                                        <div class="message-timestamp">
+                                            @FormatTimestamp(msg.Timestamp)
+                                            @if (msg.IsEdited)
+                                            {
+                                                <span class="edited-indicator">(edited)</span>
+                                            }
+                                            @if (msg.SenderId == CurrentUserId)
+                                            {
+                                                @if (msg.IsRead)
+                                                {
+                                                    <span class="read-indicator">✓✓</span>
+                                                }
+                                                else if (msg.IsDelivered)
+                                                {
+                                                    <span class="delivered-indicator">✓</span>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @* AI Smart Replies *@
+                    @if (Settings.EnableSmartReplies && _smartReplySuggestions.Any())
+                    {
+                        <div class="smart-replies-container">
+                            <div class="smart-replies-header">
+                                <span class="ai-icon">🤖</span>
+                                <span class="smart-replies-label">AI-Suggested Replies</span>
+                                <span class="confidence-badge">@($"{_aiConfidence:F0}% confidence")</span>
+                            </div>
+                            <div class="smart-replies-list">
+                                @foreach (var suggestion in _smartReplySuggestions)
+                                {
+                                    <button class="smart-reply-chip" @onclick="() => UseSmartReply(suggestion)">
+                                        <span class="reply-text">@suggestion.Text</span>
+                                        <span class="reply-confidence">@($"{suggestion.Confidence:F0}%")</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @* Message Input Area *@
+                    <div class="n360-chat__input">
+                        @if (AllowFileSharing && Settings.EnableFileSharing)
+                        {
+                            <button class="btn btn-icon" @onclick="OnAttachFileAsync" title="Attach File">
+                                <span class="icon">📎</span>
+                            </button>
+                        }
+                        <input type="text" 
+                               class="message-input" 
+                               placeholder="@MessagePlaceholder"
+                               @bind="_messageText"
+                               @onkeydown="OnMessageInputKeyDown"
+                               @oninput="OnMessageTypingAndAnalyze" />
+                        @if (Settings.EnableEmojis)
+                        {
+                            <button class="btn btn-icon" @onclick="() => _showEmojiPicker = !_showEmojiPicker" title="Emoji">
+                                <span class="icon">😊</span>
+                            </button>
+                        }
+                        <button class="btn btn-icon btn-send" 
+                                @onclick="OnSendMessageAsync" 
+                                disabled="@string.IsNullOrWhiteSpace(_messageText)"
+                                title="Send">
+                            <span class="icon">➤</span>
+                        </button>
+                    </div>
+
+                    @* Emoji Picker *@
+                    @if (_showEmojiPicker)
+                    {
+                        <div class="emoji-picker">
+                            @foreach (var emoji in GetCommonEmojis())
+                            {
+                                <span class="emoji-item" @onclick="() => InsertEmoji(emoji)">@emoji</span>
+                            }
+                        </div>
+                    }
+
+                    @* Typing Indicators *@
+                    @if (Settings.ShowTypingIndicators && _typingUsers.Any(u => u.ConversationId == _selectedConversationId))
+                    {
+                        <div class="n360-chat__typing-indicator">
+                            <span class="typing-text">
+                                @string.Join(", ", _typingUsers.Where(u => u.ConversationId == _selectedConversationId).Select(u => u.UserName))
+                                @(_typingUsers.Count(u => u.ConversationId == _selectedConversationId) > 1 ? "are" : "is") typing...
+                            </span>
+                            <div class="typing-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    }
+
+                    @* File Upload Progress *@
+                    @if (_uploadProgress != null && !_uploadProgress.IsComplete)
+                    {
+                        <div class="n360-chat__upload-progress">
+                            <div class="upload-info">
+                                <span class="file-name">@_uploadProgress.FileName</span>
+                                <span class="progress-text">@_uploadProgress.PercentComplete%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: @(_uploadProgress.PercentComplete)%"></div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <div class="n360-chat__empty">
+                    <div class="empty-icon">💬</div>
+                    <h3>No Conversation Selected</h3>
+                    <p>Select a conversation from the list or start a new one</p>
+                    @if (AllowNewConversation)
+                    {
+                        <button class="btn btn-primary" @onclick="OnNewConversationAsync">
+                            Start New Conversation
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+
+        @* Settings Panel *@
+        @if (_showSettingsPanel && !string.IsNullOrEmpty(_selectedConversationId))
+        {
+            <div class="n360-chat__settings-panel">
+                <div class="settings-header">
+                    <h3>Conversation Settings</h3>
+                    <button class="btn btn-icon" @onclick="() => _showSettingsPanel = false">
+                        <span class="icon">✕</span>
+                    </button>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.ShowTimestamps" />
+                            Show Timestamps
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.ShowTypingIndicators" />
+                            Show Typing Indicators
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.EnableNotifications" />
+                            Enable Notifications
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" @bind="Settings.EnableSoundNotifications" />
+                            Sound Notifications
+                        </label>
+                    </div>
+                    @if (AllowMuteConversation)
+                    {
+                        <div class="setting-item">
+                            <button class="btn btn-secondary w-100" @onclick="OnToggleMuteAsync">
+                                @(GetSelectedConversation()?.IsMuted == true ? "Unmute" : "Mute") Conversation
+                            </button>
+                        </div>
+                    }
+                    @if (AllowDeleteConversation)
+                    {
+                        <div class="setting-item">
+                            <button class="btn btn-danger w-100" @onclick="OnDeleteConversationAsync">
+                                Delete Conversation
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else if (!HideIfNoPermission)
+{
+    <div class="n360-chat__no-permission">
+        <p>You don't have permission to access chat.</p>
+    </div>
+}
+
+@code {
+    // RBAC & Audit
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+
+    // Data
+    [Parameter] public List<ChatConversation> Conversations { get; set; } = new();
+    [Parameter] public List<ChatMessage> Messages { get; set; } = new();
+    [Parameter] public string CurrentUserId { get; set; } = string.Empty;
+    [Parameter] public string CurrentUserName { get; set; } = string.Empty;
+    [Parameter] public string? CurrentUserAvatar { get; set; }
+
+    // Display Options
+    [Parameter] public bool ShowConversationList { get; set; } = true;
+    [Parameter] public string ConversationListTitle { get; set; } = "Messages";
+    [Parameter] public bool AllowNewConversation { get; set; } = true;
+    [Parameter] public bool AllowSearch { get; set; } = true;
+    [Parameter] public bool AllowFileSharing { get; set; } = true;
+    [Parameter] public bool AllowVideoCall { get; set; } = false;
+    [Parameter] public bool AllowMuteConversation { get; set; } = true;
+    [Parameter] public bool AllowDeleteConversation { get; set; } = true;
+    [Parameter] public bool ShowSettings { get; set; } = true;
+    [Parameter] public string MessagePlaceholder { get; set; } = "Type a message...";
+
+    // Settings
+    [Parameter] public ChatSettings Settings { get; set; } = new();
+
+    // AI Settings
+    [Parameter] public bool EnableAIFeatures { get; set; } = true;
+    [Parameter] public double AIConfidenceThreshold { get; set; } = 70.0;
+
+    // Events
+    [Parameter] public EventCallback<ChatMessage> OnMessageSent { get; set; }
+    [Parameter] public EventCallback<string> OnConversationSelected { get; set; }
+    [Parameter] public EventCallback<string> OnConversationDeleted { get; set; }
+    [Parameter] public EventCallback OnNewConversation { get; set; }
+    [Parameter] public EventCallback OnStartVideoCall { get; set; }
+    [Parameter] public EventCallback<ChatAttachment> OnFileUpload { get; set; }
+    [Parameter] public EventCallback<TypingIndicator> OnTypingStarted { get; set; }
+    [Parameter] public EventCallback<string> OnTypingStopped { get; set; }
+
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+
+    // State
+    private bool _hasPermission = true;
+    private bool _isRtl;
+    private string? _selectedConversationId;
+    private bool _sidebarCollapsed;
+    private bool _showSearchPanel;
+    private bool _showSettingsPanel;
+    private bool _showEmojiPicker;
+    private string _conversationSearchQuery = string.Empty;
+    private string _messageSearchQuery = string.Empty;
+    private string _messageText = string.Empty;
+    private List<MessageSearchResult> _searchResults = new();
+    private List<TypingIndicator> _typingUsers = new();
+    private FileUploadProgress? _uploadProgress;
+    private System.Threading.Timer? _typingTimer;
+    private System.Threading.Timer? _aiAnalysisTimer;
+
+    // AI State
+    private List<SmartReplySuggestion> _smartReplySuggestions = new();
+    private double _aiConfidence = 0.0;
+    private string _lastAnalyzedContext = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isRtl = IsRtl;
+
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+
+        if (_hasPermission && EnableAudit)
+        {
+            await LogAuditAsync("OpenChat", new { ConversationCount = Conversations.Count });
+        }
+
+        // Select first conversation by default
+        if (Conversations.Any() && string.IsNullOrEmpty(_selectedConversationId))
+        {
+            _selectedConversationId = Conversations.First().Id;
+            await GenerateSmartRepliesAsync();
+        }
+    }
+
+    private async Task OnMessageTypingAndAnalyze()
+    {
+        OnMessageTyping();
+        
+        // Debounce AI analysis
+        if (EnableAIFeatures && Settings.EnableSmartReplies)
+        {
+            _aiAnalysisTimer?.Dispose();
+            _aiAnalysisTimer = new System.Threading.Timer(async _ =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    await GenerateSmartRepliesAsync();
+                    StateHasChanged();
+                });
+            }, null, 1000, System.Threading.Timeout.Infinite);
+        }
+    }
+
+    private async Task GenerateSmartRepliesAsync()
+    {
+        if (!EnableAIFeatures || !Settings.EnableSmartReplies || string.IsNullOrEmpty(_selectedConversationId))
+        {
+            _smartReplySuggestions.Clear();
+            return;
+        }
+
+        // Get conversation context
+        var recentMessages = GetConversationMessages().TakeLast(10).ToList();
+        if (!recentMessages.Any())
+        {
+            _smartReplySuggestions.Clear();
+            return;
+        }
+
+        // Get last message from other person
+        var lastMessage = recentMessages.LastOrDefault(m => m.SenderId != CurrentUserId);
+        if (lastMessage == null)
+        {
+            _smartReplySuggestions.Clear();
+            return;
+        }
+
+        var context = lastMessage.Content.ToLower();
+        
+        // Avoid regenerating if context hasn't changed
+        if (context == _lastAnalyzedContext)
+            return;
+
+        _lastAnalyzedContext = context;
+
+        // Simulate AI processing
+        await Task.Delay(300);
+
+        // AI-powered smart reply generation based on context analysis
+        _smartReplySuggestions = GenerateContextAwareReplies(lastMessage.Content);
+        _aiConfidence = _smartReplySuggestions.Any() ? _smartReplySuggestions.Average(s => s.Confidence) : 0;
+
+        // Filter by confidence threshold
+        _smartReplySuggestions = _smartReplySuggestions
+            .Where(s => s.Confidence >= AIConfidenceThreshold)
+            .Take(3)
+            .ToList();
+    }
+
+    private List<SmartReplySuggestion> GenerateContextAwareReplies(string lastMessage)
+    {
+        var suggestions = new List<SmartReplySuggestion>();
+        var content = lastMessage.ToLower();
+
+        // Question detection
+        if (content.Contains("?") || content.StartsWith("how") || content.StartsWith("what") || 
+            content.StartsWith("when") || content.StartsWith("where") || content.StartsWith("why"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Let me check on that and get back to you", 
+                Confidence = 92.5,
+                Intent = "InformationRequest"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "I'll need a moment to look into this", 
+                Confidence = 88.3,
+                Intent = "InformationRequest"
+            });
+        }
+
+        // Meeting/Schedule mentions
+        if (content.Contains("meeting") || content.Contains("schedule") || content.Contains("appointment") || content.Contains("call"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "That works for me. What time?", 
+                Confidence = 94.7,
+                Intent = "Scheduling"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Let me check my calendar and confirm", 
+                Confidence = 91.2,
+                Intent = "Scheduling"
+            });
+        }
+
+        // Appreciation/Thanks
+        if (content.Contains("thank") || content.Contains("appreciate") || content.Contains("grateful"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "You're welcome! Happy to help", 
+                Confidence = 96.8,
+                Intent = "Gratitude"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Anytime! Let me know if you need anything else", 
+                Confidence = 93.5,
+                Intent = "Gratitude"
+            });
+        }
+
+        // Agreement/Confirmation
+        if (content.Contains("ok") || content.Contains("okay") || content.Contains("sounds good") || content.Contains("agree"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Perfect! I'll proceed with that", 
+                Confidence = 95.1,
+                Intent = "Acknowledgment"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Great! I'll keep you updated", 
+                Confidence = 92.8,
+                Intent = "Acknowledgment"
+            });
+        }
+
+        // Problem/Issue mentions
+        if (content.Contains("problem") || content.Contains("issue") || content.Contains("error") || content.Contains("not working"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "I understand. Can you provide more details?", 
+                Confidence = 91.7,
+                Intent = "TroubleShooting"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Let me help resolve this. What's the error message?", 
+                Confidence = 89.4,
+                Intent = "TroubleShooting"
+            });
+        }
+
+        // Urgency indicators
+        if (content.Contains("urgent") || content.Contains("asap") || content.Contains("emergency") || content.Contains("immediately"))
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "On it now. Will update you shortly", 
+                Confidence = 97.2,
+                Intent = "Urgency"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Priority noted. Addressing this immediately", 
+                Confidence = 94.9,
+                Intent = "Urgency"
+            });
+        }
+
+        // Default polite responses
+        if (!suggestions.Any())
+        {
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "I understand. Let me look into this", 
+                Confidence = 85.3,
+                Intent = "General"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Thanks for letting me know", 
+                Confidence = 82.7,
+                Intent = "General"
+            });
+            suggestions.Add(new SmartReplySuggestion 
+            { 
+                Text = "Got it. I'll follow up on that", 
+                Confidence = 80.5,
+                Intent = "General"
+            });
+        }
+
+        return suggestions.OrderByDescending(s => s.Confidence).ToList();
+    }
+
+    private void UseSmartReply(SmartReplySuggestion suggestion)
+    {
+        _messageText = suggestion.Text;
+        _smartReplySuggestions.Clear();
+        StateHasChanged();
+    }
+
+    private async Task OnSendMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_messageText) || string.IsNullOrEmpty(_selectedConversationId))
+            return;
+        var message = new ChatMessage
+        {
+            ConversationId = _selectedConversationId ?? string.Empty,
+            SenderId = CurrentUserId,
+            SenderName = CurrentUserName,
+            SenderAvatarUrl = CurrentUserAvatar,
+            Content = _messageText,
+            Type = MessageType.Text,
+            Timestamp = DateTime.UtcNow,
+            IsDelivered = true
+        };
+
+        Messages.Add(message);
+        _messageText = string.Empty;
+        _showEmojiPicker = false;
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SendMessage", new { 
+                ConversationId = _selectedConversationId,
+                MessageLength = message.Content.Length 
+            });
+        }
+
+        await OnMessageSent.InvokeAsync(message);
+        StateHasChanged();
+    }
+
+    private async Task OnMessageInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await OnSendMessageAsync();
+        }
+    }
+
+    private void OnMessageTyping()
+    {
+        if (!Settings.ShowTypingIndicators) return;
+
+        // Debounce typing indicator
+        _typingTimer?.Dispose();
+        _typingTimer = new System.Threading.Timer(_ =>
+        {
+            var indicator = new TypingIndicator
+            {
+                UserId = CurrentUserId,
+                UserName = CurrentUserName,
+                ConversationId = _selectedConversationId ?? string.Empty,
+                StartedAt = DateTime.UtcNow
+            };
+            OnTypingStarted.InvokeAsync(indicator);
+        }, null, 500, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task OnAttachFileAsync()
+    {
+        // File attachment logic would go here
+        // Typically would open a file picker dialog
+        if (EnableAudit)
+        {
+            await LogAuditAsync("AttachFile", new { ConversationId = _selectedConversationId });
+        }
+        await OnFileUpload.InvokeAsync();
+    }
+
+    private void InsertEmoji(string emoji)
+    {
+        _messageText += emoji;
+        _showEmojiPicker = false;
+        StateHasChanged();
+    }
+
+    private List<string> GetCommonEmojis()
+    {
+        return new List<string>
+        {
+            "😀", "😃", "😄", "😁", "😅", "😂", "🤣", "😊",
+            "😇", "🙂", "😉", "😍", "🥰", "😘", "😗", "😙",
+            "😚", "☺️", "😋", "😛", "😜", "🤪", "😝", "🤑",
+            "👍", "👎", "👏", "🙌", "🤝", "❤️", "💙", "💚",
+            "💛", "🧡", "💜", "🖤", "🤍", "🤎", "💔", "❣️"
+        };
+    }
+
+    private async Task OnSelectConversationAsync(string conversationId)
+    {
+        _selectedConversationId = conversationId;
+        _showSearchPanel = false;
+        _showSettingsPanel = false;
+
+        // Mark messages as read
+        var unreadMessages = Messages.Where(m => m.ConversationId == conversationId && !m.IsRead).ToList();
+        foreach (var msg in unreadMessages)
+        {
+            msg.IsRead = true;
+        }
+
+        var conversation = Conversations.FirstOrDefault(c => c.Id == conversationId);
+        if (conversation != null)
+        {
+            conversation.UnreadCount = 0;
+        }
+
+        if (EnableAudit)
+        {
+            await LogAuditAsync("SelectConversation", new { ConversationId = conversationId });
+        }
+
+        await OnConversationSelected.InvokeAsync(conversationId);
+        StateHasChanged();
+    }
+
+    private async Task OnNewConversationAsync()
+    {
+        if (EnableAudit)
+        {
+            await LogAuditAsync("NewConversation", null);
+        }
+
+        await OnNewConversation.InvokeAsync();
+    }
+
+    private async Task OnStartVideoCallAsync()
+    {
+        if (EnableAudit)
+        {
+            await LogAuditAsync("StartVideoCall", new { ConversationId = _selectedConversationId });
+        }
+
+        await OnStartVideoCall.InvokeAsync();
+    }
+
+    private async Task OnToggleMuteAsync()
+    {
+        var conversation = GetSelectedConversation();
+        if (conversation != null)
+        {
+            conversation.IsMuted = !conversation.IsMuted;
+
+            if (EnableAudit)
+            {
+                await LogAuditAsync(conversation.IsMuted ? "MuteConversation" : "UnmuteConversation", 
+                    new { ConversationId = _selectedConversationId });
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteConversationAsync()
+    {
+        if (!string.IsNullOrEmpty(_selectedConversationId))
+        {
+            if (EnableAudit)
+            {
+                await LogAuditAsync("DeleteConversation", new { ConversationId = _selectedConversationId });
+            }
+
+            await OnConversationDeleted.InvokeAsync(_selectedConversationId);
+            
+            Conversations.RemoveAll(c => c.Id == _selectedConversationId);
+            Messages.RemoveAll(m => m.ConversationId == _selectedConversationId);
+            
+            _selectedConversationId = Conversations.FirstOrDefault()?.Id;
+            _showSettingsPanel = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSearchConversations(KeyboardEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    private void OnSearchMessages(KeyboardEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_messageSearchQuery) || string.IsNullOrEmpty(_selectedConversationId))
+        {
+            _searchResults.Clear();
+            return;
+        }
+
+        var query = _messageSearchQuery.ToLower();
+        _searchResults = Messages
+            .Where(m => m.ConversationId == _selectedConversationId && m.Content.ToLower().Contains(query))
+            .Select(m => new MessageSearchResult
+            {
+                Message = m,
+                ConversationName = Conversations.FirstOrDefault(c => c.Id == m.ConversationId)?.Name ?? "",
+                Relevance = 1.0
+            })
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private List<ChatConversation> GetFilteredConversations()
+    {
+        var filtered = Conversations.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_conversationSearchQuery))
+        {
+            var query = _conversationSearchQuery.ToLower();
+            filtered = filtered.Where(c => c.Name.ToLower().Contains(query));
+        }
+
+        return filtered.OrderByDescending(c => c.IsPinned)
+                      .ThenByDescending(c => c.LastActivityAt ?? c.CreatedAt)
+                      .ToList();
+    }
+
+    private List<ChatMessage> GetConversationMessages()
+    {
+        if (string.IsNullOrEmpty(_selectedConversationId))
+            return new List<ChatMessage>();
+
+        return Messages.Where(m => m.ConversationId == _selectedConversationId && !m.IsDeleted)
+                      .OrderBy(m => m.Timestamp)
+                      .ToList();
+    }
+
+    private ChatConversation? GetSelectedConversation()
+    {
+        return Conversations.FirstOrDefault(c => c.Id == _selectedConversationId);
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return name.Substring(0, Math.Min(2, name.Length)).ToUpper();
+    }
+
+    private string GetLastMessagePreview(ChatConversation conversation)
+    {
+        if (conversation.LastMessage == null) return "No messages yet";
+        
+        var preview = conversation.LastMessage.Content;
+        return preview.Length > 50 ? preview.Substring(0, 50) + "..." : preview;
+    }
+
+    private string GetParticipantsText(ChatConversation conversation)
+    {
+        if (conversation.Type == ConversationType.Direct && conversation.Participants.Count == 2)
+        {
+            var otherUser = conversation.Participants.FirstOrDefault(p => p.UserId != CurrentUserId);
+            return otherUser?.Presence.ToString() ?? "Offline";
+        }
+        
+        return $"{conversation.Participants.Count} participants";
+    }
+
+    private UserPresence GetConversationPresence(ChatConversation conversation)
+    {
+        if (conversation.Type == ConversationType.Direct)
+        {
+            var otherUser = conversation.Participants.FirstOrDefault(p => p.UserId != CurrentUserId);
+            return otherUser?.Presence ?? UserPresence.Offline;
+        }
+        return UserPresence.Offline;
+    }
+
+    private string FormatTimestamp(DateTime? timestamp)
+    {
+        if (!timestamp.HasValue) return "";
+        
+        var now = DateTime.UtcNow;
+        var diff = now - timestamp.Value;
+
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        
+        return timestamp.Value.ToString(Settings.DateFormat);
+    }
+
+    private async Task LogAuditAsync(string action, object? additionalData)
+    {
+        if (!EnableAudit) return;
+
+        var metadata = new AuditMetadata
+        {
+            Resource = AuditResource ?? "Chat",
+            Action = action,
+            Timestamp = DateTime.UtcNow,
+            UserId = CurrentUserId,
+            AdditionalData = additionalData != null 
+                ? new Dictionary<string, object> { ["Data"] = additionalData }
+                : new Dictionary<string, object>()
+        };
+
+        await AuditService.LogAsync(metadata);
+    }
+
+    private Dictionary<string, object> GetHtmlAttributes()
+    {
+        var attrs = new Dictionary<string, object>
+        {
+            ["role"] = "region",
+            ["aria-label"] = "Chat Interface"
+        };
+
+        if (_isRtl)
+        {
+            attrs["dir"] = "rtl";
+        }
+
+        return attrs;
+    }
+}

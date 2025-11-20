@@ -4,6 +4,114 @@
         <name>Nalam360.Platform.FeatureFlags</name>
     </assembly>
     <members>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.AdvancedFeatureFlagService">
+            <summary>
+            Advanced feature flag service with rollout strategies.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider">
+            <summary>
+            Feature flag provider interface.
+            Abstracts the source of feature flag configurations.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider.GetFeatureFlagAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a feature flag by name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider.GetAllFeatureFlagsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all feature flags.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider.SaveFeatureFlagAsync(Nalam360.Platform.FeatureFlags.Models.FeatureFlag,System.Threading.CancellationToken)">
+            <summary>
+            Creates or updates a feature flag.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider.DeleteFeatureFlagAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a feature flag.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.InMemoryFeatureFlagProvider">
+            <summary>
+            In-memory feature flag provider.
+            Useful for testing and development.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.RemoteFeatureFlagProvider">
+            <summary>
+            Remote feature flag provider with polling and caching.
+            Compatible with LaunchDarkly, Unleash, ConfigCat, and custom REST APIs.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderExtensions">
+            <summary>
+            Extension methods for adding remote feature flag provider.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderExtensions.AddRemoteFeatureFlags(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions})">
+            <summary>
+            Adds remote feature flag provider.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions">
+            <summary>
+            Remote feature flag provider configuration.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.Endpoint">
+            <summary>
+            Remote endpoint URL.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.ApiKey">
+            <summary>
+            API key for authentication.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.RefreshInterval">
+            <summary>
+            Refresh interval for polling remote flags.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.EnableCaching">
+            <summary>
+            Enable local caching.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.CacheExpiration">
+            <summary>
+            Cache expiration time.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Providers.RemoteProviderOptions.Environment">
+            <summary>
+            Environment name (e.g., "Production", "Staging").
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Dependency injection extensions for feature flags.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.DependencyInjection.ServiceCollectionExtensions.AddFeatureFlags(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds feature flag services with in-memory provider.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.DependencyInjection.ServiceCollectionExtensions.AddFeatureFlags``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds feature flag services with custom provider.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.DependencyInjection.ServiceCollectionExtensions.AddFeatureFlags(Microsoft.Extensions.DependencyInjection.IServiceCollection,Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider)">
+            <summary>
+            Adds feature flag services with custom provider instance.
+            </summary>
+        </member>
         <member name="T:Nalam360.Platform.FeatureFlags.IFeatureFlagService">
             <summary>
             Feature flag service interface.
@@ -27,6 +135,169 @@
         <member name="M:Nalam360.Platform.FeatureFlags.FeatureContext.#ctor(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
             Feature context for targeted feature toggles.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.FeatureFlag">
+            <summary>
+            Represents a feature flag configuration.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.Id">
+            <summary>
+            Unique identifier for the feature flag.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.Name">
+            <summary>
+            Feature name (unique key).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.Description">
+            <summary>
+            Human-readable description.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.IsEnabled">
+            <summary>
+            Whether the feature is enabled globally.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.StrategyConfig">
+            <summary>
+            Rollout strategy configuration (JSON).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.StrategyType">
+            <summary>
+            Strategy type (e.g., "Percentage", "UserTargeting", "TimeWindow").
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.CreatedAt">
+            <summary>
+            Creation timestamp.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.UpdatedAt">
+            <summary>
+            Last modified timestamp.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.CreatedBy">
+            <summary>
+            Created by user.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.UpdatedBy">
+            <summary>
+            Last modified by user.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.Tags">
+            <summary>
+            Tags for categorization.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.FeatureFlag.Environment">
+            <summary>
+            Environment (e.g., "Development", "Staging", "Production").
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.RolloutStrategyTypes">
+            <summary>
+            Rollout strategy types.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.RolloutStrategy">
+            <summary>
+            Base class for rollout strategies.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.FeatureFlags.Models.RolloutStrategy.Name">
+            <summary>
+            Strategy name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.RolloutStrategy.EvaluateAsync(Nalam360.Platform.FeatureFlags.FeatureContext,System.Threading.CancellationToken)">
+            <summary>
+            Evaluates whether the feature should be enabled for the given context.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.PercentageRolloutConfig">
+            <summary>
+            Percentage rollout strategy configuration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.PercentageRolloutConfig.#ctor(System.Int32,System.String)">
+            <summary>
+            Percentage rollout strategy configuration.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.UserTargetingConfig">
+            <summary>
+            User targeting strategy configuration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.UserTargetingConfig.#ctor(System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String},System.Collections.Generic.List{Nalam360.Platform.FeatureFlags.Models.TargetingRule})">
+            <summary>
+            User targeting strategy configuration.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.TargetingRule">
+            <summary>
+            Targeting rule for user attributes.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.TargetingRule.#ctor(System.String,System.String,System.Object)">
+            <summary>
+            Targeting rule for user attributes.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.TimeWindowConfig">
+            <summary>
+            Time window strategy configuration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.TimeWindowConfig.#ctor(System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Time window strategy configuration.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Models.ABTestConfig">
+            <summary>
+            A/B test configuration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Models.ABTestConfig.#ctor(System.String,System.Collections.Generic.Dictionary{System.String,System.Int32})">
+            <summary>
+            A/B test configuration.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Strategies.ABTestStrategy">
+            <summary>
+            A/B testing strategy - assigns users to experiment variants based on configured percentages.
+            Uses consistent hashing to ensure same user always gets same variant.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Strategies.ABTestStrategy.GetVariant(System.String)">
+            <summary>
+            Gets the variant assigned to the user.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Strategies.PercentageRolloutStrategy">
+            <summary>
+            Percentage rollout strategy - enables feature for a specified percentage of users.
+            Uses consistent hashing to ensure same user always gets same result.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Strategies.TimeWindowStrategy">
+            <summary>
+            Time window strategy - enables feature only during specified time periods.
+            Useful for scheduled feature releases, maintenance windows, or promotional periods.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.FeatureFlags.Strategies.UserTargetingStrategy">
+            <summary>
+            User targeting strategy - enables feature for specific users or user segments.
             </summary>
         </member>
     </members>

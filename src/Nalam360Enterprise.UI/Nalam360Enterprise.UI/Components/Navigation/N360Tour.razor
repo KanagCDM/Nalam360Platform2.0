@@ -1,0 +1,252 @@
+@using Nalam360Enterprise.UI.Core.Security
+
+@inject IPermissionService? PermissionService
+@inject IAuditService? AuditService
+
+@if (_isOpen && (!HideIfNoPermission || _hasPermission))
+{
+    <div class="n360-tour__mask @(Mask ? "" : "n360-tour__mask--transparent")"></div>
+    
+    <div class="n360-tour__spotlight" style="@GetSpotlightStyle()"></div>
+    
+    <div class="n360-tour__popup" style="@GetPopupStyle()">
+        <div class="n360-tour__arrow" style="@GetArrowStyle()"></div>
+        
+        <div class="n360-tour__content">
+            @if (ShowClose)
+            {
+                <button type="button" class="n360-tour__close" @onclick="HandleCloseAsync">×</button>
+            }
+            
+            @if (Steps.Any() && _currentStepIndex < Steps.Count)
+            {
+                var currentStep = Steps[_currentStepIndex];
+                
+                @if (!string.IsNullOrEmpty(currentStep.Title))
+                {
+                    <div class="n360-tour__title">@currentStep.Title</div>
+                }
+                
+                <div class="n360-tour__description">
+                    @if (currentStep.Content != null)
+                    {
+                        @currentStep.Content
+                    }
+                    else
+                    {
+                        @currentStep.Description
+                    }
+                </div>
+                
+                <div class="n360-tour__footer">
+                    <div class="n360-tour__indicators">
+                        @for (int i = 0; i < Steps.Count; i++)
+                        {
+                            <span class="n360-tour__indicator @(i == _currentStepIndex ? "n360-tour__indicator--active" : "")"
+                                  @onclick="() => GoToStepAsync(i)"></span>
+                        }
+                    </div>
+                    
+                    <div class="n360-tour__actions">
+                        @if (_currentStepIndex > 0)
+                        {
+                            <button type="button" class="n360-tour__btn n360-tour__btn--prev" @onclick="HandlePreviousAsync">
+                                @PreviousButtonText
+                            </button>
+                        }
+                        
+                        @if (_currentStepIndex < Steps.Count - 1)
+                        {
+                            <button type="button" class="n360-tour__btn n360-tour__btn--next" @onclick="HandleNextAsync">
+                                @NextButtonText
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="n360-tour__btn n360-tour__btn--finish" @onclick="HandleFinishAsync">
+                                @FinishButtonText
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public List<TourStep> Steps { get; set; } = new();
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public int CurrentStep { get; set; }
+    [Parameter] public EventCallback<int> CurrentStepChanged { get; set; }
+    [Parameter] public bool Mask { get; set; } = true;
+    [Parameter] public bool ShowClose { get; set; } = true;
+    [Parameter] public string NextButtonText { get; set; } = "Next";
+    [Parameter] public string PreviousButtonText { get; set; } = "Previous";
+    [Parameter] public string FinishButtonText { get; set; } = "Finish";
+    [Parameter] public int SpotlightPadding { get; set; } = 8;
+    
+    // Events
+    [Parameter] public EventCallback<int> OnStepChange { get; set; }
+    [Parameter] public EventCallback OnFinish { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isOpen;
+    private int _currentStepIndex;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _isOpen = Open;
+        _currentStepIndex = CurrentStep;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_isOpen != Open)
+        {
+            _isOpen = Open;
+        }
+        
+        if (_currentStepIndex != CurrentStep)
+        {
+            _currentStepIndex = CurrentStep;
+        }
+    }
+
+    private async Task HandleNextAsync()
+    {
+        if (_currentStepIndex < Steps.Count - 1)
+        {
+            _currentStepIndex++;
+            await UpdateStepAsync();
+        }
+    }
+
+    private async Task HandlePreviousAsync()
+    {
+        if (_currentStepIndex > 0)
+        {
+            _currentStepIndex--;
+            await UpdateStepAsync();
+        }
+    }
+
+    private async Task GoToStepAsync(int index)
+    {
+        if (index >= 0 && index < Steps.Count)
+        {
+            _currentStepIndex = index;
+            await UpdateStepAsync();
+        }
+    }
+
+    private async Task UpdateStepAsync()
+    {
+        CurrentStep = _currentStepIndex;
+        await CurrentStepChanged.InvokeAsync(_currentStepIndex);
+        await OnStepChange.InvokeAsync(_currentStepIndex);
+        
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "TourStepChange",
+                Resource = AuditResource ?? "Tour",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "Step", _currentStepIndex },
+                    { "Title", Steps[_currentStepIndex].Title ?? string.Empty }
+                }
+            });
+        }
+    }
+
+    private async Task HandleFinishAsync()
+    {
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "TourComplete",
+                Resource = AuditResource ?? "Tour",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "CompletedSteps", _currentStepIndex + 1 },
+                    { "TotalSteps", Steps.Count }
+                }
+            });
+        }
+        
+        _isOpen = false;
+        await OpenChanged.InvokeAsync(false);
+        await OnFinish.InvokeAsync();
+    }
+
+    private async Task HandleCloseAsync()
+    {
+        _isOpen = false;
+        await OpenChanged.InvokeAsync(false);
+        await OnClose.InvokeAsync();
+    }
+
+    private string GetSpotlightStyle()
+    {
+        if (!Steps.Any() || _currentStepIndex >= Steps.Count) return string.Empty;
+        
+        var step = Steps[_currentStepIndex];
+        if (string.IsNullOrEmpty(step.Target)) return string.Empty;
+        
+        // This would need JS interop to get element position in real implementation
+        return $"top: 100px; left: 100px; width: 200px; height: 100px;";
+    }
+
+    private string GetPopupStyle()
+    {
+        if (!Steps.Any() || _currentStepIndex >= Steps.Count) return string.Empty;
+        
+        // This would need JS interop to position relative to target element
+        return $"top: 220px; left: 120px;";
+    }
+
+    private string GetArrowStyle()
+    {
+        return string.Empty;
+    }
+
+    public async Task StartAsync()
+    {
+        _isOpen = true;
+        _currentStepIndex = 0;
+        await OpenChanged.InvokeAsync(true);
+        await CurrentStepChanged.InvokeAsync(0);
+    }
+
+    public async Task NextAsync()
+    {
+        await HandleNextAsync();
+    }
+
+    public async Task PreviousAsync()
+    {
+        await HandlePreviousAsync();
+    }
+}

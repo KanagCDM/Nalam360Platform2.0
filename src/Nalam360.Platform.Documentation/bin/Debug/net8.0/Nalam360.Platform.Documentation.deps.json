@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Nalam360.Platform.Documentation/1.0.0": {
+        "runtime": {
+          "Nalam360.Platform.Documentation.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Nalam360.Platform.Documentation/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

@@ -1,0 +1,783 @@
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Core.Theming
+@inject IPermissionService PermissionService
+@inject IAuditService AuditService
+@inject ThemeService ThemeService
+
+@if (_hasPermission)
+{
+    <div class="n360-kanban-board @GetThemeClass()">
+        <!-- Toolbar -->
+        <div class="kanban-toolbar">
+            <div class="toolbar-section">
+                <h2 class="board-title">@Board.Name</h2>
+                @if (!string.IsNullOrEmpty(Board.Description))
+                {
+                    <span class="board-description">@Board.Description</span>
+                }
+            </div>
+            
+            <div class="toolbar-section">
+                <div class="search-box">
+                    <input type="text" 
+                           class="search-input" 
+                           placeholder="Search cards..."
+                           @bind="_searchText"
+                           @bind:event="oninput" />
+                </div>
+                
+                <button class="toolbar-btn" @onclick="OnToggleFilterAsync" title="Filter Cards">
+                    <span class="btn-icon">🔍</span>
+                    <span class="btn-text">Filter</span>
+                </button>
+                
+                <button class="toolbar-btn" @onclick="OnAddColumnAsync" title="Add Column">
+                    <span class="btn-icon">➕</span>
+                    <span class="btn-text">Add Column</span>
+                </button>
+                
+                <button class="toolbar-btn" @onclick="OnToggleSwimlanes" title="Toggle Swimlanes">
+                    <span class="btn-icon">⬌</span>
+                    <span class="btn-text">Swimlanes</span>
+                </button>
+                
+                <button class="toolbar-btn" @onclick="OnExportAsync" title="Export Board">
+                    <span class="btn-icon">⬇</span>
+                    <span class="btn-text">Export</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        @if (_showFilters)
+        {
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <label class="filter-label">Priority</label>
+                    <div class="filter-chips">
+                        @foreach (var priority in new[] { "Critical", "High", "Medium", "Low" })
+                        {
+                            <button class="filter-chip @(_activeFilters.Priorities.Contains(priority) ? "active" : "")"
+                                    @onclick="() => ToggleFilterPriority(priority)">
+                                @priority
+                            </button>
+                        }
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Tags</label>
+                    <div class="filter-chips">
+                        @foreach (var tag in GetAllTags())
+                        {
+                            <button class="filter-chip @(_activeFilters.Tags.Contains(tag) ? "active" : "")"
+                                    @onclick="() => ToggleFilterTag(tag)">
+                                @tag
+                            </button>
+                        }
+                    </div>
+                </div>
+                
+                <button class="clear-filters-btn" @onclick="OnClearFiltersAsync">Clear Filters</button>
+            </div>
+        }
+
+        <!-- Kanban Board Content -->
+        <div class="kanban-content">
+            @if (_showSwimlanes && Board.Swimlanes.Any())
+            {
+                <!-- Swimlane View -->
+                @foreach (var swimlane in Board.Swimlanes.OrderBy(s => s.Order))
+                {
+                    <div class="kanban-swimlane @(swimlane.IsCollapsed ? "collapsed" : "")">
+                        <div class="swimlane-header" @onclick="() => ToggleSwimlane(swimlane)">
+                            <span class="swimlane-icon">@(swimlane.Icon ?? "📋")</span>
+                            <span class="swimlane-title">@swimlane.Title</span>
+                            <span class="swimlane-card-count">(@GetSwimlaneCardCount(swimlane.Id))</span>
+                            <span class="collapse-icon">@(swimlane.IsCollapsed ? "▶" : "▼")</span>
+                        </div>
+                        
+                        @if (!swimlane.IsCollapsed)
+                        {
+                            <div class="swimlane-columns">
+                                @foreach (var column in Board.Columns.OrderBy(c => c.Order))
+                                {
+                                    <div class="kanban-column" data-column-id="@column.Id">
+                                        @RenderColumn(column, swimlane.Id)
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- Standard Column View -->
+                <div class="kanban-columns">
+                    @foreach (var column in Board.Columns.OrderBy(c => c.Order))
+                    {
+                        <div class="kanban-column @(column.IsCollapsed ? "collapsed" : "")" data-column-id="@column.Id">
+                            @RenderColumn(column, null)
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    
+    <!-- Card Details Modal -->
+    @if (_selectedCard != null)
+    {
+        <div class="card-modal-overlay" @onclick="CloseCardDetails">
+            <div class="card-modal" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <input type="text" 
+                           class="card-title-input" 
+                           @bind="_selectedCard.Title" 
+                           placeholder="Card title..." />
+                    <button class="modal-close-btn" @onclick="CloseCardDetails">✕</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="modal-section">
+                        <label class="section-label">Description</label>
+                        <textarea class="card-description-input" 
+                                  rows="4"
+                                  @bind="_selectedCard.Description" 
+                                  placeholder="Add a description..."></textarea>
+                    </div>
+                    
+                    <div class="modal-row">
+                        <div class="modal-section">
+                            <label class="section-label">Priority</label>
+                            <select class="modal-select" @bind="_selectedCard.Priority">
+                                <option value="">None</option>
+                                <option value="Critical">Critical</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        
+                        <div class="modal-section">
+                            <label class="section-label">Due Date</label>
+                            <input type="date" 
+                                   class="modal-input" 
+                                   @bind="_selectedCard.DueDate" />
+                        </div>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <label class="section-label">Assigned To</label>
+                        <input type="text" 
+                               class="modal-input" 
+                               @bind="_selectedCard.AssignedToName" 
+                               placeholder="Assign to..." />
+                    </div>
+                    
+                    <div class="modal-section">
+                        <label class="section-label">Tags</label>
+                        <div class="tag-input-container">
+                            <input type="text" 
+                                   class="tag-input" 
+                                   @bind="_newTag"
+                                   @onkeyup="OnTagKeyUp"
+                                   placeholder="Add tags..." />
+                            <div class="tags-list">
+                                @foreach (var tag in _selectedCard.Tags)
+                                {
+                                    <span class="tag">
+                                        @tag
+                                        <button class="tag-remove" @onclick="() => RemoveTag(tag)">×</button>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <label class="section-label">Checklists</label>
+                        @foreach (var checklist in _selectedCard.Checklists)
+                        {
+                            <div class="checklist">
+                                <div class="checklist-header">
+                                    <span class="checklist-title">@checklist.Title</span>
+                                    <span class="checklist-progress">@checklist.CompletedItems/@checklist.TotalItems</span>
+                                </div>
+                                <div class="checklist-progress-bar">
+                                    <div class="progress-fill" style="width: @(checklist.CompletionPercentage)%"></div>
+                                </div>
+                                @foreach (var item in checklist.Items)
+                                {
+                                    <div class="checklist-item">
+                                        <input type="checkbox" 
+                                               class="checklist-checkbox" 
+                                               checked="@item.IsCompleted"
+                                               @onchange="(e) => ToggleChecklistItem(item, (bool)e.Value!)" />
+                                        <span class="checklist-text @(item.IsCompleted ? "completed" : "")">@item.Text</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <button class="add-checklist-btn" @onclick="OnAddChecklistAsync">+ Add Checklist</button>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <label class="section-label">Comments (@_selectedCard.Comments.Count)</label>
+                        <div class="comments-list">
+                            @foreach (var comment in _selectedCard.Comments.OrderByDescending(c => c.CreatedAt))
+                            {
+                                <div class="comment">
+                                    <div class="comment-avatar">@GetUserInitials(comment.AuthorName)</div>
+                                    <div class="comment-content">
+                                        <div class="comment-header">
+                                            <span class="comment-author">@comment.AuthorName</span>
+                                            <span class="comment-date">@comment.CreatedAt.ToString("MMM d, yyyy HH:mm")</span>
+                                        </div>
+                                        <div class="comment-text">@comment.Text</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="comment-input-container">
+                            <textarea class="comment-input" 
+                                      rows="2"
+                                      @bind="_newComment"
+                                      placeholder="Add a comment..."></textarea>
+                            <button class="add-comment-btn" @onclick="OnAddCommentAsync">Post</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="modal-action-btn danger" @onclick="OnDeleteCardAsync">Delete Card</button>
+                    <button class="modal-action-btn" @onclick="OnSaveCardAsync">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+else if (HideIfNoPermission)
+{
+    <!-- Component hidden -->
+}
+else
+{
+    <div class="n360-kanban-board-no-permission">
+        <p>You do not have permission to access the Kanban Board.</p>
+    </div>
+}
+
+@code {
+    private RenderFragment RenderColumn(KanbanColumn column, string? swimlaneId) => __builder =>
+    {
+        <div class="column-header">
+            <div class="column-title-section">
+                <span class="column-icon">@(column.Icon ?? "📌")</span>
+                <span class="column-title">@column.Title</span>
+                <span class="column-count">@GetColumnCardCount(column.Id, swimlaneId)</span>
+                @if (column.WipLimit.HasValue)
+                {
+                    <span class="wip-limit @(column.IsOverWipLimit ? "exceeded" : "")">
+                        / @column.WipLimit
+                    </span>
+                }
+            </div>
+            <div class="column-actions">
+                <button class="column-action-btn" @onclick="() => OnAddCardAsync(column.Id, swimlaneId)" title="Add Card">
+                    ➕
+                </button>
+                <button class="column-action-btn" @onclick="() => ToggleColumn(column)" title="Collapse">
+                    @(column.IsCollapsed ? "▶" : "▼")
+                </button>
+            </div>
+        </div>
+        
+        @if (!column.IsCollapsed)
+        {
+            <div class="column-content"
+                 @ondrop="(e) => OnCardDrop(e, column.Id, swimlaneId)"
+                 @ondragover="OnDragOver"
+                 @ondragover:preventDefault="true">
+                @foreach (var card in GetFilteredCards(column.Id, swimlaneId))
+                {
+                    <div class="kanban-card"
+                         draggable="true"
+                         @ondragstart="(e) => OnCardDragStart(e, card)"
+                         @onclick="() => OpenCardDetails(card)">
+                        
+                        @if (card.Color != null)
+                        {
+                            <div class="card-color-bar" style="background-color: @card.Color;"></div>
+                        }
+                        
+                        <div class="card-header">
+                            <span class="card-priority-icon">@card.GetPriorityIcon()</span>
+                            <span class="card-title">@card.Title</span>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(card.Description))
+                        {
+                            <div class="card-description">@card.Description</div>
+                        }
+                        
+                        @if (card.Tags.Any())
+                        {
+                            <div class="card-tags">
+                                @foreach (var tag in card.Tags.Take(3))
+                                {
+                                    <span class="card-tag">@tag</span>
+                                }
+                                @if (card.Tags.Count > 3)
+                                {
+                                    <span class="card-tag-more">+@(card.Tags.Count - 3)</span>
+                                }
+                            </div>
+                        }
+                        
+                        <div class="card-footer">
+                            <div class="card-meta">
+                                @if (card.DueDate.HasValue)
+                                {
+                                    <span class="card-due-date @(card.DueDate < DateTime.Now ? "overdue" : "")">
+                                        📅 @card.DueDate.Value.ToString("MMM d")
+                                    </span>
+                                }
+                                @if (card.Attachments.Any())
+                                {
+                                    <span class="card-attachments">📎 @card.Attachments.Count</span>
+                                }
+                                @if (card.Comments.Any())
+                                {
+                                    <span class="card-comments">💬 @card.Comments.Count</span>
+                                }
+                                @if (card.Checklists.Any())
+                                {
+                                    var totalItems = card.Checklists.Sum(c => c.TotalItems);
+                                    var completedItems = card.Checklists.Sum(c => c.CompletedItems);
+                                    <span class="card-checklist">☑ @completedItems/@totalItems</span>
+                                }
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(card.AssignedToName))
+                            {
+                                <div class="card-assignee">
+                                    <div class="assignee-avatar" title="@card.AssignedToName">
+                                        @GetUserInitials(card.AssignedToName)
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (card.IsBlocked)
+                        {
+                            <div class="card-blocked-badge" title="@card.BlockedReason">🚫 BLOCKED</div>
+                        }
+                    </div>
+                }
+                
+                @if (column.AllowAddCard && !column.IsCollapsed)
+                {
+                    <button class="add-card-btn" @onclick="() => OnAddCardAsync(column.Id, swimlaneId)">
+                        + Add Card
+                    </button>
+                }
+            </div>
+        }
+    };
+
+    [Parameter] public KanbanBoard Board { get; set; } = new();
+    [Parameter] public EventCallback<KanbanBoard> BoardChanged { get; set; }
+    [Parameter] public EventCallback<CardMovedEventArgs> OnCardMoved { get; set; }
+    [Parameter] public EventCallback<KanbanCard> OnCardClicked { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; }
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string AuditResource { get; set; } = "KanbanBoard";
+
+    private bool _hasPermission = true;
+    private bool _showFilters;
+    private bool _showSwimlanes;
+    private string _searchText = string.Empty;
+    private KanbanFilter _activeFilters = new();
+    private KanbanCard? _selectedCard;
+    private KanbanCard? _draggingCard;
+    private string _newTag = string.Empty;
+    private string _newComment = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission))
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        UpdateColumnCardCounts();
+    }
+
+    private string GetThemeClass()
+    {
+        var theme = ThemeService.CurrentTheme;
+        return $"theme-{theme.ToString().ToLower()}";
+    }
+
+    private List<KanbanCard> GetFilteredCards(string columnId, string? swimlaneId)
+    {
+        var cards = Board.GetCardsForColumn(columnId, swimlaneId);
+        
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            cards = cards.Where(c => 
+                c.Title.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                (c.Description?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+        
+        if (_activeFilters.Priorities.Any())
+        {
+            cards = cards.Where(c => c.Priority != null && _activeFilters.Priorities.Contains(c.Priority)).ToList();
+        }
+        
+        if (_activeFilters.Tags.Any())
+        {
+            cards = cards.Where(c => c.Tags.Any(t => _activeFilters.Tags.Contains(t))).ToList();
+        }
+        
+        return cards;
+    }
+
+    private int GetColumnCardCount(string columnId, string? swimlaneId)
+    {
+        return GetFilteredCards(columnId, swimlaneId).Count;
+    }
+
+    private int GetSwimlaneCardCount(string swimlaneId)
+    {
+        return Board.Cards.Count(c => c.CustomFields.ContainsKey("SwimlaneId") && 
+                                     c.CustomFields["SwimlaneId"]?.ToString() == swimlaneId);
+    }
+
+    private void UpdateColumnCardCounts()
+    {
+        foreach (var column in Board.Columns)
+        {
+            column.CardCount = Board.Cards.Count(c => c.ColumnId == column.Id);
+        }
+    }
+
+    private List<string> GetAllTags()
+    {
+        return Board.Cards.SelectMany(c => c.Tags).Distinct().OrderBy(t => t).ToList();
+    }
+
+    private string GetUserInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+
+    private void ToggleSwimlane(KanbanSwimlane swimlane)
+    {
+        swimlane.IsCollapsed = !swimlane.IsCollapsed;
+    }
+
+    private void ToggleColumn(KanbanColumn column)
+    {
+        column.IsCollapsed = !column.IsCollapsed;
+    }
+
+    private void ToggleFilterPriority(string priority)
+    {
+        if (_activeFilters.Priorities.Contains(priority))
+            _activeFilters.Priorities.Remove(priority);
+        else
+            _activeFilters.Priorities.Add(priority);
+    }
+
+    private void ToggleFilterTag(string tag)
+    {
+        if (_activeFilters.Tags.Contains(tag))
+            _activeFilters.Tags.Remove(tag);
+        else
+            _activeFilters.Tags.Add(tag);
+    }
+
+    private async Task OnToggleFilterAsync()
+    {
+        _showFilters = !_showFilters;
+    }
+
+    private void OnToggleSwimlanes()
+    {
+        _showSwimlanes = !_showSwimlanes;
+    }
+
+    private async Task OnClearFiltersAsync()
+    {
+        _activeFilters = new KanbanFilter();
+        _searchText = string.Empty;
+    }
+
+    private async Task OnAddColumnAsync()
+    {
+        var newColumn = new KanbanColumn
+        {
+            Title = $"Column {Board.Columns.Count + 1}",
+            Order = Board.Columns.Count
+        };
+        
+        Board.Columns.Add(newColumn);
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ColumnId"] = newColumn.Id,
+                    ["ColumnTitle"] = newColumn.Title
+                }
+            });
+        }
+    }
+
+    private async Task OnAddCardAsync(string columnId, string? swimlaneId)
+    {
+        var newCard = new KanbanCard
+        {
+            Title = "New Card",
+            ColumnId = columnId,
+            Order = Board.Cards.Count(c => c.ColumnId == columnId)
+        };
+        
+        if (swimlaneId != null)
+        {
+            newCard.CustomFields["SwimlaneId"] = swimlaneId;
+        }
+        
+        Board.Cards.Add(newCard);
+        UpdateColumnCardCounts();
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Create",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CardId"] = newCard.Id,
+                    ["CardTitle"] = newCard.Title,
+                    ["ColumnId"] = columnId
+                }
+            });
+        }
+        
+        OpenCardDetails(newCard);
+    }
+
+    private void OnCardDragStart(Microsoft.AspNetCore.Components.Web.DragEventArgs e, KanbanCard card)
+    {
+        _draggingCard = card;
+    }
+
+    private void OnDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        // Allow drop
+    }
+
+    private async Task OnCardDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e, string columnId, string? swimlaneId)
+    {
+        if (_draggingCard == null) return;
+        
+        var fromColumnId = _draggingCard.ColumnId;
+        var fromSwimlaneId = _draggingCard.CustomFields.ContainsKey("SwimlaneId") 
+            ? _draggingCard.CustomFields["SwimlaneId"]?.ToString() 
+            : null;
+        
+        _draggingCard.ColumnId = columnId;
+        if (swimlaneId != null)
+        {
+            _draggingCard.CustomFields["SwimlaneId"] = swimlaneId;
+        }
+        else
+        {
+            _draggingCard.CustomFields.Remove("SwimlaneId");
+        }
+        
+        UpdateColumnCardCounts();
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Move",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CardId"] = _draggingCard.Id,
+                    ["FromColumn"] = fromColumnId,
+                    ["ToColumn"] = columnId
+                }
+            });
+        }
+        
+        await OnCardMoved.InvokeAsync(new CardMovedEventArgs
+        {
+            Card = _draggingCard,
+            FromColumnId = fromColumnId,
+            ToColumnId = columnId,
+            FromSwimlaneId = fromSwimlaneId,
+            ToSwimlaneId = swimlaneId
+        });
+        
+        _draggingCard = null;
+    }
+
+    private void OpenCardDetails(KanbanCard card)
+    {
+        _selectedCard = card;
+    }
+
+    private void CloseCardDetails()
+    {
+        _selectedCard = null;
+        _newTag = string.Empty;
+        _newComment = string.Empty;
+    }
+
+    private async Task OnSaveCardAsync()
+    {
+        if (_selectedCard == null) return;
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Update",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CardId"] = _selectedCard.Id,
+                    ["CardTitle"] = _selectedCard.Title
+                }
+            });
+        }
+        
+        await BoardChanged.InvokeAsync(Board);
+        CloseCardDetails();
+    }
+
+    private async Task OnDeleteCardAsync()
+    {
+        if (_selectedCard == null) return;
+        
+        Board.Cards.Remove(_selectedCard);
+        UpdateColumnCardCounts();
+        
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Delete",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["CardId"] = _selectedCard.Id
+                }
+            });
+        }
+        
+        CloseCardDetails();
+    }
+
+    private void OnTagKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTag) && _selectedCard != null)
+        {
+            if (!_selectedCard.Tags.Contains(_newTag))
+            {
+                _selectedCard.Tags.Add(_newTag.Trim());
+            }
+            _newTag = string.Empty;
+        }
+    }
+
+    private void RemoveTag(string tag)
+    {
+        if (_selectedCard != null)
+        {
+            _selectedCard.Tags.Remove(tag);
+        }
+    }
+
+    private async Task OnAddCommentAsync()
+    {
+        if (_selectedCard == null || string.IsNullOrWhiteSpace(_newComment)) return;
+        
+        var comment = new KanbanComment
+        {
+            Text = _newComment.Trim(),
+            AuthorName = "Current User", // Replace with actual user
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        _selectedCard.Comments.Add(comment);
+        _newComment = string.Empty;
+    }
+
+    private async Task OnAddChecklistAsync()
+    {
+        if (_selectedCard == null) return;
+        
+        var checklist = new KanbanChecklist
+        {
+            Title = "Checklist",
+            Items = new List<KanbanChecklistItem>
+            {
+                new KanbanChecklistItem { Text = "New item" }
+            }
+        };
+        
+        _selectedCard.Checklists.Add(checklist);
+    }
+
+    private void ToggleChecklistItem(KanbanChecklistItem item, bool isCompleted)
+    {
+        item.IsCompleted = isCompleted;
+        if (isCompleted)
+        {
+            item.CompletedAt = DateTime.UtcNow;
+            item.CompletedBy = "Current User"; // Replace with actual user
+        }
+        else
+        {
+            item.CompletedAt = null;
+            item.CompletedBy = null;
+        }
+    }
+
+    private async Task OnExportAsync()
+    {
+        if (EnableAudit)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "Export",
+                Resource = AuditResource,
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["BoardId"] = Board.Id,
+                    ["CardCount"] = Board.Cards.Count
+                }
+            });
+        }
+    }
+}

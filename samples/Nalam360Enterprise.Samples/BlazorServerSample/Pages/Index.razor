@@ -1,0 +1,198 @@
+@page "/"
+@using Nalam360Enterprise.UI.Components.Inputs
+@using Nalam360Enterprise.UI.Components.Buttons
+@using Nalam360Enterprise.UI.Components.Data
+@using Nalam360Enterprise.UI.Components.Display
+
+<PageTitle>Nalam360 Enterprise UI - Sample</PageTitle>
+
+<div class="container mt-4">
+    <N360Avatar Content="N360" Size="AvatarSize.Large" Shape="AvatarShape.Circle" />
+    
+    <h1 class="mt-3">Nalam360 Enterprise UI Components</h1>
+    <p class="lead">Showcase of enterprise Blazor components with RBAC, theming, and accessibility.</p>
+    
+    <N360Divider />
+    
+    <!-- Input Components -->
+    <h2>Input Components</h2>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Text Input</label>
+            <N360TextBox @bind-Value="@username"
+                         Placeholder="Enter username"
+                         EnableAudit="true"
+                         AuditResource="SampleForm" />
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Numeric Input</label>
+            <N360NumericTextBox @bind-Value="@age"
+                                Placeholder="Enter age"
+                                Min="0"
+                                Max="120" />
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Date Picker</label>
+            <N360DatePicker @bind-Value="@selectedDate"
+                            Placeholder="Select date" />
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Dropdown</label>
+            <N360DropDownList TValue="string"
+                              TItem="string"
+                              @bind-Value="@selectedCountry"
+                              DataSource="@countries"
+                              Placeholder="Select country" />
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <N360CheckBox @bind-Value="@agreedToTerms"
+                      Label="I agree to terms and conditions" />
+    </div>
+    
+    <div class="mb-3">
+        <N360Switch @bind-Value="@enableNotifications"
+                    OnLabel="Enabled"
+                    OffLabel="Disabled" />
+        <span class="ms-2">Notifications</span>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label">Rating</label>
+        <N360Rating @bind-Value="@rating"
+                    ItemsCount="5"
+                    AllowReset="true" />
+    </div>
+    
+    <N360Divider />
+    
+    <!-- Button Components -->
+    <h2>Buttons</h2>
+    
+    <div class="mb-3">
+        <N360Button Text="Primary Button"
+                    Type="Primary"
+                    OnClick="@HandleButtonClick" />
+        
+        <N360Button Text="Secondary"
+                    Type="Secondary"
+                    OnClick="@HandleButtonClick"
+                    CssClass="ms-2" />
+        
+        <N360Button Text="Success"
+                    Type="Success"
+                    OnClick="@HandleButtonClick"
+                    CssClass="ms-2" />
+        
+        <N360Button Text="Disabled"
+                    Disabled="true"
+                    CssClass="ms-2" />
+    </div>
+    
+    <N360Divider />
+    
+    <!-- Data Display -->
+    <h2>Data Components</h2>
+    
+    <N360Grid TItem="User"
+              DataSource="@users"
+              EnablePaging="true"
+              PageSize="5"
+              EnableFiltering="true"
+              EnableSorting="true">
+        <GridColumns>
+            <GridColumn Field="@nameof(User.Id)" HeaderText="ID" Width="100px" />
+            <GridColumn Field="@nameof(User.Name)" HeaderText="Name" />
+            <GridColumn Field="@nameof(User.Email)" HeaderText="Email" />
+            <GridColumn Field="@nameof(User.Role)" HeaderText="Role" Width="150px" />
+        </GridColumns>
+    </N360Grid>
+    
+    <N360Divider />
+    
+    <!-- Feedback -->
+    <h2>Feedback Components</h2>
+    
+    <div class="mb-3">
+        <N360Alert Type="AlertType.Info"
+                   Title="Information"
+                   Message="This is an informational alert"
+                   Closable="true" />
+    </div>
+    
+    <div class="mb-3">
+        <N360Alert Type="AlertType.Success"
+                   Title="Success"
+                   Message="Operation completed successfully"
+                   Closable="true" />
+    </div>
+    
+    <div class="mb-3">
+        <N360Alert Type="AlertType.Warning"
+                   Title="Warning"
+                   Message="Please review this warning"
+                   Closable="true" />
+    </div>
+    
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-info mt-3">
+            @message
+        </div>
+    }
+</div>
+
+@code {
+    private string username = "";
+    private int age = 25;
+    private DateTime? selectedDate = DateTime.Today;
+    private string selectedCountry = "";
+    private bool agreedToTerms = false;
+    private bool enableNotifications = true;
+    private double rating = 4;
+    private string message = "";
+    
+    private List<string> countries = new()
+    {
+        "United States",
+        "Canada",
+        "United Kingdom",
+        "Germany",
+        "France",
+        "India",
+        "Japan",
+        "Australia"
+    };
+    
+    private List<User> users = new()
+    {
+        new User { Id = 1, Name = "John Doe", Email = "john@example.com", Role = "Admin" },
+        new User { Id = 2, Name = "Jane Smith", Email = "jane@example.com", Role = "User" },
+        new User { Id = 3, Name = "Bob Johnson", Email = "bob@example.com", Role = "Manager" },
+        new User { Id = 4, Name = "Alice Williams", Email = "alice@example.com", Role = "User" },
+        new User { Id = 5, Name = "Charlie Brown", Email = "charlie@example.com", Role = "User" },
+        new User { Id = 6, Name = "Diana Prince", Email = "diana@example.com", Role = "Admin" }
+    };
+    
+    private Task HandleButtonClick()
+    {
+        message = $"Button clicked at {DateTime.Now:HH:mm:ss}";
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+    
+    public class User
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "";
+    }
+}
