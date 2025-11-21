@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Integration</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Integration features for Nalam360 Enterprise Platform with HTTP clients and external service wrappers.</description>
+    <tags>integration http rest grpc blob-storage enterprise</tags>
+    <repository type="git" commit="86ce8c8f59be0afa297dc40bea38695cce1f4d46" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="AWSSDK.S3" version="3.7.402.7" exclude="Build,Analyzers" />
+        <dependency id="Azure.Storage.Blobs" version="12.21.2" exclude="Build,Analyzers" />
+        <dependency id="Google.Cloud.Storage.V1" version="4.10.0" exclude="Build,Analyzers" />
+        <dependency id="Grpc.Net.Client" version="2.60.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Configuration.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Configuration.Binder" version="8.0.2" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="8.0.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Integration\bin\Release\net8.0\Nalam360.Platform.Integration.dll" target="lib\net8.0\Nalam360.Platform.Integration.dll" />
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Integration\bin\Release\net8.0\Nalam360.Platform.Integration.xml" target="lib\net8.0\Nalam360.Platform.Integration.xml" />
+  </files>
+</package>

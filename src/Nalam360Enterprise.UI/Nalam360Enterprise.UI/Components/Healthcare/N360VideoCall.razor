@@ -1,0 +1,366 @@
+@using Microsoft.JSInterop
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Nalam360Enterprise.UI.Components.Healthcare
+@inherits N360ComponentBase
+@implements IAsyncDisposable
+
+@if (_hasPermission)
+{
+    <div class="n360-video-call @CssClass" style="@Style" @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="n360-video-call__header">
+                <h3 class="n360-video-call__title">@Title</h3>
+                <div class="n360-video-call__status">
+                    <span class="n360-video-call__status-indicator @_statusClass"></span>
+                    <span>@_statusText</span>
+                </div>
+            </div>
+        }
+        
+        <div class="n360-video-call__video-container">
+            <!-- Remote video (other participant) -->
+            <video id="@RemoteVideoId" 
+                   class="n360-video-call__remote-video" 
+                   autoplay 
+                   playsinline></video>
+            
+            <!-- Local video (self view) -->
+            <video id="@LocalVideoId" 
+                   class="n360-video-call__local-video @(_isLocalVideoHidden ? "hidden" : "")" 
+                   autoplay 
+                   playsinline 
+                   muted></video>
+            
+            @if (_callState == CallState.Connecting)
+            {
+                <div class="n360-video-call__overlay">
+                    <div class="n360-video-call__spinner"></div>
+                    <p>Connecting...</p>
+                </div>
+            }
+            
+            @if (_callState == CallState.Disconnected && ShowReconnectButton)
+            {
+                <div class="n360-video-call__overlay">
+                    <button class="n360-video-call__reconnect-btn" @onclick="ReconnectAsync">
+                        🔄 Reconnect
+                    </button>
+                </div>
+            }
+        </div>
+        
+        <div class="n360-video-call__controls">
+            <button class="n360-video-call__btn @(_isMuted ? "active" : "")" 
+                    @onclick="ToggleMuteAsync"
+                    disabled="@(_callState != CallState.Connected)"
+                    title="@(_isMuted ? "Unmute" : "Mute")">
+                @(_isMuted ? "🔇" : "🎤")
+            </button>
+            
+            <button class="n360-video-call__btn @(_isVideoOff ? "active" : "")" 
+                    @onclick="ToggleVideoAsync"
+                    disabled="@(_callState != CallState.Connected)"
+                    title="@(_isVideoOff ? "Start Video" : "Stop Video")">
+                @(_isVideoOff ? "📹" : "📷")
+            </button>
+            
+            <button class="n360-video-call__btn" 
+                    @onclick="ToggleLocalVideoVisibilityAsync"
+                    disabled="@(_callState != CallState.Connected)"
+                    title="@(_isLocalVideoHidden ? "Show Self View" : "Hide Self View")">
+                👁️
+            </button>
+            
+            @if (ShowScreenShareButton)
+            {
+                <button class="n360-video-call__btn @(_isScreenSharing ? "active" : "")" 
+                        @onclick="ToggleScreenShareAsync"
+                        disabled="@(_callState != CallState.Connected)"
+                        title="@(_isScreenSharing ? "Stop Sharing" : "Share Screen")">
+                    🖥️
+                </button>
+            }
+            
+            <button class="n360-video-call__btn n360-video-call__btn--end" 
+                    @onclick="EndCallAsync"
+                    disabled="@(_callState == CallState.Idle)"
+                    title="End Call">
+                📞
+            </button>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="n360-video-call__error">
+                ⚠️ @_errorMessage
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string RoomId { get; set; } = string.Empty;
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public string? SignalingServerUrl { get; set; }
+    
+    [Parameter] public bool AutoStart { get; set; }
+    [Parameter] public bool ShowScreenShareButton { get; set; } = true;
+    [Parameter] public bool ShowReconnectButton { get; set; } = true;
+    [Parameter] public bool EnableAudioByDefault { get; set; } = true;
+    [Parameter] public bool EnableVideoByDefault { get; set; } = true;
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<CallState> OnCallStateChanged { get; set; }
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    [Parameter] public EventCallback OnCallStarted { get; set; }
+    [Parameter] public EventCallback OnCallEnded { get; set; }
+    
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IPermissionService? PermissionService { get; set; }
+    [Inject] private IAuditService? AuditService { get; set; }
+    
+    private bool _hasPermission = true;
+    private CallState _callState = CallState.Idle;
+    private bool _isMuted = false;
+    private bool _isVideoOff = false;
+    private bool _isLocalVideoHidden = false;
+    private bool _isScreenSharing = false;
+    private string? _errorMessage;
+    private IJSObjectReference? _videoCallModule;
+    
+    private string LocalVideoId => $"local-video-{Guid.NewGuid():N}";
+    private string RemoteVideoId => $"remote-video-{Guid.NewGuid():N}";
+    
+    private string _statusClass => _callState switch
+    {
+        CallState.Connected => "status-connected",
+        CallState.Connecting => "status-connecting",
+        CallState.Disconnected => "status-disconnected",
+        _ => "status-idle"
+    };
+    
+    private string _statusText => _callState switch
+    {
+        CallState.Connected => "Connected",
+        CallState.Connecting => "Connecting...",
+        CallState.Disconnected => "Disconnected",
+        _ => "Idle"
+    };
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        
+        if (_hasPermission)
+        {
+            _isMuted = !EnableAudioByDefault;
+            _isVideoOff = !EnableVideoByDefault;
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission)
+        {
+            try
+            {
+                _videoCallModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/videoCall.js");
+                
+                if (AutoStart && !string.IsNullOrEmpty(RoomId))
+                {
+                    await StartCallAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                await HandleErrorAsync($"Failed to initialize video call: {ex.Message}");
+            }
+        }
+    }
+    
+    private async Task CheckPermissionAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            
+            if (!_hasPermission && !HideIfNoPermission)
+            {
+                _hasPermission = true;
+            }
+        }
+    }
+    
+    public async Task StartCallAsync()
+    {
+        if (_callState != CallState.Idle || _videoCallModule == null)
+            return;
+        
+        try
+        {
+            await UpdateCallStateAsync(CallState.Connecting);
+            
+            await _videoCallModule.InvokeVoidAsync("startCall", 
+                RoomId, 
+                UserId, 
+                LocalVideoId, 
+                RemoteVideoId,
+                SignalingServerUrl ?? "wss://signaling.example.com",
+                EnableAudioByDefault,
+                EnableVideoByDefault);
+            
+            await UpdateCallStateAsync(CallState.Connected);
+            await OnCallStarted.InvokeAsync();
+            
+            if (EnableAudit && AuditService != null)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    UserId = UserId,
+                    Action = "VideoCallStarted",
+                    Resource = AuditResource ?? "VideoCall",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["RoomId"] = RoomId
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await HandleErrorAsync($"Failed to start call: {ex.Message}");
+            await UpdateCallStateAsync(CallState.Disconnected);
+        }
+    }
+    
+    public async Task EndCallAsync()
+    {
+        if (_callState == CallState.Idle || _videoCallModule == null)
+            return;
+        
+        try
+        {
+            await _videoCallModule.InvokeVoidAsync("endCall");
+            await UpdateCallStateAsync(CallState.Idle);
+            await OnCallEnded.InvokeAsync();
+            
+            if (EnableAudit && AuditService != null)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    UserId = UserId,
+                    Action = "VideoCallEnded",
+                    Resource = AuditResource ?? "VideoCall",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["RoomId"] = RoomId
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await HandleErrorAsync($"Failed to end call: {ex.Message}");
+        }
+    }
+    
+    public async Task ReconnectAsync()
+    {
+        await UpdateCallStateAsync(CallState.Idle);
+        await StartCallAsync();
+    }
+    
+    private async Task ToggleMuteAsync()
+    {
+        if (_videoCallModule == null) return;
+        
+        try
+        {
+            _isMuted = !_isMuted;
+            await _videoCallModule.InvokeVoidAsync("toggleAudio", _isMuted);
+        }
+        catch (Exception ex)
+        {
+            await HandleErrorAsync($"Failed to toggle mute: {ex.Message}");
+        }
+    }
+    
+    private async Task ToggleVideoAsync()
+    {
+        if (_videoCallModule == null) return;
+        
+        try
+        {
+            _isVideoOff = !_isVideoOff;
+            await _videoCallModule.InvokeVoidAsync("toggleVideo", _isVideoOff);
+        }
+        catch (Exception ex)
+        {
+            await HandleErrorAsync($"Failed to toggle video: {ex.Message}");
+        }
+    }
+    
+    private async Task ToggleLocalVideoVisibilityAsync()
+    {
+        _isLocalVideoHidden = !_isLocalVideoHidden;
+        await Task.CompletedTask;
+    }
+    
+    private async Task ToggleScreenShareAsync()
+    {
+        if (_videoCallModule == null) return;
+        
+        try
+        {
+            _isScreenSharing = !_isScreenSharing;
+            await _videoCallModule.InvokeVoidAsync("toggleScreenShare", _isScreenSharing);
+        }
+        catch (Exception ex)
+        {
+            await HandleErrorAsync($"Failed to toggle screen share: {ex.Message}");
+            _isScreenSharing = false;
+        }
+    }
+    
+    private async Task UpdateCallStateAsync(CallState newState)
+    {
+        _callState = newState;
+        await OnCallStateChanged.InvokeAsync(newState);
+        StateHasChanged();
+    }
+    
+    private async Task HandleErrorAsync(string errorMessage)
+    {
+        _errorMessage = errorMessage;
+        await OnError.InvokeAsync(errorMessage);
+        StateHasChanged();
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_videoCallModule != null)
+        {
+            try
+            {
+                await _videoCallModule.InvokeVoidAsync("cleanup");
+                await _videoCallModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+    }
+}

@@ -1,0 +1,282 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+@inject NavigationManager Navigation
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    @ChildContent
+    
+    @if (ShowWarning && _showWarningDialog)
+    {
+        <div class="n360-idle-timeout__overlay">
+            <div class="n360-idle-timeout__dialog">
+                <div class="n360-idle-timeout__icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="n360-idle-timeout__title">@WarningTitle</h3>
+                <p class="n360-idle-timeout__message">@WarningMessage</p>
+                
+                <div class="n360-idle-timeout__countdown">
+                    <div class="n360-idle-timeout__timer">@_remainingSeconds</div>
+                    <div class="n360-idle-timeout__timer-label">seconds remaining</div>
+                </div>
+                
+                <div class="n360-idle-timeout__actions">
+                    <button class="n360-btn n360-btn--primary" @onclick="ExtendSessionAsync">
+                        <i class="fas fa-refresh"></i> Stay Logged In
+                    </button>
+                    <button class="n360-btn n360-btn--secondary" @onclick="LogoutNowAsync">
+                        <i class="fas fa-sign-out-alt"></i> Logout Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Content to monitor for idle timeout
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Idle timeout duration in milliseconds (default: 15 minutes)
+    /// </summary>
+    [Parameter] public int TimeoutDuration { get; set; } = 900000; // 15 minutes
+    
+    /// <summary>
+    /// Warning before timeout in milliseconds (default: 2 minutes)
+    /// </summary>
+    [Parameter] public int WarningDuration { get; set; } = 120000; // 2 minutes
+    
+    /// <summary>
+    /// Show warning dialog before timeout
+    /// </summary>
+    [Parameter] public bool ShowWarning { get; set; } = true;
+    
+    /// <summary>
+    /// Warning dialog title
+    /// </summary>
+    [Parameter] public string WarningTitle { get; set; } = "Session Timeout Warning";
+    
+    /// <summary>
+    /// Warning dialog message
+    /// </summary>
+    [Parameter] public string WarningMessage { get; set; } = "Your session is about to expire due to inactivity.";
+    
+    /// <summary>
+    /// Logout URL to redirect to on timeout
+    /// </summary>
+    [Parameter] public string? LogoutUrl { get; set; }
+    
+    /// <summary>
+    /// Events that reset the idle timer
+    /// </summary>
+    [Parameter] public string[] MonitorEvents { get; set; } = new[] 
+    { 
+        "mousedown", "mousemove", "keypress", "scroll", "touchstart", "click" 
+    };
+    
+    /// <summary>
+    /// Throttle event handling (milliseconds)
+    /// </summary>
+    [Parameter] public int EventThrottle { get; set; } = 1000;
+    
+    /// <summary>
+    /// Store session state before logout
+    /// </summary>
+    [Parameter] public bool PreserveState { get; set; } = true;
+    
+    /// <summary>
+    /// Callback when idle timeout warning shown
+    /// </summary>
+    [Parameter] public EventCallback OnWarning { get; set; }
+    
+    /// <summary>
+    /// Callback when timeout occurs
+    /// </summary>
+    [Parameter] public EventCallback OnTimeout { get; set; }
+    
+    /// <summary>
+    /// Callback when session extended
+    /// </summary>
+    [Parameter] public EventCallback OnSessionExtended { get; set; }
+    
+    /// <summary>
+    /// Custom logout handler
+    /// </summary>
+    [Parameter] public Func<Task>? OnLogout { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _showWarningDialog;
+    private int _remainingSeconds;
+    private Timer? _countdownTimer;
+    private DotNetObjectReference<N360IdleTimeout>? _objRef;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            
+            var config = new
+            {
+                timeoutDuration = TimeoutDuration,
+                warningDuration = WarningDuration,
+                events = MonitorEvents,
+                throttle = EventThrottle
+            };
+            
+            await JS.InvokeVoidAsync("Nalam360.IdleTimeout.initialize", _objRef, config);
+            LogAudit("IdleTimeoutStarted", $"Monitoring idle timeout: {TimeoutDuration}ms");
+        }
+    }
+    
+    [JSInvokable]
+    public async Task ShowWarningDialog()
+    {
+        _showWarningDialog = true;
+        _remainingSeconds = WarningDuration / 1000;
+        
+        await OnWarning.InvokeAsync();
+        LogAudit("IdleWarningShown", "Idle timeout warning displayed");
+        
+        StartCountdown();
+        StateHasChanged();
+    }
+    
+    [JSInvokable]
+    public async Task HandleTimeout()
+    {
+        _showWarningDialog = false;
+        
+        await OnTimeout.InvokeAsync();
+        LogAudit("IdleTimeout", "Session timed out due to inactivity");
+        
+        await LogoutAsync();
+    }
+    
+    private async Task ExtendSessionAsync()
+    {
+        _showWarningDialog = false;
+        _countdownTimer?.Dispose();
+        
+        await JS.InvokeVoidAsync("Nalam360.IdleTimeout.reset");
+        await OnSessionExtended.InvokeAsync();
+        LogAudit("SessionExtended", "User extended session");
+        
+        StateHasChanged();
+    }
+    
+    private async Task LogoutNowAsync()
+    {
+        _showWarningDialog = false;
+        _countdownTimer?.Dispose();
+        
+        LogAudit("ManualLogout", "User initiated logout from idle warning");
+        await LogoutAsync();
+    }
+    
+    private async Task LogoutAsync()
+    {
+        if (OnLogout != null)
+        {
+            await OnLogout();
+        }
+        else if (!string.IsNullOrEmpty(LogoutUrl))
+        {
+            Navigation.NavigateTo(LogoutUrl, forceLoad: true);
+        }
+        else
+        {
+            // Default logout action
+            await JS.InvokeVoidAsync("Nalam360.IdleTimeout.clearSession", PreserveState);
+            Navigation.NavigateTo("/logout", forceLoad: true);
+        }
+    }
+    
+    private void StartCountdown()
+    {
+        _countdownTimer?.Dispose();
+        _countdownTimer = new Timer(async _ =>
+        {
+            _remainingSeconds--;
+            
+            if (_remainingSeconds <= 0)
+            {
+                _countdownTimer?.Dispose();
+                await InvokeAsync(async () => await HandleTimeout());
+            }
+            else
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, 0, 1000);
+    }
+    
+    /// <summary>
+    /// Manually reset the idle timer
+    /// </summary>
+    public async Task ResetAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.IdleTimeout.reset");
+        LogAudit("IdleTimerReset", "Idle timer manually reset");
+    }
+    
+    /// <summary>
+    /// Pause idle monitoring
+    /// </summary>
+    public async Task PauseAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.IdleTimeout.pause");
+        LogAudit("IdleTimerPaused", "Idle monitoring paused");
+    }
+    
+    /// <summary>
+    /// Resume idle monitoring
+    /// </summary>
+    public async Task ResumeAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.IdleTimeout.resume");
+        LogAudit("IdleTimerResumed", "Idle monitoring resumed");
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _countdownTimer?.Dispose();
+        _objRef?.Dispose();
+    }
+}

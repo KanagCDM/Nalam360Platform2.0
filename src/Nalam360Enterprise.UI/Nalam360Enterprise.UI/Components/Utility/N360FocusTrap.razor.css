@@ -1,0 +1,34 @@
+.n360-focus-trap {
+    display: block;
+    position: relative;
+}
+
+.n360-focus-trap:focus {
+    outline: none;
+}
+
+.n360-focus-trap__start,
+.n360-focus-trap__end {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.n360-focus-trap__start:focus,
+.n360-focus-trap__end:focus {
+    outline: none;
+}
+
+.n360-focus-trap--active {
+    /* Optional visual indicator when focus trap is active */
+}
+
+.n360-focus-trap--rtl {
+    direction: rtl;
+}

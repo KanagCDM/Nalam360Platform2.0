@@ -1,17 +1,91 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj": {}
+    "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj": {}
   },
   "projects": {
-    "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj": {
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
-        "projectName": "Nalam360Enterprise.UI",
-        "projectPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
+        "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj",
+        "projectName": "Nalam360.Platform.Core",
+        "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj",
         "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-        "outputPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\",
+        "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\mmc2878\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "D:\\Pandiyaraj\\Syncfusion\\Blazor\\29.1.33\\nuget": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
+        "projectName": "Nalam360Enterprise.UI",
+        "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
+        "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
+        "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -34,7 +108,11 @@
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
+                "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
@@ -175,14 +253,14 @@
         }
       }
     },
-    "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj": {
+    "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
+        "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
         "projectName": "Nalam360Enterprise.UI.Tests",
-        "projectPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
+        "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
         "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-        "outputPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\obj\\",
+        "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -206,8 +284,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj": {
-                "projectPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj"
+              "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj": {
+                "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj"
               }
             }
           }

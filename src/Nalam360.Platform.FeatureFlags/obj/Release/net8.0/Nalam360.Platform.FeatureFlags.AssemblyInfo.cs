@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Feature flags for Nalam360 Enterprise Platform.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+edd3982f1a38baeeb42aa78fcc49d92c1dd57152")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+86ce8c8f59be0afa297dc40bea38695cce1f4d46")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.FeatureFlags")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.FeatureFlags")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

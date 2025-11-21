@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "XrO8dolUgKQ=",
+  "dgSpecHash": "yMCGhu6B6oA=",
   "success": true,
-  "projectFilePath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests\\Nalam360Enterprise.UI.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\anglesharp\\1.3.0\\anglesharp.1.3.0.nupkg.sha512",
     "C:\\Users\\mmc2878\\.nuget\\packages\\anglesharp.css\\1.0.0-beta.157\\anglesharp.css.1.0.0-beta.157.nupkg.sha512",

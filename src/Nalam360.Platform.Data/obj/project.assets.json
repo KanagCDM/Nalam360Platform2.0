@@ -2507,11 +2507,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
+      "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
       "projectName": "Nalam360.Platform.Data",
-      "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
+      "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
       "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-      "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Data\\obj\\",
+      "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Data\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -2535,11 +2535,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
-              "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
+            "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
+              "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
             },
-            "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj": {
-              "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj"
+            "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj": {
+              "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj"
             }
           }
         }

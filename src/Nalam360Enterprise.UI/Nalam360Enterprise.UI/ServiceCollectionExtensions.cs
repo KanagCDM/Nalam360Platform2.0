@@ -1,7 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nalam360Enterprise.UI.Core.AI.Services;
+using Nalam360Enterprise.UI.Core.Browser;
+using Nalam360Enterprise.UI.Core.Http;
+using Nalam360Enterprise.UI.Core.Notifications;
 using Nalam360Enterprise.UI.Core.Security;
+using Nalam360Enterprise.UI.Core.State;
+using Nalam360Enterprise.UI.Core.Storage;
 using Nalam360Enterprise.UI.Core.Theming;
 using Syncfusion.Blazor;
 
@@ -51,6 +56,28 @@ public static class ServiceCollectionExtensions
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MLNetModelService>>();
             return new MLNetModelService(logger, "ML/Models");
         });
+
+        // Register HTTP client and API client
+        services.AddHttpClient<IApiClient, ApiClient>();
+        services.AddScoped<IApiClient>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient(nameof(IApiClient));
+            var logger = sp.GetRequiredService<ILogger<ApiClient>>();
+            return new ApiClient(httpClient, logger);
+        });
+
+        // Register state management
+        services.AddScoped(typeof(IStateManager<>), typeof(StateManager<>));
+
+        // Register notification queue
+        services.AddSingleton<INotificationQueue, NotificationQueue>();
+
+        // Register storage service
+        services.AddScoped<IStorageService, StorageService>();
+
+        // Register browser service
+        services.AddScoped<IBrowserService, BrowserService>();
 
         return services;
     }

@@ -1,0 +1,8 @@
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\bin\Release\net9.0\.msCoverageSourceRootsMapping_Nalam360Enterprise.UI.Tests
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\bin\Release\net9.0\CoverletSourceRootsMapping_Nalam360Enterprise.UI.Tests
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\tests\Nalam360Enterprise.UI.Tests\Nalam360Enterprise.UI.Tests\obj\Release\net9.0\Nalam360Enterprise.UI.Tests.sourcelink.json

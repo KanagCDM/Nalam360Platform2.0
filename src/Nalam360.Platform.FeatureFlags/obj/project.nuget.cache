@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "vF1lC3sgmWw=",
+  "dgSpecHash": "kcQS/qVwEOk=",
   "success": true,
-  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.configuration\\8.0.0\\microsoft.extensions.configuration.8.0.0.nupkg.sha512",
     "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\8.0.0\\microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",

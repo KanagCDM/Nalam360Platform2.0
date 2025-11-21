@@ -129,7 +129,7 @@ Historical documents and session records (archived)
 
 ### Live Documentation
 - **Interactive Site:** http://localhost:5032 (when running)
-- **Component Browser:** 144 components documented
+- **Component Browser:** 161 components documented
 - **API Reference:** Complete parameter documentation
 - **Live Playground:** 7 interactive components
 

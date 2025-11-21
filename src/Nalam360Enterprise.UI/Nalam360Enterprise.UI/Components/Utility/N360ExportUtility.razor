@@ -1,0 +1,497 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-export-utility @GetCssClass()"
+         style="@Style">
+        
+        @if (ShowUI)
+        {
+            <div class="n360-export-utility__controls">
+                @if (ShowFormatSelector)
+                {
+                    <div class="n360-export-utility__format">
+                        <label class="n360-export-utility__label">Format:</label>
+                        <select class="n360-export-utility__select" @bind="_selectedFormat">
+                            @foreach (var format in EnabledFormats)
+                            {
+                                <option value="@format">@format</option>
+                            }
+                        </select>
+                    </div>
+                }
+                
+                <button class="n360-export-utility__button n360-export-utility__button--primary"
+                        @onclick="ExportAsync"
+                        disabled="@(_isExporting || !_hasData)">
+                    @if (_isExporting)
+                    {
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Exporting...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-download"></i>
+                        <span>@ButtonText</span>
+                    }
+                </button>
+                
+                @if (ShowClearButton && _hasData)
+                {
+                    <button class="n360-export-utility__button n360-export-utility__button--secondary"
+                            @onclick="ClearDataAsync">
+                        <i class="fas fa-times"></i>
+                        <span>Clear</span>
+                    </button>
+                }
+            </div>
+            
+            @if (_isExporting && ShowProgress)
+            {
+                <div class="n360-export-utility__progress">
+                    <div class="n360-export-utility__progress-bar" style="width: @(_progress)%"></div>
+                </div>
+                <div class="n360-export-utility__progress-text">@_progress%</div>
+            }
+            
+            @if (!string.IsNullOrEmpty(_statusMessage))
+            {
+                <div class="n360-export-utility__status n360-export-utility__status--@_statusType">
+                    <i class="fas fa-@(_statusType == "success" ? "check-circle" : _statusType == "error" ? "exclamation-circle" : "info-circle")"></i>
+                    <span>@_statusMessage</span>
+                </div>
+            }
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Data to export
+    /// </summary>
+    [Parameter] public object? Data { get; set; }
+    
+    /// <summary>
+    /// Function to get data dynamically
+    /// </summary>
+    [Parameter] public Func<Task<object>>? GetDataAsync { get; set; }
+    
+    /// <summary>
+    /// Default export format
+    /// </summary>
+    [Parameter] public ExportFormat DefaultFormat { get; set; } = ExportFormat.CSV;
+    
+    /// <summary>
+    /// Enabled export formats
+    /// </summary>
+    [Parameter] public List<ExportFormat> EnabledFormats { get; set; } = new()
+    {
+        ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XML, ExportFormat.HTML, ExportFormat.Markdown
+    };
+    
+    /// <summary>
+    /// Export filename (without extension)
+    /// </summary>
+    [Parameter] public string FileName { get; set; } = "export";
+    
+    /// <summary>
+    /// Show UI controls
+    /// </summary>
+    [Parameter] public bool ShowUI { get; set; } = true;
+    
+    /// <summary>
+    /// Show format selector dropdown
+    /// </summary>
+    [Parameter] public bool ShowFormatSelector { get; set; } = true;
+    
+    /// <summary>
+    /// Show progress bar during export
+    /// </summary>
+    [Parameter] public bool ShowProgress { get; set; } = true;
+    
+    /// <summary>
+    /// Show clear button
+    /// </summary>
+    [Parameter] public bool ShowClearButton { get; set; }
+    
+    /// <summary>
+    /// Export button text
+    /// </summary>
+    [Parameter] public string ButtonText { get; set; } = "Export";
+    
+    /// <summary>
+    /// CSV delimiter
+    /// </summary>
+    [Parameter] public string CsvDelimiter { get; set; } = ",";
+    
+    /// <summary>
+    /// Include headers in CSV
+    /// </summary>
+    [Parameter] public bool IncludeHeaders { get; set; } = true;
+    
+    /// <summary>
+    /// JSON formatting (indented or compact)
+    /// </summary>
+    [Parameter] public bool JsonIndented { get; set; } = true;
+    
+    /// <summary>
+    /// Callback before export
+    /// </summary>
+    [Parameter] public EventCallback<ExportEventArgs> OnBeforeExport { get; set; }
+    
+    /// <summary>
+    /// Callback after export
+    /// </summary>
+    [Parameter] public EventCallback<ExportEventArgs> OnAfterExport { get; set; }
+    
+    /// <summary>
+    /// Callback on export error
+    /// </summary>
+    [Parameter] public EventCallback<string> OnExportError { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ExportFormat _selectedFormat;
+    private bool _isExporting;
+    private int _progress;
+    private bool _hasData;
+    private string? _statusMessage;
+    private string _statusType = "info";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _selectedFormat = DefaultFormat;
+        _hasData = Data != null || GetDataAsync != null;
+    }
+    
+    protected override void OnParametersSet()
+    {
+        _hasData = Data != null || GetDataAsync != null;
+    }
+    
+    /// <summary>
+    /// Export data in selected format
+    /// </summary>
+    public async Task ExportAsync()
+    {
+        if (_isExporting || !_hasData) return;
+        
+        _isExporting = true;
+        _progress = 0;
+        _statusMessage = null;
+        StateHasChanged();
+        
+        try
+        {
+            // Get data
+            var exportData = Data;
+            if (exportData == null && GetDataAsync != null)
+            {
+                _progress = 10;
+                StateHasChanged();
+                exportData = await GetDataAsync();
+            }
+            
+            if (exportData == null)
+            {
+                throw new InvalidOperationException("No data to export");
+            }
+            
+            _progress = 30;
+            StateHasChanged();
+            
+            // Before export callback
+            var eventArgs = new ExportEventArgs
+            {
+                Format = _selectedFormat,
+                FileName = FileName,
+                Data = exportData
+            };
+            await OnBeforeExport.InvokeAsync(eventArgs);
+            
+            _progress = 50;
+            StateHasChanged();
+            
+            // Convert to selected format
+            string content;
+            string mimeType;
+            string extension;
+            
+            switch (_selectedFormat)
+            {
+                case ExportFormat.CSV:
+                    content = ConvertToCSV(exportData);
+                    mimeType = "text/csv";
+                    extension = ".csv";
+                    break;
+                case ExportFormat.JSON:
+                    content = ConvertToJSON(exportData);
+                    mimeType = "application/json";
+                    extension = ".json";
+                    break;
+                case ExportFormat.XML:
+                    content = ConvertToXML(exportData);
+                    mimeType = "application/xml";
+                    extension = ".xml";
+                    break;
+                case ExportFormat.HTML:
+                    content = ConvertToHTML(exportData);
+                    mimeType = "text/html";
+                    extension = ".html";
+                    break;
+                case ExportFormat.Markdown:
+                    content = ConvertToMarkdown(exportData);
+                    mimeType = "text/markdown";
+                    extension = ".md";
+                    break;
+                default:
+                    throw new NotSupportedException($"Format {_selectedFormat} not supported");
+            }
+            
+            _progress = 80;
+            StateHasChanged();
+            
+            // Download file
+            var fullFileName = $"{FileName}{extension}";
+            await JS.InvokeVoidAsync("Nalam360.ExportUtility.download", content, fullFileName, mimeType);
+            
+            _progress = 100;
+            _statusMessage = $"Successfully exported to {fullFileName}";
+            _statusType = "success";
+            
+            await OnAfterExport.InvokeAsync(eventArgs);
+            LogAudit("DataExported", $"Exported to {_selectedFormat}: {fullFileName}");
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Export failed: {ex.Message}";
+            _statusType = "error";
+            await OnExportError.InvokeAsync(ex.Message);
+            LogAudit("ExportError", $"Export failed: {ex.Message}");
+        }
+        finally
+        {
+            _isExporting = false;
+            StateHasChanged();
+            
+            // Clear status after 5 seconds
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                _statusMessage = null;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+    
+    /// <summary>
+    /// Clear data
+    /// </summary>
+    public async Task ClearDataAsync()
+    {
+        Data = null;
+        _hasData = false;
+        _statusMessage = "Data cleared";
+        _statusType = "info";
+        LogAudit("DataCleared", "Export data cleared");
+        StateHasChanged();
+        
+        await Task.CompletedTask;
+    }
+    
+    private string ConvertToCSV(object data)
+    {
+        // Simple implementation - uses reflection to get properties
+        if (data is System.Collections.IEnumerable enumerable)
+        {
+            var sb = new System.Text.StringBuilder();
+            var items = enumerable.Cast<object>().ToList();
+            
+            if (!items.Any()) return string.Empty;
+            
+            var properties = items.First().GetType().GetProperties();
+            
+            // Headers
+            if (IncludeHeaders)
+            {
+                sb.AppendLine(string.Join(CsvDelimiter, properties.Select(p => EscapeCSV(p.Name))));
+            }
+            
+            // Rows
+            foreach (var item in items)
+            {
+                var values = properties.Select(p => EscapeCSV(p.GetValue(item)?.ToString() ?? ""));
+                sb.AppendLine(string.Join(CsvDelimiter, values));
+            }
+            
+            return sb.ToString();
+        }
+        
+        return data.ToString() ?? string.Empty;
+    }
+    
+    private string ConvertToJSON(object data)
+    {
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = JsonIndented
+        };
+        return System.Text.Json.JsonSerializer.Serialize(data, options);
+    }
+    
+    private string ConvertToXML(object data)
+    {
+        // Basic XML conversion
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.AppendLine("<root>");
+        sb.AppendLine($"  <data>{System.Security.SecurityElement.Escape(data.ToString() ?? "")}</data>");
+        sb.AppendLine("</root>");
+        return sb.ToString();
+    }
+    
+    private string ConvertToHTML(object data)
+    {
+        if (data is System.Collections.IEnumerable enumerable)
+        {
+            var items = enumerable.Cast<object>().ToList();
+            if (!items.Any()) return "<p>No data</p>";
+            
+            var properties = items.First().GetType().GetProperties();
+            
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("<table border='1' cellpadding='5' cellspacing='0'>");
+            
+            // Headers
+            sb.AppendLine("<thead><tr>");
+            foreach (var prop in properties)
+            {
+                sb.AppendLine($"<th>{System.Web.HttpUtility.HtmlEncode(prop.Name)}</th>");
+            }
+            sb.AppendLine("</tr></thead>");
+            
+            // Rows
+            sb.AppendLine("<tbody>");
+            foreach (var item in items)
+            {
+                sb.AppendLine("<tr>");
+                foreach (var prop in properties)
+                {
+                    sb.AppendLine($"<td>{System.Web.HttpUtility.HtmlEncode(prop.GetValue(item)?.ToString() ?? "")}</td>");
+                }
+                sb.AppendLine("</tr>");
+            }
+            sb.AppendLine("</tbody>");
+            
+            sb.AppendLine("</table>");
+            return sb.ToString();
+        }
+        
+        return $"<p>{System.Web.HttpUtility.HtmlEncode(data.ToString())}</p>";
+    }
+    
+    private string ConvertToMarkdown(object data)
+    {
+        if (data is System.Collections.IEnumerable enumerable)
+        {
+            var items = enumerable.Cast<object>().ToList();
+            if (!items.Any()) return "No data";
+            
+            var properties = items.First().GetType().GetProperties();
+            
+            var sb = new System.Text.StringBuilder();
+            
+            // Headers
+            sb.AppendLine("| " + string.Join(" | ", properties.Select(p => p.Name)) + " |");
+            sb.AppendLine("| " + string.Join(" | ", properties.Select(_ => "---")) + " |");
+            
+            // Rows
+            foreach (var item in items)
+            {
+                var values = properties.Select(p => (p.GetValue(item)?.ToString() ?? "").Replace("|", "\\|"));
+                sb.AppendLine("| " + string.Join(" | ", values) + " |");
+            }
+            
+            return sb.ToString();
+        }
+        
+        return data.ToString() ?? string.Empty;
+    }
+    
+    private string EscapeCSV(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        const string quote = "\"";
+        if (value.Contains(CsvDelimiter) || value.Contains(quote) || value.Contains("\n"))
+        {
+            return $"{quote}{value.Replace(quote, quote + quote)}{quote}";
+        }
+        return value;
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-export-utility" };
+        
+        if (_isExporting)
+            classes.Add("n360-export-utility--exporting");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-export-utility--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+    
+    public enum ExportFormat
+    {
+        CSV,
+        JSON,
+        XML,
+        HTML,
+        Markdown
+    }
+    
+    public class ExportEventArgs
+    {
+        public ExportFormat Format { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public object? Data { get; set; }
+    }
+}

@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Observability</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Observability.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering observability services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.DependencyInjection.ServiceCollectionExtensions.AddPlatformObservability(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds OpenTelemetry observability to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.DependencyInjection.ServiceCollectionExtensions.AddPlatformObservability(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions})">
+            <summary>
+            Adds OpenTelemetry observability to the service collection with options.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Health.CustomHealthCheck">
+            <summary>
+            Custom health check base class.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.ITraceContext">
+            <summary>
+            Distributed tracing context interface.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.ITraceContext.TraceId">
+            <summary>
+            Gets the trace identifier.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.ITraceContext.SpanId">
+            <summary>
+            Gets the span identifier.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.ITraceContext.StartSpan(System.String)">
+            <summary>
+            Starts a new span.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.ITraceContext.AddTag(System.String,System.String)">
+            <summary>
+            Adds a tag to the current span.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.ITraceContext.RecordException(System.Exception)">
+            <summary>
+            Records an exception.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Telemetry.IMetricsService">
+            <summary>
+            Service for managing application metrics.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.IMetricsService.IncrementCounter(System.String,System.Int64,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <summary>
+            Records a counter increment.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.IMetricsService.RecordHistogram(System.String,System.Double,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <summary>
+            Records a histogram value.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.IMetricsService.RecordGauge(System.String,System.Int64,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <summary>
+            Records a gauge value.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.IMetricsService.Meter">
+            <summary>
+            Gets the meter instance.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Telemetry.ITracingService">
+            <summary>
+            Service for managing distributed tracing with OpenTelemetry.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.ITracingService.StartActivity(System.String,System.Diagnostics.ActivityKind)">
+            <summary>
+            Starts a new activity (span).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.ITracingService.CurrentActivity">
+            <summary>
+            Gets the current activity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.ITracingService.AddTag(System.String,System.Object)">
+            <summary>
+            Adds a tag to the current activity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.ITracingService.AddEvent(System.String,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <summary>
+            Adds an event to the current activity.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.ITracingService.SetStatus(System.Diagnostics.ActivityStatusCode,System.String)">
+            <summary>
+            Sets the status of the current activity.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Telemetry.MetricsService">
+            <summary>
+            Implementation of metrics service using System.Diagnostics.Metrics.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.MetricsService.Meter">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.MetricsService.IncrementCounter(System.String,System.Int64,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.MetricsService.RecordHistogram(System.String,System.Double,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.MetricsService.RecordGauge(System.String,System.Int64,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions">
+            <summary>
+            Configuration options for OpenTelemetry.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.ServiceName">
+            <summary>
+            Gets or sets the service name for telemetry.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.ServiceVersion">
+            <summary>
+            Gets or sets the service version.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.OtlpEndpoint">
+            <summary>
+            Gets or sets the OTLP exporter endpoint.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.ExportToConsole">
+            <summary>
+            Gets or sets whether to export to console.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.TracingEnabled">
+            <summary>
+            Gets or sets whether tracing is enabled.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.OpenTelemetryOptions.MetricsEnabled">
+            <summary>
+            Gets or sets whether metrics are enabled.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Observability.Telemetry.TracingService">
+            <summary>
+            Implementation of tracing service using System.Diagnostics.Activity.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Observability.Telemetry.TracingService.CurrentActivity">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.TracingService.StartActivity(System.String,System.Diagnostics.ActivityKind)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.TracingService.AddTag(System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.TracingService.AddEvent(System.String,System.Collections.Generic.KeyValuePair{System.String,System.Object}[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Observability.Telemetry.TracingService.SetStatus(System.Diagnostics.ActivityStatusCode,System.String)">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

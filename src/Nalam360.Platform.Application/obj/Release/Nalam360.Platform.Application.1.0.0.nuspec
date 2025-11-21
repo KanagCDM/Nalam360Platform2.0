@@ -6,7 +6,7 @@
     <authors>Nalam360</authors>
     <description>Application layer for Nalam360 Enterprise Platform with CQRS, Mediator pattern, and pipeline behaviors.</description>
     <tags>cqrs mediator clean-architecture ddd enterprise</tags>
-    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <repository type="git" commit="86ce8c8f59be0afa297dc40bea38695cce1f4d46" />
     <dependencies>
       <group targetFramework="net8.0">
         <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
@@ -20,7 +20,7 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.dll" target="lib\net8.0\Nalam360.Platform.Application.dll" />
-    <file src="d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.xml" target="lib\net8.0\Nalam360.Platform.Application.xml" />
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.dll" target="lib\net8.0\Nalam360.Platform.Application.dll" />
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.xml" target="lib\net8.0\Nalam360.Platform.Application.xml" />
   </files>
 </package>

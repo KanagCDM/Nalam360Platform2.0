@@ -1,0 +1,273 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-focus-trap @GetCssClass()"
+         style="@Style"
+         tabindex="0"
+         @ref="_containerRef"
+         @onfocus="HandleContainerFocus">
+        
+        <span class="n360-focus-trap__start"
+              tabindex="0"
+              @onfocus="HandleStartFocus"
+              @ref="_startSentinelRef"></span>
+        
+        @ChildContent
+        
+        <span class="n360-focus-trap__end"
+              tabindex="0"
+              @onfocus="HandleEndFocus"
+              @ref="_endSentinelRef"></span>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to trap focus within
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Enable focus trap
+    /// </summary>
+    [Parameter] public bool IsActive { get; set; } = true;
+    
+    /// <summary>
+    /// Auto-focus first element when activated
+    /// </summary>
+    [Parameter] public bool AutoFocus { get; set; } = true;
+    
+    /// <summary>
+    /// Return focus to previous element on deactivate
+    /// </summary>
+    [Parameter] public bool ReturnFocus { get; set; } = true;
+    
+    /// <summary>
+    /// Allow escape key to deactivate
+    /// </summary>
+    [Parameter] public bool EscapeDeactivates { get; set; } = true;
+    
+    /// <summary>
+    /// Click outside deactivates
+    /// </summary>
+    [Parameter] public bool ClickOutsideDeactivates { get; set; }
+    
+    /// <summary>
+    /// Selector for initial focus element
+    /// </summary>
+    [Parameter] public string? InitialFocusSelector { get; set; }
+    
+    /// <summary>
+    /// Selector for fallback focus element
+    /// </summary>
+    [Parameter] public string? FallbackFocusSelector { get; set; }
+    
+    /// <summary>
+    /// Allow Tab/Shift+Tab outside trap
+    /// </summary>
+    [Parameter] public bool AllowOutsideClick { get; set; }
+    
+    /// <summary>
+    /// Callback when focus trap activated
+    /// </summary>
+    [Parameter] public EventCallback OnActivate { get; set; }
+    
+    /// <summary>
+    /// Callback when focus trap deactivated
+    /// </summary>
+    [Parameter] public EventCallback OnDeactivate { get; set; }
+    
+    /// <summary>
+    /// Callback when escape pressed
+    /// </summary>
+    [Parameter] public EventCallback OnEscape { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ElementReference _containerRef;
+    private ElementReference _startSentinelRef;
+    private ElementReference _endSentinelRef;
+    private DotNetObjectReference<N360FocusTrap>? _objRef;
+    private bool _wasActive;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+        }
+        
+        // Handle activation state changes
+        if (IsActive && !_wasActive)
+        {
+            await ActivateAsync();
+            _wasActive = true;
+        }
+        else if (!IsActive && _wasActive)
+        {
+            await DeactivateAsync();
+            _wasActive = false;
+        }
+    }
+    
+    private async Task ActivateAsync()
+    {
+        if (!_hasPermission) return;
+        
+        var config = new
+        {
+            autoFocus = AutoFocus,
+            returnFocus = ReturnFocus,
+            escapeDeactivates = EscapeDeactivates,
+            clickOutsideDeactivates = ClickOutsideDeactivates,
+            allowOutsideClick = AllowOutsideClick,
+            initialFocusSelector = InitialFocusSelector,
+            fallbackFocusSelector = FallbackFocusSelector
+        };
+        
+        await JS.InvokeVoidAsync("Nalam360.FocusTrap.activate", _containerRef, _objRef, config);
+        await OnActivate.InvokeAsync();
+        LogAudit("FocusTrapActivated", "Focus trap activated");
+    }
+    
+    private async Task DeactivateAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.FocusTrap.deactivate", _containerRef);
+        await OnDeactivate.InvokeAsync();
+        LogAudit("FocusTrapDeactivated", "Focus trap deactivated");
+    }
+    
+    private async Task HandleStartFocus()
+    {
+        if (IsActive)
+        {
+            // Move focus to last focusable element
+            await JS.InvokeVoidAsync("Nalam360.FocusTrap.focusLast", _containerRef);
+        }
+    }
+    
+    private async Task HandleEndFocus()
+    {
+        if (IsActive)
+        {
+            // Move focus to first focusable element
+            await JS.InvokeVoidAsync("Nalam360.FocusTrap.focusFirst", _containerRef);
+        }
+    }
+    
+    private void HandleContainerFocus()
+    {
+        // Container received focus, ensure proper element is focused
+    }
+    
+    [JSInvokable]
+    public async Task HandleEscapeKey()
+    {
+        if (EscapeDeactivates)
+        {
+            IsActive = false;
+            await OnEscape.InvokeAsync();
+            LogAudit("FocusTrapEscaped", "Focus trap escaped with Escape key");
+            StateHasChanged();
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleClickOutside()
+    {
+        if (ClickOutsideDeactivates)
+        {
+            IsActive = false;
+            LogAudit("FocusTrapClickedOutside", "Focus trap deactivated by outside click");
+            StateHasChanged();
+        }
+    }
+    
+    /// <summary>
+    /// Activate focus trap
+    /// </summary>
+    public async Task ActivateManuallyAsync()
+    {
+        IsActive = true;
+        await ActivateAsync();
+    }
+    
+    /// <summary>
+    /// Deactivate focus trap
+    /// </summary>
+    public async Task DeactivateManuallyAsync()
+    {
+        IsActive = false;
+        await DeactivateAsync();
+    }
+    
+    /// <summary>
+    /// Get focusable elements within trap
+    /// </summary>
+    public async Task<int> GetFocusableCountAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<int>("Nalam360.FocusTrap.getFocusableCount", _containerRef);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-focus-trap" };
+        
+        if (IsActive)
+            classes.Add("n360-focus-trap--active");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-focus-trap--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _objRef?.Dispose();
+    }
+}

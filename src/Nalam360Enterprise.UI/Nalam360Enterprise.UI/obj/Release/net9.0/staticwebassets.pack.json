@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\Release\\net9.0\\scopedcss\\projectbundle\\Nalam360Enterprise.UI.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Nalam360Enterprise.UI.x188tcvty2.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
+    },
+    {
+      "Id": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\js\\nalam360-interop.js",
+      "PackagePath": "staticwebassets\\js\\nalam360-interop.js"
+    },
+    {
+      "Id": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\wwwroot\\styles\\design-tokens.css",
+      "PackagePath": "staticwebassets\\styles\\design-tokens.css"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.Nalam360Enterprise.UI.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.build.Nalam360Enterprise.UI.props",
+      "PackagePath": "build\\Nalam360Enterprise.UI.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.buildMultiTargeting.Nalam360Enterprise.UI.props",
+      "PackagePath": "buildMultiTargeting\\Nalam360Enterprise.UI.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.buildTransitive.Nalam360Enterprise.UI.props",
+      "PackagePath": "buildTransitive\\Nalam360Enterprise.UI.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

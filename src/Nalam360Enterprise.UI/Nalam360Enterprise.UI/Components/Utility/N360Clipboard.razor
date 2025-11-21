@@ -1,0 +1,314 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    @if (ShowButton)
+    {
+        <button class="@GetButtonClass()" 
+                @onclick="CopyAsync"
+                disabled="@IsDisabled"
+                style="@Style"
+                @attributes="@GetHtmlAttributes()">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <i class="@Icon"></i>
+            }
+            @if (!string.IsNullOrEmpty(ButtonText))
+            {
+                <span>@ButtonText</span>
+            }
+        </button>
+    }
+    
+    @if (ShowFeedback && _showSuccessMessage)
+    {
+        <div class="n360-clipboard__feedback n360-clipboard__feedback--@FeedbackType.ToString().ToLower()">
+            <i class="@GetFeedbackIcon()"></i>
+            <span>@FeedbackMessage</span>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Text to copy to clipboard
+    /// </summary>
+    [Parameter] public string? Text { get; set; }
+    
+    /// <summary>
+    /// Function to get text dynamically
+    /// </summary>
+    [Parameter] public Func<string>? GetText { get; set; }
+    
+    /// <summary>
+    /// Show copy button
+    /// </summary>
+    [Parameter] public bool ShowButton { get; set; } = true;
+    
+    /// <summary>
+    /// Button text
+    /// </summary>
+    [Parameter] public string ButtonText { get; set; } = "Copy";
+    
+    /// <summary>
+    /// Button icon class
+    /// </summary>
+    [Parameter] public string Icon { get; set; } = "fas fa-copy";
+    
+    /// <summary>
+    /// Button variant
+    /// </summary>
+    [Parameter] public ClipboardButtonVariant Variant { get; set; } = ClipboardButtonVariant.Default;
+    
+    /// <summary>
+    /// Button size
+    /// </summary>
+    [Parameter] public ClipboardButtonSize Size { get; set; } = ClipboardButtonSize.Medium;
+    
+    /// <summary>
+    /// Show success feedback
+    /// </summary>
+    [Parameter] public bool ShowFeedback { get; set; } = true;
+    
+    /// <summary>
+    /// Success feedback message
+    /// </summary>
+    [Parameter] public string FeedbackMessage { get; set; } = "Copied!";
+    
+    /// <summary>
+    /// Feedback type
+    /// </summary>
+    [Parameter] public ClipboardFeedbackType FeedbackType { get; set; } = ClipboardFeedbackType.Success;
+    
+    /// <summary>
+    /// Feedback display duration (milliseconds)
+    /// </summary>
+    [Parameter] public int FeedbackDuration { get; set; } = 2000;
+    
+    /// <summary>
+    /// Disabled state
+    /// </summary>
+    [Parameter] public bool IsDisabled { get; set; }
+    
+    /// <summary>
+    /// Format text before copying (e.g., trim, uppercase)
+    /// </summary>
+    [Parameter] public Func<string, string>? FormatBeforeCopy { get; set; }
+    
+    /// <summary>
+    /// Callback when copy succeeds
+    /// </summary>
+    [Parameter] public EventCallback<string> OnCopied { get; set; }
+    
+    /// <summary>
+    /// Callback when copy fails
+    /// </summary>
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    
+    /// <summary>
+    /// Fallback to legacy method if Clipboard API not available
+    /// </summary>
+    [Parameter] public bool UseFallback { get; set; } = true;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _showSuccessMessage;
+    private Timer? _feedbackTimer;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    /// <summary>
+    /// Copy text to clipboard programmatically
+    /// </summary>
+    public async Task CopyAsync()
+    {
+        if (IsDisabled || (!_hasPermission && RequiredPermission != null))
+            return;
+        
+        try
+        {
+            var textToCopy = GetTextToCopy();
+            
+            if (string.IsNullOrEmpty(textToCopy))
+            {
+                await OnError.InvokeAsync("No text to copy");
+                return;
+            }
+            
+            // Format text if formatter provided
+            if (FormatBeforeCopy != null)
+            {
+                textToCopy = FormatBeforeCopy(textToCopy);
+            }
+            
+            // Try modern Clipboard API first
+            var success = await JS.InvokeAsync<bool>("Nalam360.Clipboard.copy", textToCopy, UseFallback);
+            
+            if (success)
+            {
+                await OnCopied.InvokeAsync(textToCopy);
+                ShowSuccessFeedback();
+                LogAudit("CopyToClipboard", $"Copied {textToCopy.Length} characters");
+            }
+            else
+            {
+                await OnError.InvokeAsync("Failed to copy to clipboard");
+            }
+        }
+        catch (Exception ex)
+        {
+            await OnError.InvokeAsync(ex.Message);
+        }
+    }
+    
+    /// <summary>
+    /// Read text from clipboard
+    /// </summary>
+    public async Task<string?> ReadAsync()
+    {
+        if (RequiredPermission != null && !_hasPermission)
+            return null;
+        
+        try
+        {
+            var text = await JS.InvokeAsync<string>("Nalam360.Clipboard.read");
+            LogAudit("ReadFromClipboard", "Read from clipboard");
+            return text;
+        }
+        catch (Exception ex)
+        {
+            await OnError.InvokeAsync(ex.Message);
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// Check if Clipboard API is supported
+    /// </summary>
+    public async Task<bool> IsSupportedAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<bool>("Nalam360.Clipboard.isSupported");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    private string GetTextToCopy()
+    {
+        if (GetText != null)
+            return GetText();
+        
+        return Text ?? string.Empty;
+    }
+    
+    private void ShowSuccessFeedback()
+    {
+        if (!ShowFeedback) return;
+        
+        _showSuccessMessage = true;
+        StateHasChanged();
+        
+        // Hide feedback after duration
+        _feedbackTimer?.Dispose();
+        _feedbackTimer = new Timer(_ =>
+        {
+            _showSuccessMessage = false;
+            InvokeAsync(StateHasChanged);
+        }, null, FeedbackDuration, Timeout.Infinite);
+    }
+    
+    private string GetButtonClass()
+    {
+        var classes = new List<string> { "n360-clipboard__button" };
+        
+        classes.Add($"n360-clipboard__button--{Variant.ToString().ToLower()}");
+        classes.Add($"n360-clipboard__button--{Size.ToString().ToLower()}");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsDisabled)
+            classes.Add("n360-clipboard__button--disabled");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetFeedbackIcon()
+    {
+        return FeedbackType switch
+        {
+            ClipboardFeedbackType.Success => "fas fa-check-circle",
+            ClipboardFeedbackType.Error => "fas fa-exclamation-circle",
+            ClipboardFeedbackType.Warning => "fas fa-exclamation-triangle",
+            ClipboardFeedbackType.Info => "fas fa-info-circle",
+            _ => "fas fa-check-circle"
+        };
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _feedbackTimer?.Dispose();
+    }
+}
+
+@code {
+    public enum ClipboardButtonVariant
+    {
+        Default,
+        Primary,
+        Secondary,
+        Success,
+        Danger,
+        Ghost,
+        Link
+    }
+    
+    public enum ClipboardButtonSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+    
+    public enum ClipboardFeedbackType
+    {
+        Success,
+        Error,
+        Warning,
+        Info
+    }
+}

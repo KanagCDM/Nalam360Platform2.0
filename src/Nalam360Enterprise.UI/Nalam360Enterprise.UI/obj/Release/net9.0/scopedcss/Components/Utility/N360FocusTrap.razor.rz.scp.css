@@ -1,0 +1,34 @@
+.n360-focus-trap[b-snbw0rxlr8] {
+    display: block;
+    position: relative;
+}
+
+.n360-focus-trap:focus[b-snbw0rxlr8] {
+    outline: none;
+}
+
+.n360-focus-trap__start[b-snbw0rxlr8],
+.n360-focus-trap__end[b-snbw0rxlr8] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.n360-focus-trap__start:focus[b-snbw0rxlr8],
+.n360-focus-trap__end:focus[b-snbw0rxlr8] {
+    outline: none;
+}
+
+.n360-focus-trap--active[b-snbw0rxlr8] {
+    /* Optional visual indicator when focus trap is active */
+}
+
+.n360-focus-trap--rtl[b-snbw0rxlr8] {
+    direction: rtl;
+}

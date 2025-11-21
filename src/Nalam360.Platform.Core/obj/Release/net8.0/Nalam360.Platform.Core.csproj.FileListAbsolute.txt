@@ -28,3 +28,18 @@ D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.C
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.xml
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.pdb
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Core\obj\Release\net8.0\ref\Nalam360.Platform.Core.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\bin\Release\net8.0\Nalam360.Platform.Core.deps.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\bin\Release\net8.0\Nalam360.Platform.Core.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\bin\Release\net8.0\Nalam360.Platform.Core.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\bin\Release\net8.0\Nalam360.Platform.Core.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.sourcelink.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\refint\Nalam360.Platform.Core.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\Nalam360.Platform.Core.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Core\obj\Release\net8.0\ref\Nalam360.Platform.Core.dll

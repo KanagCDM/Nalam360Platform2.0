@@ -1,0 +1,105 @@
+@using Microsoft.JSInterop
+@using Nalam360Enterprise.UI.Core
+@inherits N360ComponentBase
+@implements IAsyncDisposable
+
+<div @ref="_containerRef" class="n360-lazy-load @CssClass" style="@Style" @attributes="AdditionalAttributes">
+    @if (_isVisible || _hasLoaded)
+    {
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+    }
+    else if (PlaceholderContent != null)
+    {
+        <div class="n360-lazy-load__placeholder">
+            @PlaceholderContent
+        </div>
+    }
+    else if (ShowDefaultPlaceholder)
+    {
+        <div class="n360-lazy-load__placeholder n360-lazy-load__placeholder--default">
+            <div class="n360-lazy-load__skeleton"></div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? PlaceholderContent { get; set; }
+    
+    [Parameter] public bool ShowDefaultPlaceholder { get; set; } = true;
+    [Parameter] public string RootMargin { get; set; } = "50px";
+    [Parameter] public double Threshold { get; set; } = 0.1;
+    [Parameter] public bool LoadOnce { get; set; } = true;
+    
+    [Parameter] public EventCallback OnVisible { get; set; }
+    [Parameter] public EventCallback OnLoaded { get; set; }
+    
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    
+    private ElementReference _containerRef;
+    private IJSObjectReference? _lazyLoadModule;
+    private DotNetObjectReference<N360LazyLoad>? _dotNetRef;
+    private bool _isVisible;
+    private bool _hasLoaded;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _lazyLoadModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/lazyLoad.js");
+                
+                _dotNetRef = DotNetObjectReference.Create(this);
+                
+                await _lazyLoadModule.InvokeVoidAsync("observe",
+                    _containerRef,
+                    _dotNetRef,
+                    RootMargin,
+                    Threshold);
+            }
+            catch (Exception)
+            {
+                // Fallback: load immediately if IntersectionObserver not available
+                await HandleVisibilityChangedAsync(true);
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleVisibilityChangedAsync(bool isVisible)
+    {
+        if (isVisible && (!_hasLoaded || !LoadOnce))
+        {
+            _isVisible = true;
+            _hasLoaded = true;
+            
+            await OnVisible.InvokeAsync();
+            await OnLoaded.InvokeAsync();
+            
+            StateHasChanged();
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_lazyLoadModule != null)
+        {
+            try
+            {
+                await _lazyLoadModule.InvokeVoidAsync("unobserve", _containerRef);
+                await _lazyLoadModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+        
+        _dotNetRef?.Dispose();
+    }
+}

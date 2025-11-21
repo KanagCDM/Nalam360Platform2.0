@@ -1,0 +1,127 @@
+.n360-screenshot-blocker {
+    position: relative;
+    display: block;
+}
+
+.n360-screenshot-blocker--active {
+    /* Active state indicator */
+}
+
+.n360-screenshot-blocker--blurred {
+    filter: blur(var(--blur-amount, 10px));
+    transition: filter 0.3s ease;
+}
+
+.n360-screenshot-blocker--no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.n360-screenshot-blocker__watermark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 700;
+    color: rgba(255, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: 9998;
+    transform: rotate(-45deg);
+    text-transform: uppercase;
+    letter-spacing: 8px;
+}
+
+.n360-screenshot-blocker__warning {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.n360-screenshot-blocker__warning-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--n360-danger, #ff4d4f);
+    color: white;
+    border-radius: var(--n360-radius-md, 8px);
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.n360-screenshot-blocker__warning-content i {
+    font-size: 18px;
+}
+
+/* Prevent screenshot context menu */
+.n360-screenshot-blocker--active img,
+.n360-screenshot-blocker--active video,
+.n360-screenshot-blocker--active canvas {
+    pointer-events: none;
+}
+
+/* Print protection */
+@media print {
+    .n360-screenshot-blocker--active {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    .n360-screenshot-blocker--active::before {
+        content: "This content is protected and cannot be printed.";
+        visibility: visible;
+        display: block;
+        padding: 2rem;
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+    }
+}
+
+/* RTL Support */
+.n360-screenshot-blocker--rtl {
+    direction: rtl;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .n360-screenshot-blocker__watermark {
+        font-size: 32px;
+        letter-spacing: 4px;
+    }
+    
+    .n360-screenshot-blocker__warning {
+        left: 10px;
+        right: 10px;
+        transform: none;
+    }
+    
+    .n360-screenshot-blocker__warning-content {
+        padding: 0.75rem 1rem;
+        font-size: 13px;
+    }
+}

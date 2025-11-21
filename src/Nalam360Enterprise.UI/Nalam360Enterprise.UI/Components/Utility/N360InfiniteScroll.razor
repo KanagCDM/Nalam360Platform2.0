@@ -1,0 +1,203 @@
+@using Microsoft.JSInterop
+@using Nalam360Enterprise.UI.Core
+@inherits N360ComponentBase
+@implements IAsyncDisposable
+
+<div @ref="_containerRef" 
+     class="n360-infinite-scroll @CssClass" 
+     style="@Style" 
+     @attributes="AdditionalAttributes">
+    
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    
+    @if (_isLoading && LoadingContent != null)
+    {
+        <div class="n360-infinite-scroll__loading">
+            @LoadingContent
+        </div>
+    }
+    else if (_isLoading && ShowDefaultLoader)
+    {
+        <div class="n360-infinite-scroll__loading n360-infinite-scroll__loading--default">
+            <div class="n360-infinite-scroll__spinner"></div>
+            <p>@LoadingText</p>
+        </div>
+    }
+    
+    @if (_hasError && ErrorContent != null)
+    {
+        <div class="n360-infinite-scroll__error">
+            @ErrorContent
+        </div>
+    }
+    else if (_hasError && ShowDefaultError)
+    {
+        <div class="n360-infinite-scroll__error n360-infinite-scroll__error--default">
+            <p>⚠️ @ErrorText</p>
+            @if (AllowRetry)
+            {
+                <button class="n360-infinite-scroll__retry-btn" @onclick="RetryAsync">
+                    Retry
+                </button>
+            }
+        </div>
+    }
+    
+    @if (_hasMore && !_isLoading && !_hasError)
+    {
+        <div @ref="_sentinelRef" class="n360-infinite-scroll__sentinel"></div>
+    }
+    
+    @if (!_hasMore && EndContent != null)
+    {
+        <div class="n360-infinite-scroll__end">
+            @EndContent
+        </div>
+    }
+    else if (!_hasMore && ShowEndMessage)
+    {
+        <div class="n360-infinite-scroll__end n360-infinite-scroll__end--default">
+            <p>@EndMessage</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? LoadingContent { get; set; }
+    [Parameter] public RenderFragment? ErrorContent { get; set; }
+    [Parameter] public RenderFragment? EndContent { get; set; }
+    
+    [Parameter] public EventCallback OnLoadMore { get; set; }
+    [Parameter] public EventCallback<Exception> OnError { get; set; }
+    
+    [Parameter] public bool HasMore { get; set; } = true;
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool ShowDefaultLoader { get; set; } = true;
+    [Parameter] public bool ShowDefaultError { get; set; } = true;
+    [Parameter] public bool ShowEndMessage { get; set; } = true;
+    [Parameter] public bool AllowRetry { get; set; } = true;
+    
+    [Parameter] public string LoadingText { get; set; } = "Loading more...";
+    [Parameter] public string ErrorText { get; set; } = "Failed to load more items";
+    [Parameter] public string EndMessage { get; set; } = "No more items to load";
+    
+    [Parameter] public string RootMargin { get; set; } = "100px";
+    [Parameter] public double Threshold { get; set; } = 0.1;
+    [Parameter] public int ThrottleMs { get; set; } = 500;
+    
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    
+    private ElementReference _containerRef;
+    private ElementReference _sentinelRef;
+    private IJSObjectReference? _infiniteScrollModule;
+    private DotNetObjectReference<N360InfiniteScroll>? _dotNetRef;
+    
+    private bool _isLoading;
+    private bool _hasMore = true;
+    private bool _hasError;
+    private DateTime _lastLoadTime = DateTime.MinValue;
+    
+    protected override void OnParametersSet()
+    {
+        _hasMore = HasMore;
+        _isLoading = IsLoading;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _infiniteScrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/infiniteScroll.js");
+                
+                _dotNetRef = DotNetObjectReference.Create(this);
+                
+                await _infiniteScrollModule.InvokeVoidAsync("observe",
+                    _sentinelRef,
+                    _dotNetRef,
+                    RootMargin,
+                    Threshold);
+            }
+            catch (Exception)
+            {
+                // Intersection Observer not available - component still works via manual scrolling
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleIntersectionAsync()
+    {
+        // Throttle requests
+        if ((DateTime.Now - _lastLoadTime).TotalMilliseconds < ThrottleMs)
+            return;
+        
+        if (!_hasMore || _isLoading || _hasError)
+            return;
+        
+        await LoadMoreAsync();
+    }
+    
+    private async Task LoadMoreAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _lastLoadTime = DateTime.Now;
+        StateHasChanged();
+        
+        try
+        {
+            await OnLoadMore.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _hasError = true;
+            await OnError.InvokeAsync(ex);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task RetryAsync()
+    {
+        _hasError = false;
+        await LoadMoreAsync();
+    }
+    
+    public async Task ResetAsync()
+    {
+        _hasMore = true;
+        _isLoading = false;
+        _hasError = false;
+        _lastLoadTime = DateTime.MinValue;
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_infiniteScrollModule != null)
+        {
+            try
+            {
+                await _infiniteScrollModule.InvokeVoidAsync("unobserve", _sentinelRef);
+                await _infiniteScrollModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+        
+        _dotNetRef?.Dispose();
+    }
+}

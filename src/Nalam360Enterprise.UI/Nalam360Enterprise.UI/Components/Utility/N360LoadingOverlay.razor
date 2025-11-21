@@ -1,0 +1,283 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@inherits N360ComponentBase
+
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-loading-overlay @GetCssClass() @(IsVisible ? "n360-loading-overlay--visible" : "")"
+         style="@GetStyle()">
+        <div class="n360-loading-overlay__backdrop"></div>
+        <div class="n360-loading-overlay__content">
+            <div class="n360-loading-overlay__spinner n360-loading-overlay__spinner--@SpinnerType.ToString().ToLower()">
+                @if (SpinnerType == LoadingSpinnerType.Spinner)
+                {
+                    <div class="n360-spinner">
+                        <div class="n360-spinner__circle"></div>
+                    </div>
+                }
+                else if (SpinnerType == LoadingSpinnerType.Dots)
+                {
+                    <div class="n360-dots">
+                        <div class="n360-dots__dot"></div>
+                        <div class="n360-dots__dot"></div>
+                        <div class="n360-dots__dot"></div>
+                    </div>
+                }
+                else if (SpinnerType == LoadingSpinnerType.Bars)
+                {
+                    <div class="n360-bars">
+                        <div class="n360-bars__bar"></div>
+                        <div class="n360-bars__bar"></div>
+                        <div class="n360-bars__bar"></div>
+                        <div class="n360-bars__bar"></div>
+                        <div class="n360-bars__bar"></div>
+                    </div>
+                }
+                else if (SpinnerType == LoadingSpinnerType.Ring)
+                {
+                    <div class="n360-ring">
+                        <div class="n360-ring__circle"></div>
+                        <div class="n360-ring__circle"></div>
+                        <div class="n360-ring__circle"></div>
+                        <div class="n360-ring__circle"></div>
+                    </div>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Text))
+            {
+                <div class="n360-loading-overlay__text">@Text</div>
+            }
+            
+            @if (ShowProgress && Progress.HasValue)
+            {
+                <div class="n360-loading-overlay__progress">
+                    <div class="n360-loading-overlay__progress-bar" style="width: @(Progress.Value)%"></div>
+                </div>
+                <div class="n360-loading-overlay__progress-text">@Progress.Value%</div>
+            }
+            
+            @if (ShowCancel && OnCancel.HasDelegate)
+            {
+                <button class="n360-loading-overlay__cancel-btn" @onclick="HandleCancel">
+                    @CancelText
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Show/hide loading overlay
+    /// </summary>
+    [Parameter] public bool IsVisible { get; set; }
+    
+    /// <summary>
+    /// Loading spinner type
+    /// </summary>
+    [Parameter] public LoadingSpinnerType SpinnerType { get; set; } = LoadingSpinnerType.Spinner;
+    
+    /// <summary>
+    /// Loading text message
+    /// </summary>
+    [Parameter] public string? Text { get; set; } = "Loading...";
+    
+    /// <summary>
+    /// Spinner size (small, medium, large)
+    /// </summary>
+    [Parameter] public LoadingSize Size { get; set; } = LoadingSize.Medium;
+    
+    /// <summary>
+    /// Backdrop opacity (0-1)
+    /// </summary>
+    [Parameter] public double BackdropOpacity { get; set; } = 0.7;
+    
+    /// <summary>
+    /// Backdrop blur in pixels
+    /// </summary>
+    [Parameter] public int BackdropBlur { get; set; } = 4;
+    
+    /// <summary>
+    /// Z-index for overlay
+    /// </summary>
+    [Parameter] public int ZIndex { get; set; } = 9999;
+    
+    /// <summary>
+    /// Show progress bar
+    /// </summary>
+    [Parameter] public bool ShowProgress { get; set; }
+    
+    /// <summary>
+    /// Progress percentage (0-100)
+    /// </summary>
+    [Parameter] public int? Progress { get; set; }
+    
+    /// <summary>
+    /// Show cancel button
+    /// </summary>
+    [Parameter] public bool ShowCancel { get; set; }
+    
+    /// <summary>
+    /// Cancel button text
+    /// </summary>
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    
+    /// <summary>
+    /// Callback when cancel clicked
+    /// </summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+    
+    /// <summary>
+    /// Full-screen or container-scoped
+    /// </summary>
+    [Parameter] public bool IsFullScreen { get; set; } = true;
+    
+    /// <summary>
+    /// Spinner color
+    /// </summary>
+    [Parameter] public string? SpinnerColor { get; set; }
+    
+    /// <summary>
+    /// Text color
+    /// </summary>
+    [Parameter] public string? TextColor { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && EnableAudit)
+        {
+            LogAudit("LoadingShown", $"Loading overlay shown: {Text}");
+        }
+    }
+    
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+        LogAudit("LoadingCancelled", "Loading cancelled by user");
+    }
+    
+    /// <summary>
+    /// Show loading overlay
+    /// </summary>
+    public void Show()
+    {
+        IsVisible = true;
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Hide loading overlay
+    /// </summary>
+    public void Hide()
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Update progress
+    /// </summary>
+    public void UpdateProgress(int progress)
+    {
+        Progress = Math.Clamp(progress, 0, 100);
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Update text
+    /// </summary>
+    public void UpdateText(string text)
+    {
+        Text = text;
+        StateHasChanged();
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string>();
+        
+        if (IsFullScreen)
+            classes.Add("n360-loading-overlay--fullscreen");
+        else
+            classes.Add("n360-loading-overlay--container");
+        
+        classes.Add($"n360-loading-overlay--{Size.ToString().ToLower()}");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-loading-overlay--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetStyle()
+    {
+        var styles = new List<string>();
+        
+        if (ZIndex != 9999)
+            styles.Add($"z-index: {ZIndex}");
+        
+        if (!string.IsNullOrEmpty(SpinnerColor))
+            styles.Add($"--spinner-color: {SpinnerColor}");
+        
+        if (!string.IsNullOrEmpty(TextColor))
+            styles.Add($"--text-color: {TextColor}");
+        
+        styles.Add($"--backdrop-opacity: {BackdropOpacity}");
+        styles.Add($"--backdrop-blur: {BackdropBlur}px");
+        
+        if (!string.IsNullOrEmpty(Style))
+            styles.Add(Style);
+        
+        return string.Join("; ", styles);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public enum LoadingSpinnerType
+    {
+        Spinner,
+        Dots,
+        Bars,
+        Ring
+    }
+    
+    public enum LoadingSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+}

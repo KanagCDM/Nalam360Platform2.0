@@ -104,11 +104,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Serialization\\Nalam360.Platform.Serialization.csproj",
+      "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Serialization\\Nalam360.Platform.Serialization.csproj",
       "projectName": "Nalam360.Platform.Serialization",
-      "projectPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Serialization\\Nalam360.Platform.Serialization.csproj",
+      "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Serialization\\Nalam360.Platform.Serialization.csproj",
       "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-      "outputPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Serialization\\obj\\",
+      "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Serialization\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",

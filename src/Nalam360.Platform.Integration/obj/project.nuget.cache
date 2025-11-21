@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8CMk6qo+njY=",
+  "dgSpecHash": "mbFKQh+Y/0g=",
   "success": true,
-  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\awssdk.core\\3.7.400.16\\awssdk.core.3.7.400.16.nupkg.sha512",
     "C:\\Users\\mmc2878\\.nuget\\packages\\awssdk.s3\\3.7.402.7\\awssdk.s3.3.7.402.7.nupkg.sha512",

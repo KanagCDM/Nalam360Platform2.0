@@ -1,0 +1,491 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Web
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-dragdrop @GetCssClass() @(_isDragOver ? "n360-dragdrop--drag-over" : "") @(IsDisabled ? "n360-dragdrop--disabled" : "")"
+         style="@Style"
+         @ref="_dropZoneRef"
+         @ondragenter="HandleDragEnter"
+         @ondragover="HandleDragOver"
+         @ondragleave="HandleDragLeave"
+         @ondrop="HandleDrop">
+        
+        @if (Mode == DragDropMode.FileUpload)
+        {
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                <div class="n360-dragdrop__content">
+                    <div class="n360-dragdrop__icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="n360-dragdrop__text">
+                        <strong>@UploadText</strong>
+                        <span>@UploadSubtext</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(AcceptedTypes))
+                    {
+                        <div class="n360-dragdrop__hint">
+                            Accepted: @AcceptedTypes
+                        </div>
+                    }
+                </div>
+            }
+            
+            @if (ShowFileList && _uploadedFiles.Any())
+            {
+                <div class="n360-dragdrop__file-list">
+                    @foreach (var file in _uploadedFiles)
+                    {
+                        <div class="n360-dragdrop__file-item">
+                            <i class="fas fa-file"></i>
+                            <span class="n360-dragdrop__file-name">@file.Name</span>
+                            <span class="n360-dragdrop__file-size">@FormatFileSize(file.Size)</span>
+                            @if (ShowRemoveButton)
+                            {
+                                <button class="n360-dragdrop__remove-btn" @onclick="() => RemoveFile(file)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else if (Mode == DragDropMode.Reorder)
+        {
+            <div class="n360-dragdrop__reorder-list">
+                @if (Items != null)
+                {
+                    @foreach (var (item, index) in Items.Select((item, i) => (item, i)))
+                    {
+                        <div class="n360-dragdrop__reorder-item @(_draggedIndex == index ? "n360-dragdrop__reorder-item--dragging" : "") @(_dropTargetIndex == index ? "n360-dragdrop__reorder-item--drop-target" : "")"
+                             draggable="@(!IsDisabled)"
+                             @ondragstart="() => HandleReorderDragStart(index)"
+                             @ondragend="HandleReorderDragEnd"
+                             @ondragenter="() => HandleReorderDragEnter(index)"
+                             data-index="@index">
+                            
+                            @if (ShowDragHandle)
+                            {
+                                <div class="n360-dragdrop__drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </div>
+                            }
+                            
+                            @if (ItemTemplate != null)
+                            {
+                                @ItemTemplate(item)
+                            }
+                            else
+                            {
+                                <div class="n360-dragdrop__item-content">@item?.ToString()</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        
+        <input type="file" 
+               class="n360-dragdrop__input" 
+               @ref="_fileInputRef"
+               accept="@AcceptedTypes"
+               multiple="@AllowMultiple"
+               disabled="@IsDisabled"
+               @onchange="HandleFileInputChange" />
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Drag-drop mode: FileUpload or Reorder
+    /// </summary>
+    [Parameter] public DragDropMode Mode { get; set; } = DragDropMode.FileUpload;
+    
+    /// <summary>
+    /// Custom content for file upload zone
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Accepted file types (e.g., ".pdf,.doc,.docx")
+    /// </summary>
+    [Parameter] public string? AcceptedTypes { get; set; }
+    
+    /// <summary>
+    /// Allow multiple file uploads
+    /// </summary>
+    [Parameter] public bool AllowMultiple { get; set; } = true;
+    
+    /// <summary>
+    /// Maximum number of files
+    /// </summary>
+    [Parameter] public int? MaxFiles { get; set; }
+    
+    /// <summary>
+    /// Maximum file size in bytes
+    /// </summary>
+    [Parameter] public long? MaxFileSize { get; set; }
+    
+    /// <summary>
+    /// Upload zone text
+    /// </summary>
+    [Parameter] public string UploadText { get; set; } = "Drop files here or click to browse";
+    
+    /// <summary>
+    /// Upload zone subtext
+    /// </summary>
+    [Parameter] public string UploadSubtext { get; set; } = "Drag and drop files or click to select";
+    
+    /// <summary>
+    /// Show uploaded file list
+    /// </summary>
+    [Parameter] public bool ShowFileList { get; set; } = true;
+    
+    /// <summary>
+    /// Show remove button for files
+    /// </summary>
+    [Parameter] public bool ShowRemoveButton { get; set; } = true;
+    
+    /// <summary>
+    /// Items for reorder mode
+    /// </summary>
+    [Parameter] public IEnumerable<object>? Items { get; set; }
+    
+    /// <summary>
+    /// Template for reorder items
+    /// </summary>
+    [Parameter] public RenderFragment<object>? ItemTemplate { get; set; }
+    
+    /// <summary>
+    /// Show drag handle for reorder items
+    /// </summary>
+    [Parameter] public bool ShowDragHandle { get; set; } = true;
+    
+    /// <summary>
+    /// Disable drag-drop functionality
+    /// </summary>
+    [Parameter] public bool IsDisabled { get; set; }
+    
+    /// <summary>
+    /// Callback when files dropped/selected
+    /// </summary>
+    [Parameter] public EventCallback<DragDropFileEventArgs> OnFilesDropped { get; set; }
+    
+    /// <summary>
+    /// Callback when items reordered
+    /// </summary>
+    [Parameter] public EventCallback<DragDropReorderEventArgs> OnItemsReordered { get; set; }
+    
+    /// <summary>
+    /// Callback for file validation
+    /// </summary>
+    [Parameter] public Func<FileInfo, Task<(bool IsValid, string? ErrorMessage)>>? ValidateFile { get; set; }
+    
+    /// <summary>
+    /// Callback when validation fails
+    /// </summary>
+    [Parameter] public EventCallback<string> OnValidationError { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _isDragOver;
+    private int? _draggedIndex;
+    private int? _dropTargetIndex;
+    private ElementReference _dropZoneRef;
+    private ElementReference _fileInputRef;
+    private List<FileInfo> _uploadedFiles = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    private void HandleDragEnter(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (IsDisabled) return;
+        _isDragOver = true;
+    }
+    
+    private void HandleDragOver(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (IsDisabled) return;
+        // Prevent default to allow drop
+    }
+    
+    private void HandleDragLeave(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        _isDragOver = false;
+    }
+    
+    private async Task HandleDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (IsDisabled) return;
+        
+        _isDragOver = false;
+        
+        if (Mode == DragDropMode.FileUpload)
+        {
+            var files = await GetDroppedFilesAsync();
+            await ProcessFilesAsync(files);
+        }
+    }
+    
+    private async Task HandleFileInputChange(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+        var files = await GetSelectedFilesAsync();
+        await ProcessFilesAsync(files);
+    }
+    
+    private async Task<List<FileInfo>> GetDroppedFilesAsync()
+    {
+        try
+        {
+            var filesJson = await JS.InvokeAsync<string>("Nalam360.DragDrop.getDroppedFiles", _dropZoneRef);
+            // Parse files from JavaScript
+            return new List<FileInfo>(); // Placeholder
+        }
+        catch
+        {
+            return new List<FileInfo>();
+        }
+    }
+    
+    private async Task<List<FileInfo>> GetSelectedFilesAsync()
+    {
+        try
+        {
+            var filesJson = await JS.InvokeAsync<string>("Nalam360.DragDrop.getSelectedFiles", _fileInputRef);
+            // Parse files from JavaScript
+            return new List<FileInfo>(); // Placeholder
+        }
+        catch
+        {
+            return new List<FileInfo>();
+        }
+    }
+    
+    private async Task ProcessFilesAsync(List<FileInfo> files)
+    {
+        var validFiles = new List<FileInfo>();
+        
+        foreach (var file in files)
+        {
+            // Check max files
+            if (MaxFiles.HasValue && _uploadedFiles.Count + validFiles.Count >= MaxFiles.Value)
+            {
+                await OnValidationError.InvokeAsync($"Maximum {MaxFiles.Value} files allowed");
+                break;
+            }
+            
+            // Check file size
+            if (MaxFileSize.HasValue && file.Size > MaxFileSize.Value)
+            {
+                await OnValidationError.InvokeAsync($"File '{file.Name}' exceeds maximum size of {FormatFileSize(MaxFileSize.Value)}");
+                continue;
+            }
+            
+            // Check file type
+            if (!string.IsNullOrEmpty(AcceptedTypes) && !IsAcceptedType(file.Name))
+            {
+                await OnValidationError.InvokeAsync($"File type not accepted: {file.Name}");
+                continue;
+            }
+            
+            // Custom validation
+            if (ValidateFile != null)
+            {
+                var (isValid, errorMessage) = await ValidateFile(file);
+                if (!isValid)
+                {
+                    await OnValidationError.InvokeAsync(errorMessage ?? $"File validation failed: {file.Name}");
+                    continue;
+                }
+            }
+            
+            validFiles.Add(file);
+        }
+        
+        if (validFiles.Any())
+        {
+            _uploadedFiles.AddRange(validFiles);
+            
+            var eventArgs = new DragDropFileEventArgs
+            {
+                Files = validFiles,
+                TotalFiles = _uploadedFiles.Count
+            };
+            
+            await OnFilesDropped.InvokeAsync(eventArgs);
+            LogAudit("FilesDropped", $"Uploaded {validFiles.Count} files");
+        }
+    }
+    
+    private bool IsAcceptedType(string fileName)
+    {
+        if (string.IsNullOrEmpty(AcceptedTypes)) return true;
+        
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var acceptedExtensions = AcceptedTypes.Split(',').Select(t => t.Trim().ToLowerInvariant());
+        
+        return acceptedExtensions.Any(ext => ext == extension || ext == "*");
+    }
+    
+    private void RemoveFile(FileInfo file)
+    {
+        _uploadedFiles.Remove(file);
+        LogAudit("FileRemoved", $"Removed file: {file.Name}");
+    }
+    
+    private void HandleReorderDragStart(int index)
+    {
+        if (IsDisabled) return;
+        _draggedIndex = index;
+    }
+    
+    private void HandleReorderDragEnd()
+    {
+        if (_draggedIndex.HasValue && _dropTargetIndex.HasValue && _draggedIndex != _dropTargetIndex)
+        {
+            var itemsList = Items?.ToList();
+            if (itemsList != null)
+            {
+                var item = itemsList[_draggedIndex.Value];
+                itemsList.RemoveAt(_draggedIndex.Value);
+                itemsList.Insert(_dropTargetIndex.Value, item);
+                
+                var eventArgs = new DragDropReorderEventArgs
+                {
+                    Items = itemsList,
+                    FromIndex = _draggedIndex.Value,
+                    ToIndex = _dropTargetIndex.Value
+                };
+                
+                OnItemsReordered.InvokeAsync(eventArgs);
+                LogAudit("ItemsReordered", $"Moved item from {_draggedIndex} to {_dropTargetIndex}");
+            }
+        }
+        
+        _draggedIndex = null;
+        _dropTargetIndex = null;
+    }
+    
+    private void HandleReorderDragEnter(int index)
+    {
+        if (IsDisabled || _draggedIndex == index) return;
+        _dropTargetIndex = index;
+    }
+    
+    /// <summary>
+    /// Clear all uploaded files
+    /// </summary>
+    public void ClearFiles()
+    {
+        _uploadedFiles.Clear();
+        LogAudit("FilesCleared", "All files cleared");
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Get uploaded files
+    /// </summary>
+    public IReadOnlyList<FileInfo> GetFiles() => _uploadedFiles.AsReadOnly();
+    
+    /// <summary>
+    /// Open file browser
+    /// </summary>
+    public async Task OpenFileBrowserAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.DragDrop.openFileBrowser", _fileInputRef);
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-dragdrop" };
+        
+        if (Mode == DragDropMode.FileUpload)
+            classes.Add("n360-dragdrop--upload");
+        else if (Mode == DragDropMode.Reorder)
+            classes.Add("n360-dragdrop--reorder");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-dragdrop--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public class FileInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public long Size { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public DateTime LastModified { get; set; }
+    }
+    
+    public enum DragDropMode
+    {
+        FileUpload,
+        Reorder
+    }
+    
+    public class DragDropFileEventArgs
+    {
+        public List<FileInfo> Files { get; set; } = new();
+        public int TotalFiles { get; set; }
+    }
+    
+    public class DragDropReorderEventArgs
+    {
+        public List<object> Items { get; set; } = new();
+        public int FromIndex { get; set; }
+        public int ToIndex { get; set; }
+    }
+}

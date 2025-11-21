@@ -148,6 +148,11 @@ public class RedisCacheOptions
     public string ConnectionString { get; set; } = "localhost:6379";
 
     /// <summary>
+    /// Redis password (optional).
+    /// </summary>
+    public string? Password { get; set; }
+
+    /// <summary>
     /// Redis database number (0-15).
     /// </summary>
     public int Database { get; set; } = 0;

@@ -2,8 +2,8 @@
 
 ## Complete Component Inventory
 
-**Total Components: 144** (126 base + 18 AI-powered)
-**Latest Additions: N360ActivityFeed, N360UserProfile** 🆕
+**Total Components: 161** (143 base + 18 AI-powered)
+**Latest Additions: Phase 6 Continued - 13 Utility Components (N360Clipboard, N360Watermark, N360IdleTimeout, N360DragDrop, N360Hotkeys, N360LoadingOverlay, N360ResizeObserver, N360FocusTrap, N360ScreenshotBlocker, N360Fullscreen, N360ExportUtility, N360ColorPickerAdvanced, N360BarcodeHealthcare)** 🆕
 
 **Component Type Legend:**
 - 🟦 **Basic** - Simple Syncfusion wrappers for quick implementation (40-100 lines)
@@ -13,7 +13,7 @@
 
 ---
 
-### ✅ Input Components (27)
+### ✅ Input Components (29)
 | Component | Status | Description |
 |-----------|--------|-------------|
 | `N360TextBox` | ✅ Implemented | Single/multi-line text input with validation, RBAC, audit |
@@ -43,6 +43,8 @@
 | `N360InputNumber` | ✅ Implemented | Enhanced numeric input with formatter/parser, controls position |
 | `N360OTP` | ✅ Implemented | One-time password input with auto-focus, validation |
 | `N360PinInput` | ✅ Implemented | PIN code entry with masked input, character boxes |
+| `N360BarcodeScanner` 🆕 | ✅ Implemented | Camera-based barcode scanner with 11 formats (QR Code, Code128, Code39, EAN13, UPC, etc.), live preview, scan history, copy/delete actions, auto-start, beep/vibrate feedback, front/back camera toggle, RBAC |
+| `N360ColorPickerAdvanced` 🆕 | ✅ Implemented | Advanced color picker with interactive color wheel canvas, hue/alpha sliders, HEX/RGB/HSL triple input modes, eyedropper tool (EyeDropper API), recent colors history (max 10), saved palettes with LocalStorage persistence, RGB ↔ HSL conversion (490 lines + 330 CSS) |
 
 ### ✅ Data Grid Components (4)
 | Component | Status | Description |
@@ -119,7 +121,7 @@
 | `N360Schedule` 🟦 | ✅ Implemented | **Basic:** Simple calendar/schedule view with Day/Week/Month/Agenda modes (Syncfusion wrapper, 80 lines) - For resource booking with approval workflow, see N360Scheduler 🟪 in Enterprise section |
 | `N360Kanban` 🟦 | ✅ Implemented | **Basic:** Simple kanban board with drag/drop columns (Syncfusion wrapper, 101 lines) - For project management with swimlanes/WIP limits, see N360KanbanBoard 🟪 in Enterprise section |
 
-### ✅ Data Display Components (14)
+### ✅ Data Display Components (15)
 | Component | Status | Description |
 |-----------|--------|-------------|
 | `N360ProgressBar` | ✅ Implemented | Progress bar with variants (custom HTML/CSS) |
@@ -136,6 +138,7 @@
 | `N360QRCode` | ✅ Implemented | QR code generator with error levels, logo support |
 | `N360Barcode` | ✅ Implemented | Barcode generator for Code128, EAN13, UPC, and other formats |
 | `N360Affix` | ✅ Implemented | Fixed position scroll container for sticky headers/sidebars |
+| `N360BarcodeHealthcare` 🆕 | ✅ Implemented | Healthcare barcode generator with 8 formats (NDC, GS1 DataMatrix, GS1-128, HIBC, UDI, Code128, DataMatrix, QR Code), NDC configuration (labeler/product/package codes with 3 format options), GS1 configuration (GTIN/Lot/Serial/Expiry with AI formatting), metadata display, action buttons (download PNG, print, copy to clipboard), validation (450 lines + 250 CSS) |
 
 ### ✅ Advanced Components (4 of 4 implemented - ALL COMPLETE!)
 | Component | Status | Description |
@@ -145,10 +148,25 @@
 | `N360RichTextEditor` | ✅ Implemented | WYSIWYG text editor with comprehensive toolbar (bold/italic/underline/lists/alignment), image/table insertion, link management, code view, paste cleanup, character count (requires Syncfusion.Blazor.RichTextEditor) |
 | `N360FileManager` | ✅ Implemented | File management with tree/list/grid views, file operations (copy/move/delete/rename), folder navigation, drag-drop upload, file preview, context menu, search/filter (requires Syncfusion.Blazor.FileManager) |
 
-### ✅ Utility Components (1)
+### ✅ Utility Components (18)
 | Component | Status | Description |
 |-----------|--------|-------------|
 | `N360ThemeCustomizer` 🆕 | ✅ Implemented | **Live theme customization panel** with mode (light/dark/auto), 8 color presets, custom color picker, border radius slider, font size, density, animations toggle (360 lines + 650 CSS) |
+| `N360Print` 🆕 | ✅ Implemented | Print component with custom print layouts, page orientation (Portrait/Landscape), paper sizes (A4/A3/A5/Letter/Legal/Tabloid), custom margins, print styles, header/footer templates, hide elements, before/after callbacks, RBAC |
+| `N360LazyLoad` 🆕 | ✅ Implemented | Lazy loading container with IntersectionObserver, custom placeholders, skeleton loading, threshold configuration, load callbacks |
+| `N360InfiniteScroll` 🆕 | ✅ Implemented | Infinite scroll pagination with loading indicators, throttling, error/end states, retry functionality, customizable triggers |
+| `N360VirtualScroll` 🆕 | ✅ Implemented | Virtual scrolling for large lists with Blazor Virtualize, handles 100k+ items, constant DOM nodes, item height configuration, overscan buffer |
+| `N360Clipboard` 🆕 | ✅ Implemented | Modern Clipboard API wrapper with copy/read functionality, 7 button variants (Default/Primary/Secondary/Success/Danger/Ghost/Link), 3 sizes, legacy fallback (document.execCommand), success feedback with 4 types (Message/Toast/Tooltip/Icon), FormatBeforeCopy function, OnCopied/OnError callbacks (240 lines + 140 CSS) |
+| `N360Watermark` 🆕 | ✅ Implemented | Document watermarking with text and/or image support, 10 position options (Repeat with 50 items, Center, 8 corners/edges), configurable opacity/font-size/color/rotation (-45° default)/gap (100px), tampering detection via MutationObserver with auto-restore, print protection (@media print opacity 0.3, z-index 99999), copy protection (user-select: none) (280 lines + 60 CSS) |
+| `N360IdleTimeout` 🆕 | ✅ Implemented | Session idle timeout detection with configurable events (mousedown/mousemove/keypress/scroll/touchstart/click), timeout duration (default 15 min), warning duration (default 2 min), event throttle (1 sec), warning dialog with countdown timer, "Stay Logged In" or "Logout Now" buttons, custom logout handler or redirect to LogoutUrl, optional state preservation, ResetAsync/PauseAsync/ResumeAsync methods (265 lines + 165 CSS) |
+| `N360DragDrop` 🆕 | ✅ Implemented | Drag-and-drop with dual modes: FileUpload (drop zone with accepted types filter, max files/size validation, custom ValidateFile callback) and Reorder (sortable lists with drag handles, visual indicators for dragging/drop-target states), file list with name/size/remove button, methods: ClearFiles/GetFiles/OpenFileBrowserAsync (370 lines + 205 CSS) |
+| `N360Hotkeys` 🆕 | ✅ Implemented | Keyboard shortcut manager with key combo registration (Ctrl+S, etc), description, category, callback, scope (Global for entire app or Component scoped), help modal triggered by "?" key (configurable) showing all shortcuts grouped by category, conflict detection for duplicate keys, permission-based hotkeys, RegisterAsync/UnregisterAsync/EnableAsync/DisableAsync methods, IgnoreInputs parameter skips hotkeys when typing in inputs (340 lines + 210 CSS) |
+| `N360LoadingOverlay` 🆕 | ✅ Implemented | Loading overlay with 4 spinner types (Spinner: rotating circle, Dots: bouncing, Bars: equalizer, Ring: 4 rotating arcs), 3 sizes (Small/Medium/Large), full-screen or container-scoped, progress bar with percentage display, cancel button, customization (backdrop opacity/blur, z-index, spinner/text colors), methods: Show/Hide/UpdateProgress(int)/UpdateText(string) (240 lines + 230 CSS) |
+| `N360ResizeObserver` 🆕 | ✅ Implemented | ResizeObserver API wrapper with debounce (default 100ms), observe width/height/both with threshold filtering (default 1px), built-in responsive breakpoints (576/768/992/1200/1400) or custom, event data: width/height/changes/current breakpoint, methods: GetSizeAsync/DisconnectAsync/ReconnectAsync (170 lines + 10 CSS) |
+| `N360FocusTrap` 🆕 | ✅ Implemented | Accessibility focus management with Tab/Shift+Tab cycling within modal/dialog content using sentinel elements, auto-focus first element on activate, return focus on deactivate, Escape key and click-outside deactivation (configurable), custom focus: InitialFocusSelector/FallbackFocusSelector, JSInvokable HandleEscapeKey/HandleClickOutside callbacks, methods: ActivateManuallyAsync/DeactivateManuallyAsync/GetFocusableCountAsync (270 lines + 35 CSS) |
+| `N360ScreenshotBlocker` 🆕 | ✅ Implemented | PHI protection with multi-layer security: PrtScn key blocking, context menu disable, text selection disable, watermark overlay with large rotated "CONFIDENTIAL" text (customizable), blur on focus loss (configurable blur amount), screen recording detection (experimental), warning system with animated message on screenshot attempts (configurable duration), print protection (@media print hides content, shows protection message), methods: ActivateAsync/DeactivateAsync/BlurContentAsync/UnblurContentAsync (240 lines + 115 CSS) |
+| `N360Fullscreen` 🆕 | ✅ Implemented | Cross-browser Fullscreen API with vendor prefix fallback, toggle button with 4 position options (TopLeft/TopRight/BottomLeft/BottomRight), icon changes (expand/compress), optional button text, F11 or custom keyboard shortcut support, JSInvokable HandleFullscreenChange(bool) for browser-initiated changes, methods: EnterAsync/ExitAsync/ToggleAsync/IsSupportedAsync (240 lines + 110 CSS) |
+| `N360ExportUtility` 🆕 | ✅ Implemented | Data export wrapper with 5 formats (CSV, JSON, XML, HTML, Markdown) with format selector dropdown, real-time progress bar (0% → 100%) with status messages (success/error/info), dynamic data: static Data parameter or GetDataAsync() function, format options (CSV delimiter, include headers, JSON indenting), reflection-based: automatically converts IEnumerable to tables with property inspection, CSV escaping for delimiters/quotes/newlines, HTML/Markdown table generation, methods: ExportAsync/ClearDataAsync, events: OnBeforeExport/OnAfterExport/OnExportError (430 lines + 160 CSS) |
 
 ### ✅ Search Components (1)
 | Component | Status | Description |
@@ -218,13 +236,37 @@
 ---
 
 ## Summary
-- **Total Components:** 133 (115 base + 18 AI components)
-- **Fully Implemented:** 133 (100%) ✅ **COMPLETE!**
+- **Total Components:** 161 (143 base + 18 AI components)
+- **Fully Implemented:** 161 (100%) ✅ **COMPLETE!**
 - **Healthcare-Specific:** 3 (PatientCard, VitalSignsInput, AppointmentScheduler)
 - **AI-Powered Healthcare:** 18 (SmartChat, PredictiveAnalytics, NaturalLanguageQuery, ClinicalDecisionSupport, MedicalImageAnalysis, DocumentIntelligence, VoiceAssistant, SentimentDashboard, AutomatedCoding, IntelligentSearch, ClinicalPathways, ResourceOptimization, AnomalyDetection, RevenueCycleManagement, GenomicsAnalysis, ClinicalTrialMatching, PatientEngagement, OperationalEfficiency)
 - **Enterprise Business:** 22 (DataTable, NotificationCenter, FilterBuilder, AuditViewer, CommentThread, FileExplorer, TaskManager, ProjectPlanner, TeamCollaboration, WorkflowDesigner, ReportBuilder, KanbanBoard, GanttChart, Dashboard, Scheduler, Chat, Inbox, DataImporter, DataExporter, ApprovalCenter, FormBuilder, UserDirectory, RoleManager)
 - **Advanced Document Components:** 3 (PdfViewer, RichTextEditor, FileManager - require additional Syncfusion packages)
 - **Placeholders:** 0 (0%) - All components fully implemented!
+
+### Recent Additions (Phase 6 Continued - Nov 22, 2025)
+**Utility Components (13):**
+- `N360Clipboard` - Modern Clipboard API wrapper with copy/read, 7 button variants, 3 sizes, success feedback
+- `N360Watermark` - Document watermarking with text/image, 10 positions, tampering detection, print/copy protection
+- `N360IdleTimeout` - Session idle timeout with configurable events, warning dialog, countdown timer, logout handling
+- `N360DragDrop` - Drag-and-drop with FileUpload (drop zone, validation) and Reorder (sortable lists) modes
+- `N360Hotkeys` - Keyboard shortcut manager with key combo registration, help modal, conflict detection
+- `N360LoadingOverlay` - Loading overlay with 4 spinner types, progress bar, cancel button, customizable styling
+- `N360ResizeObserver` - ResizeObserver API wrapper with debounce, responsive breakpoints, threshold filtering
+- `N360FocusTrap` - Accessibility focus management with Tab cycling, auto-focus, Escape/click-outside deactivation
+- `N360ScreenshotBlocker` - PHI protection with PrtScn blocking, watermark overlay, blur on focus loss, print protection
+- `N360Fullscreen` - Cross-browser Fullscreen API with toggle button, vendor prefix fallback, keyboard support
+- `N360ExportUtility` - Data export wrapper with 5 formats (CSV/JSON/XML/HTML/Markdown), progress bar, dynamic data
+- `N360ColorPickerAdvanced` - Advanced color picker with color wheel, hue/alpha sliders, HEX/RGB/HSL modes, eyedropper tool
+- `N360BarcodeHealthcare` - Healthcare barcode generator with 8 formats (NDC, GS1 DataMatrix, GS1-128, HIBC, UDI, etc.)
+
+### Recent Additions (Phase 6 - Nov 21, 2025)
+**Utility Components (5):**
+- `N360Print` - Print component with custom layouts, orientation, paper sizes, margins, header/footer templates
+- `N360BarcodeScanner` - Camera-based barcode scanner with 11 formats, live preview, scan history, camera toggle
+- `N360LazyLoad` - Lazy loading with IntersectionObserver, custom placeholders, skeleton support
+- `N360InfiniteScroll` - Infinite scroll pagination with loading indicators, error handling, retry
+- `N360VirtualScroll` - Virtual scrolling for 100k+ items with constant DOM nodes
 
 ### Recent Additions (Phase 5 - Nov 18, 2025)
 **Enterprise Business Components (16):**
@@ -1002,5 +1044,5 @@ All AI components are located in `Components/AI/` and follow enterprise standard
 *Generated: November 19, 2025*
 *Total Development Time: Initial + Enhancement + Healthcare + Enterprise + AI Expansion*
 *Component Library Version: 2.0.0*
-*Total Components: 133 (100% Fully Implemented)* 🎉
+*Total Components: 148 (100% Fully Implemented)* 🎉
 *AI Components: 18 (Healthcare Intelligence Suite)*

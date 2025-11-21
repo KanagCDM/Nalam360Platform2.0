@@ -1604,6 +1604,19 @@
             "related": ".XML"
           }
         }
+      },
+      "Nalam360.Platform.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Nalam360.Platform.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Nalam360.Platform.Core.dll": {}
+        }
       }
     }
   },
@@ -4130,6 +4143,11 @@
         "zxing.net.0.16.9.nupkg.sha512",
         "zxing.net.nuspec"
       ]
+    },
+    "Nalam360.Platform.Core/1.0.0": {
+      "type": "project",
+      "path": "../../Nalam360.Platform.Core/Nalam360.Platform.Core.csproj",
+      "msbuildProject": "../../Nalam360.Platform.Core/Nalam360.Platform.Core.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -4139,6 +4157,7 @@
       "Microsoft.Extensions.Http.Polly >= 9.0.0",
       "Microsoft.ML >= 3.0.1",
       "Microsoft.SourceLink.GitHub >= 8.0.0",
+      "Nalam360.Platform.Core >= 1.0.0",
       "QRCoder >= 1.7.0",
       "Syncfusion.Blazor.Buttons >= 29.1.33",
       "Syncfusion.Blazor.Calendars >= 29.1.33",
@@ -4169,11 +4188,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
+      "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
       "projectName": "Nalam360Enterprise.UI",
-      "projectPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
+      "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI.csproj",
       "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-      "outputPath": "D:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\",
+      "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360Enterprise.UI\\Nalam360Enterprise.UI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -4196,7 +4215,11 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
+              "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

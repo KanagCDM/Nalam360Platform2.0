@@ -1,0 +1,299 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-screenshot-blocker @GetCssClass()"
+         style="@Style"
+         @ref="_containerRef">
+        
+        @if (ShowWatermark && IsActive)
+        {
+            <div class="n360-screenshot-blocker__watermark">
+                @WatermarkText
+            </div>
+        }
+        
+        @ChildContent
+        
+        @if (_showWarning)
+        {
+            <div class="n360-screenshot-blocker__warning">
+                <div class="n360-screenshot-blocker__warning-content">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>@WarningMessage</span>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to protect from screenshots
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Enable screenshot blocking
+    /// </summary>
+    [Parameter] public bool IsActive { get; set; } = true;
+    
+    /// <summary>
+    /// Blur content on focus loss
+    /// </summary>
+    [Parameter] public bool BlurOnFocusLoss { get; set; } = true;
+    
+    /// <summary>
+    /// Blur amount in pixels
+    /// </summary>
+    [Parameter] public int BlurAmount { get; set; } = 10;
+    
+    /// <summary>
+    /// Show watermark overlay
+    /// </summary>
+    [Parameter] public bool ShowWatermark { get; set; } = true;
+    
+    /// <summary>
+    /// Watermark text
+    /// </summary>
+    [Parameter] public string WatermarkText { get; set; } = "CONFIDENTIAL";
+    
+    /// <summary>
+    /// Disable print screen key
+    /// </summary>
+    [Parameter] public bool DisablePrintScreen { get; set; } = true;
+    
+    /// <summary>
+    /// Disable context menu (right-click)
+    /// </summary>
+    [Parameter] public bool DisableContextMenu { get; set; } = true;
+    
+    /// <summary>
+    /// Disable text selection
+    /// </summary>
+    [Parameter] public bool DisableSelection { get; set; } = true;
+    
+    /// <summary>
+    /// Detect screen recording (experimental)
+    /// </summary>
+    [Parameter] public bool DetectRecording { get; set; }
+    
+    /// <summary>
+    /// Show warning on attempt
+    /// </summary>
+    [Parameter] public bool ShowWarning { get; set; } = true;
+    
+    /// <summary>
+    /// Warning message
+    /// </summary>
+    [Parameter] public string WarningMessage { get; set; } = "Screenshot attempt detected. This content is protected.";
+    
+    /// <summary>
+    /// Warning display duration (ms)
+    /// </summary>
+    [Parameter] public int WarningDuration { get; set; } = 3000;
+    
+    /// <summary>
+    /// Callback when screenshot attempt detected
+    /// </summary>
+    [Parameter] public EventCallback<ScreenshotAttemptEventArgs> OnAttemptDetected { get; set; }
+    
+    /// <summary>
+    /// Callback when content blurred
+    /// </summary>
+    [Parameter] public EventCallback OnContentBlurred { get; set; }
+    
+    /// <summary>
+    /// Callback when content unblurred
+    /// </summary>
+    [Parameter] public EventCallback OnContentUnblurred { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ElementReference _containerRef;
+    private DotNetObjectReference<N360ScreenshotBlocker>? _objRef;
+    private bool _showWarning;
+    private Timer? _warningTimer;
+    private bool _isBlurred;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission && IsActive)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            
+            var config = new
+            {
+                blurOnFocusLoss = BlurOnFocusLoss,
+                blurAmount = BlurAmount,
+                disablePrintScreen = DisablePrintScreen,
+                disableContextMenu = DisableContextMenu,
+                disableSelection = DisableSelection,
+                detectRecording = DetectRecording
+            };
+            
+            await JS.InvokeVoidAsync("Nalam360.ScreenshotBlocker.initialize", _containerRef, _objRef, config);
+            LogAudit("ScreenshotBlockerActivated", "Screenshot protection activated");
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleScreenshotAttempt(string method)
+    {
+        if (!IsActive) return;
+        
+        var eventArgs = new ScreenshotAttemptEventArgs
+        {
+            Method = method,
+            Timestamp = DateTime.Now,
+            WasBlocked = true
+        };
+        
+        await OnAttemptDetected.InvokeAsync(eventArgs);
+        LogAudit("ScreenshotAttemptDetected", $"Screenshot attempt via {method}");
+        
+        if (ShowWarning)
+        {
+            await ShowWarningMessageAsync();
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleContentBlurred()
+    {
+        _isBlurred = true;
+        await OnContentBlurred.InvokeAsync();
+        LogAudit("ContentBlurred", "Content blurred for protection");
+        StateHasChanged();
+    }
+    
+    [JSInvokable]
+    public async Task HandleContentUnblurred()
+    {
+        _isBlurred = false;
+        await OnContentUnblurred.InvokeAsync();
+        LogAudit("ContentUnblurred", "Content unblurred");
+        StateHasChanged();
+    }
+    
+    private async Task ShowWarningMessageAsync()
+    {
+        _showWarning = true;
+        StateHasChanged();
+        
+        _warningTimer?.Dispose();
+        _warningTimer = new Timer(_ =>
+        {
+            _showWarning = false;
+            InvokeAsync(StateHasChanged);
+        }, null, WarningDuration, Timeout.Infinite);
+        
+        await Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Activate screenshot blocking
+    /// </summary>
+    public async Task ActivateAsync()
+    {
+        IsActive = true;
+        await JS.InvokeVoidAsync("Nalam360.ScreenshotBlocker.activate", _containerRef);
+        LogAudit("ScreenshotBlockerActivated", "Screenshot protection activated");
+    }
+    
+    /// <summary>
+    /// Deactivate screenshot blocking
+    /// </summary>
+    public async Task DeactivateAsync()
+    {
+        IsActive = false;
+        await JS.InvokeVoidAsync("Nalam360.ScreenshotBlocker.deactivate", _containerRef);
+        LogAudit("ScreenshotBlockerDeactivated", "Screenshot protection deactivated");
+    }
+    
+    /// <summary>
+    /// Manually blur content
+    /// </summary>
+    public async Task BlurContentAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.ScreenshotBlocker.blur", _containerRef, BlurAmount);
+        await HandleContentBlurred();
+    }
+    
+    /// <summary>
+    /// Manually unblur content
+    /// </summary>
+    public async Task UnblurContentAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.ScreenshotBlocker.unblur", _containerRef);
+        await HandleContentUnblurred();
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-screenshot-blocker" };
+        
+        if (IsActive)
+            classes.Add("n360-screenshot-blocker--active");
+        
+        if (_isBlurred)
+            classes.Add("n360-screenshot-blocker--blurred");
+        
+        if (DisableSelection)
+            classes.Add("n360-screenshot-blocker--no-select");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-screenshot-blocker--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _warningTimer?.Dispose();
+        _objRef?.Dispose();
+    }
+    
+    public class ScreenshotAttemptEventArgs
+    {
+        public string Method { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public bool WasBlocked { get; set; }
+    }
+}

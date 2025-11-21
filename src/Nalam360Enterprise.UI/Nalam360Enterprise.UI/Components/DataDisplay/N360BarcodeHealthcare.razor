@@ -1,0 +1,491 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-barcode-healthcare @GetCssClass()"
+         style="@Style">
+        
+        @if (ShowConfiguration)
+        {
+            <div class="n360-barcode-healthcare__config">
+                <div class="n360-barcode-healthcare__field">
+                    <label>Barcode Type:</label>
+                    <select @bind="_selectedType" @bind:event="oninput" @bind:after="GenerateBarcodeAsync">
+                        <option value="@HealthcareBarcodeType.NDC">NDC (National Drug Code)</option>
+                        <option value="@HealthcareBarcodeType.GS1_DataMatrix">GS1 DataMatrix</option>
+                        <option value="@HealthcareBarcodeType.GS1_128">GS1-128 (UCC/EAN-128)</option>
+                        <option value="@HealthcareBarcodeType.HIBC">HIBC (Health Industry Bar Code)</option>
+                        <option value="@HealthcareBarcodeType.UDI">UDI (Unique Device Identifier)</option>
+                        <option value="@HealthcareBarcodeType.Code128">Code 128 (Generic)</option>
+                        <option value="@HealthcareBarcodeType.DataMatrix">DataMatrix (Generic)</option>
+                        <option value="@HealthcareBarcodeType.QRCode">QR Code</option>
+                    </select>
+                </div>
+                
+                @if (_selectedType == HealthcareBarcodeType.NDC)
+                {
+                    <div class="n360-barcode-healthcare__ndc">
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Labeler Code (4-5 digits):</label>
+                            <input type="text" @bind="_ndcLabeler" maxlength="5" placeholder="12345" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Product Code (3-4 digits):</label>
+                            <input type="text" @bind="_ndcProduct" maxlength="4" placeholder="678" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Package Code (1-2 digits):</label>
+                            <input type="text" @bind="_ndcPackage" maxlength="2" placeholder="90" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Format:</label>
+                            <select @bind="_ndcFormat">
+                                <option value="5-4-2">5-4-2</option>
+                                <option value="5-3-2">5-3-2</option>
+                                <option value="4-4-2">4-4-2</option>
+                            </select>
+                        </div>
+                    </div>
+                }
+                else if (_selectedType == HealthcareBarcodeType.GS1_DataMatrix || _selectedType == HealthcareBarcodeType.GS1_128)
+                {
+                    <div class="n360-barcode-healthcare__gs1">
+                        <div class="n360-barcode-healthcare__field">
+                            <label>GTIN (01):</label>
+                            <input type="text" @bind="_gs1GTIN" maxlength="14" placeholder="00012345678905" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Lot Number (10):</label>
+                            <input type="text" @bind="_gs1Lot" placeholder="ABC123" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Serial Number (21):</label>
+                            <input type="text" @bind="_gs1Serial" placeholder="123456789" />
+                        </div>
+                        <div class="n360-barcode-healthcare__field">
+                            <label>Expiry Date (17) YYMMDD:</label>
+                            <input type="text" @bind="_gs1Expiry" maxlength="6" placeholder="251231" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="n360-barcode-healthcare__field">
+                        <label>Barcode Value:</label>
+                        <input type="text" @bind="_customValue" placeholder="Enter barcode data" />
+                    </div>
+                }
+                
+                <button class="n360-barcode-healthcare__generate-btn"
+                        @onclick="GenerateBarcodeAsync"
+                        disabled="@_isGenerating">
+                    @if (_isGenerating)
+                    {
+                        <i class="fas fa-spinner fa-spin"></i>
+                    }
+                    else
+                    {
+                        <i class="fas fa-barcode"></i>
+                    }
+                    Generate Barcode
+                </button>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(_barcodeDataUrl))
+        {
+            <div class="n360-barcode-healthcare__display">
+                <img src="@_barcodeDataUrl"
+                     alt="Healthcare Barcode"
+                     class="n360-barcode-healthcare__image"
+                     style="width: @Width; height: @Height;" />
+                
+                @if (ShowValue)
+                {
+                    <div class="n360-barcode-healthcare__value">@_displayValue</div>
+                }
+                
+                @if (ShowMetadata && _metadata != null)
+                {
+                    <div class="n360-barcode-healthcare__metadata">
+                        <div class="n360-barcode-healthcare__metadata-title">Barcode Information</div>
+                        @foreach (var kvp in _metadata)
+                        {
+                            <div class="n360-barcode-healthcare__metadata-item">
+                                <span class="n360-barcode-healthcare__metadata-key">@kvp.Key:</span>
+                                <span class="n360-barcode-healthcare__metadata-value">@kvp.Value</span>
+                            </div>
+                        }
+                    </div>
+                }
+                
+                @if (ShowActions)
+                {
+                    <div class="n360-barcode-healthcare__actions">
+                        <button class="n360-barcode-healthcare__action-btn"
+                                @onclick="DownloadBarcodeAsync">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button class="n360-barcode-healthcare__action-btn"
+                                @onclick="PrintBarcodeAsync">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <button class="n360-barcode-healthcare__action-btn"
+                                @onclick="CopyToClipboardAsync">
+                            <i class="fas fa-copy"></i> Copy Value
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else if (_errorMessage != null)
+        {
+            <div class="n360-barcode-healthcare__error">
+                <i class="fas fa-exclamation-triangle"></i>
+                @_errorMessage
+            </div>
+        }
+        else if (ShowConfiguration)
+        {
+            <div class="n360-barcode-healthcare__placeholder">
+                <i class="fas fa-barcode"></i>
+                <p>Configure and generate healthcare barcode</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Barcode type
+    /// </summary>
+    [Parameter] public HealthcareBarcodeType BarcodeType { get; set; } = HealthcareBarcodeType.NDC;
+    
+    /// <summary>
+    /// Barcode value (for non-configured types)
+    /// </summary>
+    [Parameter] public string? Value { get; set; }
+    
+    /// <summary>
+    /// Show configuration UI
+    /// </summary>
+    [Parameter] public bool ShowConfiguration { get; set; } = true;
+    
+    /// <summary>
+    /// Show barcode value text
+    /// </summary>
+    [Parameter] public bool ShowValue { get; set; } = true;
+    
+    /// <summary>
+    /// Show metadata information
+    /// </summary>
+    [Parameter] public bool ShowMetadata { get; set; } = true;
+    
+    /// <summary>
+    /// Show action buttons
+    /// </summary>
+    [Parameter] public bool ShowActions { get; set; } = true;
+    
+    /// <summary>
+    /// Barcode width
+    /// </summary>
+    [Parameter] public string Width { get; set; } = "300px";
+    
+    /// <summary>
+    /// Barcode height
+    /// </summary>
+    [Parameter] public string Height { get; set; } = "150px";
+    
+    /// <summary>
+    /// Error correction level (for QR/DataMatrix)
+    /// </summary>
+    [Parameter] public string ErrorCorrectionLevel { get; set; } = "M";
+    
+    /// <summary>
+    /// Callback when barcode generated
+    /// </summary>
+    [Parameter] public EventCallback<BarcodeGeneratedEventArgs> OnBarcodeGenerated { get; set; }
+    
+    /// <summary>
+    /// Callback on generation error
+    /// </summary>
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private HealthcareBarcodeType _selectedType;
+    private bool _isGenerating;
+    private string? _barcodeDataUrl;
+    private string? _displayValue;
+    private string? _errorMessage;
+    private Dictionary<string, string>? _metadata;
+    
+    // NDC fields
+    private string _ndcLabeler = "";
+    private string _ndcProduct = "";
+    private string _ndcPackage = "";
+    private string _ndcFormat = "5-4-2";
+    
+    // GS1 fields
+    private string _gs1GTIN = "";
+    private string _gs1Lot = "";
+    private string _gs1Serial = "";
+    private string _gs1Expiry = "";
+    
+    // Generic value
+    private string _customValue = "";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        _selectedType = BarcodeType;
+        
+        if (!string.IsNullOrEmpty(Value) && !ShowConfiguration)
+        {
+            _customValue = Value;
+            await GenerateBarcodeAsync();
+        }
+    }
+    
+    private async Task GenerateBarcodeAsync()
+    {
+        _isGenerating = true;
+        _errorMessage = null;
+        _barcodeDataUrl = null;
+        _metadata = null;
+        StateHasChanged();
+        
+        try
+        {
+            string barcodeData;
+            
+            switch (_selectedType)
+            {
+                case HealthcareBarcodeType.NDC:
+                    barcodeData = GenerateNDC();
+                    break;
+                case HealthcareBarcodeType.GS1_DataMatrix:
+                case HealthcareBarcodeType.GS1_128:
+                    barcodeData = GenerateGS1();
+                    break;
+                default:
+                    barcodeData = _customValue;
+                    break;
+            }
+            
+            if (string.IsNullOrEmpty(barcodeData))
+            {
+                throw new InvalidOperationException("Barcode data cannot be empty");
+            }
+            
+            _displayValue = barcodeData;
+            
+            // Generate barcode image via JavaScript interop
+            var config = new
+            {
+                type = _selectedType.ToString(),
+                data = barcodeData,
+                width = int.TryParse(Width.Replace("px", ""), out var w) ? w : 300,
+                height = int.TryParse(Height.Replace("px", ""), out var h) ? h : 150,
+                errorCorrectionLevel = ErrorCorrectionLevel
+            };
+            
+            _barcodeDataUrl = await JS.InvokeAsync<string>("Nalam360.HealthcareBarcode.generate", config);
+            
+            // Generate metadata
+            _metadata = GenerateMetadata(barcodeData);
+            
+            var eventArgs = new BarcodeGeneratedEventArgs
+            {
+                Type = _selectedType,
+                Value = barcodeData,
+                Metadata = _metadata
+            };
+            
+            await OnBarcodeGenerated.InvokeAsync(eventArgs);
+            LogAudit("BarcodeGenerated", $"Generated {_selectedType}: {barcodeData}");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error generating barcode: {ex.Message}";
+            await OnError.InvokeAsync(_errorMessage);
+            LogAudit("BarcodeError", _errorMessage);
+        }
+        finally
+        {
+            _isGenerating = false;
+            StateHasChanged();
+        }
+    }
+    
+    private string GenerateNDC()
+    {
+        // Validate NDC components
+        if (string.IsNullOrEmpty(_ndcLabeler) || string.IsNullOrEmpty(_ndcProduct) || string.IsNullOrEmpty(_ndcPackage))
+        {
+            throw new InvalidOperationException("All NDC fields are required");
+        }
+        
+        // Format NDC based on selected format
+        var parts = _ndcFormat.Split('-');
+        var labelerLen = int.Parse(parts[0]);
+        var productLen = int.Parse(parts[1]);
+        var packageLen = int.Parse(parts[2]);
+        
+        var labeler = _ndcLabeler.PadLeft(labelerLen, '0');
+        var product = _ndcProduct.PadLeft(productLen, '0');
+        var package = _ndcPackage.PadLeft(packageLen, '0');
+        
+        return $"{labeler}-{product}-{package}";
+    }
+    
+    private string GenerateGS1()
+    {
+        var gs1Data = new System.Text.StringBuilder();
+        
+        // GTIN (AI 01) - required
+        if (string.IsNullOrEmpty(_gs1GTIN))
+        {
+            throw new InvalidOperationException("GTIN is required for GS1 barcodes");
+        }
+        gs1Data.Append($"(01){_gs1GTIN.PadLeft(14, '0')}");
+        
+        // Lot Number (AI 10)
+        if (!string.IsNullOrEmpty(_gs1Lot))
+        {
+            gs1Data.Append($"(10){_gs1Lot}");
+        }
+        
+        // Serial Number (AI 21)
+        if (!string.IsNullOrEmpty(_gs1Serial))
+        {
+            gs1Data.Append($"(21){_gs1Serial}");
+        }
+        
+        // Expiry Date (AI 17)
+        if (!string.IsNullOrEmpty(_gs1Expiry))
+        {
+            gs1Data.Append($"(17){_gs1Expiry}");
+        }
+        
+        return gs1Data.ToString();
+    }
+    
+    private Dictionary<string, string> GenerateMetadata(string barcodeData)
+    {
+        var metadata = new Dictionary<string, string>
+        {
+            ["Type"] = _selectedType.ToString().Replace("_", " "),
+            ["Value"] = barcodeData,
+            ["Length"] = barcodeData.Length.ToString()
+        };
+        
+        if (_selectedType == HealthcareBarcodeType.NDC)
+        {
+            metadata["Labeler Code"] = _ndcLabeler;
+            metadata["Product Code"] = _ndcProduct;
+            metadata["Package Code"] = _ndcPackage;
+            metadata["Format"] = _ndcFormat;
+        }
+        else if (_selectedType == HealthcareBarcodeType.GS1_DataMatrix || _selectedType == HealthcareBarcodeType.GS1_128)
+        {
+            if (!string.IsNullOrEmpty(_gs1GTIN)) metadata["GTIN"] = _gs1GTIN;
+            if (!string.IsNullOrEmpty(_gs1Lot)) metadata["Lot Number"] = _gs1Lot;
+            if (!string.IsNullOrEmpty(_gs1Serial)) metadata["Serial Number"] = _gs1Serial;
+            if (!string.IsNullOrEmpty(_gs1Expiry)) metadata["Expiry Date"] = _gs1Expiry;
+        }
+        
+        metadata["Generated"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        
+        return metadata;
+    }
+    
+    private async Task DownloadBarcodeAsync()
+    {
+        if (!string.IsNullOrEmpty(_barcodeDataUrl))
+        {
+            var fileName = $"{_selectedType}_{DateTime.Now:yyyyMMddHHmmss}.png";
+            await JS.InvokeVoidAsync("Nalam360.HealthcareBarcode.download", _barcodeDataUrl, fileName);
+            LogAudit("BarcodeDownloaded", $"Downloaded barcode: {fileName}");
+        }
+    }
+    
+    private async Task PrintBarcodeAsync()
+    {
+        if (!string.IsNullOrEmpty(_barcodeDataUrl))
+        {
+            await JS.InvokeVoidAsync("Nalam360.HealthcareBarcode.print", _barcodeDataUrl, _displayValue);
+            LogAudit("BarcodePrinted", "Barcode printed");
+        }
+    }
+    
+    private async Task CopyToClipboardAsync()
+    {
+        if (!string.IsNullOrEmpty(_displayValue))
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _displayValue);
+            LogAudit("BarcodeCopied", "Barcode value copied to clipboard");
+        }
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-barcode-healthcare" };
+        if (!string.IsNullOrEmpty(CssClass)) classes.Add(CssClass);
+        if (IsRtl) classes.Add("n360-barcode-healthcare--rtl");
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup
+    }
+    
+    public enum HealthcareBarcodeType
+    {
+        NDC,
+        GS1_DataMatrix,
+        GS1_128,
+        HIBC,
+        UDI,
+        Code128,
+        DataMatrix,
+        QRCode
+    }
+    
+    public class BarcodeGeneratedEventArgs
+    {
+        public HealthcareBarcodeType Type { get; set; }
+        public string Value { get; set; } = string.Empty;
+        public Dictionary<string, string>? Metadata { get; set; }
+    }
+}

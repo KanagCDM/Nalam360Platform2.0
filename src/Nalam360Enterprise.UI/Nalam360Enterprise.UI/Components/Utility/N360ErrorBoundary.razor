@@ -1,0 +1,183 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Nalam360Enterprise.UI.Core.Security
+@inherits ErrorBoundary
+
+<div class="n360-error-boundary @CssClass" style="@Style">
+    @if (CurrentException != null && ShowError)
+    {
+        <div class="n360-error-boundary__content @ErrorSeverityClass">
+            <div class="n360-error-boundary__icon">
+                @ErrorIcon
+            </div>
+            <div class="n360-error-boundary__body">
+                @if (ErrorContent != null)
+                {
+                    @ErrorContent(CurrentException)
+                }
+                else
+                {
+                    <h3 class="n360-error-boundary__title">@ErrorTitle</h3>
+                    <p class="n360-error-boundary__message">@ErrorMessage</p>
+                    
+                    @if (ShowDetails && !string.IsNullOrEmpty(CurrentException.Message))
+                    {
+                        <div class="n360-error-boundary__details">
+                            <strong>Error Details:</strong>
+                            <pre>@CurrentException.Message</pre>
+                            
+                            @if (ShowStackTrace && !string.IsNullOrEmpty(CurrentException.StackTrace))
+                            {
+                                <details class="n360-error-boundary__stack">
+                                    <summary>Stack Trace</summary>
+                                    <pre>@CurrentException.StackTrace</pre>
+                                </details>
+                            }
+                        </div>
+                    }
+                }
+                
+                <div class="n360-error-boundary__actions">
+                    @if (ShowReloadButton)
+                    {
+                        <button class="n360-btn n360-btn--primary" @onclick="HandleReload">
+                            @ReloadButtonText
+                        </button>
+                    }
+                    @if (ShowRetryButton)
+                    {
+                        <button class="n360-btn n360-btn--secondary" @onclick="HandleRetry">
+                            @RetryButtonText
+                        </button>
+                    }
+                    @if (ShowContactSupportButton)
+                    {
+                        <button class="n360-btn n360-btn--secondary" @onclick="HandleContactSupport">
+                            @ContactSupportButtonText
+                        </button>
+                    }
+                    @if (CustomActions != null)
+                    {
+                        @CustomActions
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public new RenderFragment? ChildContent { get; set; }
+    [Parameter] public new RenderFragment<Exception>? ErrorContent { get; set; }
+    [Parameter] public RenderFragment? CustomActions { get; set; }
+    
+    // Display Options
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool ShowError { get; set; } = true;
+    [Parameter] public bool ShowDetails { get; set; } = false;
+    [Parameter] public bool ShowStackTrace { get; set; } = false;
+    
+    // Button Visibility
+    [Parameter] public bool ShowReloadButton { get; set; } = true;
+    [Parameter] public bool ShowRetryButton { get; set; } = true;
+    [Parameter] public bool ShowContactSupportButton { get; set; } = false;
+    
+    // Button Text
+    [Parameter] public string ReloadButtonText { get; set; } = "Reload Page";
+    [Parameter] public string RetryButtonText { get; set; } = "Try Again";
+    [Parameter] public string ContactSupportButtonText { get; set; } = "Contact Support";
+    
+    // Error Messages
+    [Parameter] public string ErrorTitle { get; set; } = "Something went wrong";
+    [Parameter] public string ErrorMessage { get; set; } = "An unexpected error occurred. Please try again.";
+    [Parameter] public string ErrorIcon { get; set; } = "⚠️";
+    
+    // Error Severity
+    [Parameter] public ErrorSeverity Severity { get; set; } = ErrorSeverity.Error;
+    
+    // Events
+    [Parameter] public EventCallback<Exception> OnError { get; set; }
+    [Parameter] public EventCallback OnReload { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public EventCallback OnContactSupport { get; set; }
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; } = true;
+    [Parameter] public string? AuditResource { get; set; }
+    
+    [Inject] private IAuditService? AuditService { get; set; }
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+    
+    private string ErrorSeverityClass => Severity switch
+    {
+        ErrorSeverity.Warning => "n360-error-boundary--warning",
+        ErrorSeverity.Error => "n360-error-boundary--error",
+        ErrorSeverity.Critical => "n360-error-boundary--critical",
+        _ => "n360-error-boundary--error"
+    };
+    
+    protected override async Task OnErrorAsync(Exception exception)
+    {
+        // Log to audit service
+        if (EnableAudit && AuditService != null)
+        {
+            await AuditService.LogAsync(new Nalam360Enterprise.UI.Core.Security.AuditMetadata
+            {
+                UserId = "System",
+                Action = "ComponentError",
+                Resource = AuditResource ?? "ErrorBoundary",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["Exception"] = exception.Message,
+                    ["Severity"] = Severity.ToString()
+                }
+            });
+        }
+        
+        // Trigger custom error handler
+        if (OnError.HasDelegate)
+        {
+            await OnError.InvokeAsync(exception);
+        }
+        
+        // Log to console in development
+        Console.Error.WriteLine($"[ErrorBoundary] {exception.GetType().Name}: {exception.Message}");
+        Console.Error.WriteLine(exception.StackTrace);
+    }
+    
+    private async Task HandleReload()
+    {
+        if (OnReload.HasDelegate)
+        {
+            await OnReload.InvokeAsync();
+        }
+        else
+        {
+            NavigationManager?.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
+    }
+    
+    private async Task HandleRetry()
+    {
+        if (OnRetry.HasDelegate)
+        {
+            await OnRetry.InvokeAsync();
+        }
+        else
+        {
+            Recover();
+        }
+    }
+    
+    private async Task HandleContactSupport()
+    {
+        if (OnContactSupport.HasDelegate)
+        {
+            await OnContactSupport.InvokeAsync();
+        }
+    }
+}

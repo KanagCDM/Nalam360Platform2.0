@@ -27,3 +27,18 @@ d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.D
 d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.pdb
 d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Release\net8.0\ref\Nalam360.Platform.Documentation.dll
 d:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.deps.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.sourcelink.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\refint\Nalam360.Platform.Documentation.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\Nalam360.Platform.Documentation.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\obj\Release\net8.0\ref\Nalam360.Platform.Documentation.dll

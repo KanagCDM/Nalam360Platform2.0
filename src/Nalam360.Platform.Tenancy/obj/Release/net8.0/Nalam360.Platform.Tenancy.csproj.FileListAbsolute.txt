@@ -26,3 +26,17 @@ D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.T
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.xml
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.pdb
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\ref\Nalam360.Platform.Tenancy.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\bin\Release\net8.0\Nalam360.Platform.Tenancy.deps.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\bin\Release\net8.0\Nalam360.Platform.Tenancy.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\bin\Release\net8.0\Nalam360.Platform.Tenancy.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\bin\Release\net8.0\Nalam360.Platform.Tenancy.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.sourcelink.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\refint\Nalam360.Platform.Tenancy.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\Nalam360.Platform.Tenancy.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Tenancy\obj\Release\net8.0\ref\Nalam360.Platform.Tenancy.dll

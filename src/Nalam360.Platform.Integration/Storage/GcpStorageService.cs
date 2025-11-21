@@ -35,36 +35,37 @@ public class GcpStorageService : IBlobStorageService
                     .UnderlyingCredential as Google.Apis.Auth.OAuth2.ServiceAccountCredential);
     }
 
-    public async Task<Result> UploadAsync(
+    public async Task<Result<string>> UploadAsync(
         string containerName,
         string blobName,
-        Stream data,
+        Stream content,
+        string contentType,
         CancellationToken ct = default)
     {
         try
         {
             _logger.LogInformation("Uploading blob {BlobName} to bucket {BucketName}", blobName, containerName);
 
-            await _client.UploadObjectAsync(
+            var obj = await _client.UploadObjectAsync(
                 bucket: containerName,
                 objectName: blobName,
-                contentType: _options.DefaultContentType,
-                source: data,
+                contentType: contentType ?? _options.DefaultContentType,
+                source: content,
                 options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.Private },
                 cancellationToken: ct);
 
             _logger.LogInformation("Successfully uploaded blob {BlobName}", blobName);
-            return Result.Success();
+            return Result<string>.Success(obj.MediaLink);
         }
         catch (Google.GoogleApiException ex)
         {
             _logger.LogError(ex, "GCP API error uploading blob {BlobName}: {Error}", blobName, ex.Message);
-            return Result.Failure(Error.Internal("GcpStorageError", $"Failed to upload blob: {ex.Message}"));
+            return Result<string>.Failure(Error.Internal("GcpStorageError", $"Failed to upload blob: {ex.Message}"));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error uploading blob {BlobName}", blobName);
-            return Result.Failure(Error.Unexpected("UploadError", ex.Message));
+            return Result<string>.Failure(Error.Unexpected("UploadError", ex.Message));
         }
     }
 
@@ -167,69 +168,6 @@ public class GcpStorageService : IBlobStorageService
         }
     }
 
-    public async Task<Result<Uri>> GetSignedUrlAsync(
-        string containerName,
-        string blobName,
-        TimeSpan expiration,
-        CancellationToken ct = default)
-    {
-        try
-        {
-            _logger.LogInformation("Generating signed URL for blob {BlobName}, expiration: {Expiration}",
-                blobName, expiration);
-
-            var signedUrl = await _urlSigner.SignAsync(
-                bucket: containerName,
-                objectName: blobName,
-                duration: expiration,
-                requestMethod: HttpMethod.Get);
-
-            _logger.LogInformation("Successfully generated signed URL for blob {BlobName}", blobName);
-            return Result<Uri>.Success(new Uri(signedUrl));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating signed URL for blob {BlobName}", blobName);
-            return Result<Uri>.Failure(Error.Unexpected("SignedUrlError", ex.Message));
-        }
-    }
-
-    public async Task<Result<IEnumerable<string>>> ListAsync(
-        string containerName,
-        string? prefix = null,
-        CancellationToken ct = default)
-    {
-        try
-        {
-            _logger.LogInformation("Listing blobs in bucket {BucketName} with prefix {Prefix}",
-                containerName, prefix ?? "none");
-
-            var objects = _client.ListObjectsAsync(
-                bucket: containerName,
-                prefix: prefix,
-                options: null);
-
-            var blobNames = new List<string>();
-            await foreach (var obj in objects.WithCancellation(ct))
-            {
-                blobNames.Add(obj.Name);
-            }
-
-            _logger.LogInformation("Found {Count} blobs in bucket {BucketName}", blobNames.Count, containerName);
-            return Result<IEnumerable<string>>.Success(blobNames);
-        }
-        catch (Google.GoogleApiException ex)
-        {
-            _logger.LogError(ex, "GCP API error listing blobs: {Error}", ex.Message);
-            return Result<IEnumerable<string>>.Failure(Error.Internal("GcpStorageError", $"Failed to list blobs: {ex.Message}"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error listing blobs in bucket {BucketName}", containerName);
-            return Result<IEnumerable<string>>.Failure(Error.Unexpected("ListError", ex.Message));
-        }
-    }
-
     public async Task<Result> CopyAsync(
         string sourceContainer,
         string sourceBlobName,
@@ -263,6 +201,65 @@ public class GcpStorageService : IBlobStorageService
         {
             _logger.LogError(ex, "Error copying blob");
             return Result.Failure(Error.Unexpected("CopyError", ex.Message));
+        }
+    }
+
+    public async Task<Result<IReadOnlyList<string>>> ListBlobsAsync(
+        string containerName,
+        string? prefix = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Listing blobs in bucket {BucketName} with prefix {Prefix}", containerName, prefix);
+
+            var blobs = new List<string>();
+            var objects = _client.ListObjectsAsync(containerName, prefix);
+
+            await foreach (var obj in objects.WithCancellation(ct))
+            {
+                blobs.Add(obj.Name);
+            }
+
+            _logger.LogInformation("Found {Count} blobs in bucket {BucketName}", blobs.Count, containerName);
+            return Result<IReadOnlyList<string>>.Success(blobs);
+        }
+        catch (Google.GoogleApiException ex)
+        {
+            _logger.LogError(ex, "GCP API error listing blobs: {Error}", ex.Message);
+            return Result<IReadOnlyList<string>>.Failure(Error.Internal("GcpStorageError", $"Failed to list blobs: {ex.Message}"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing blobs");
+            return Result<IReadOnlyList<string>>.Failure(Error.Unexpected("ListError", ex.Message));
+        }
+    }
+
+    public async Task<Result<string>> GetSharedAccessUrlAsync(
+        string containerName,
+        string blobName,
+        TimeSpan expiration,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Generating signed URL for blob {BlobName}, expiration: {Expiration}",
+                blobName, expiration);
+
+            var url = await _urlSigner.SignAsync(
+                bucket: containerName,
+                objectName: blobName,
+                duration: expiration,
+                cancellationToken: ct);
+
+            _logger.LogInformation("Successfully generated signed URL for blob {BlobName}", blobName);
+            return Result<string>.Success(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating signed URL for blob {BlobName}", blobName);
+            return Result<string>.Failure(Error.Unexpected("SignedUrlError", ex.Message));
         }
     }
 }

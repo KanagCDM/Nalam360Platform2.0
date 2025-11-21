@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+lAN+lGziqw=",
+  "dgSpecHash": "tfEhQEAJ0Dg=",
   "success": true,
-  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Application\\Nalam360.Platform.Application.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Application\\Nalam360.Platform.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\fluentvalidation\\11.9.0\\fluentvalidation.11.9.0.nupkg.sha512",
     "C:\\Users\\mmc2878\\.nuget\\packages\\mediatr\\12.4.1\\mediatr.12.4.1.nupkg.sha512",

@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Messaging</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusEventBus">
+            <summary>
+            Azure Service Bus implementation of the event bus.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusEventBus.PublishAsync``1(``0,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusEventBus.PublishBatchAsync``1(System.Collections.Generic.IEnumerable{``0},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusOptions">
+            <summary>
+            Configuration options for Azure Service Bus.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusOptions.ConnectionString">
+            <summary>
+            Gets or sets the Azure Service Bus connection string.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusOptions.TopicName">
+            <summary>
+            Gets or sets the topic name for publishing events.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusOptions.UseSessionId">
+            <summary>
+            Gets or sets whether to use session IDs for messages.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering messaging services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddRabbitMqEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds RabbitMQ event bus to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddRabbitMqEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions})">
+            <summary>
+            Adds RabbitMQ event bus to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddKafkaEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Kafka event bus to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddKafkaEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Messaging.Kafka.KafkaOptions})">
+            <summary>
+            Adds Kafka event bus to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddAzureServiceBusEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Azure Service Bus event bus to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddAzureServiceBusEventBus(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Messaging.AzureServiceBus.AzureServiceBusOptions})">
+            <summary>
+            Adds Azure Service Bus event bus to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddOutboxPattern(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds outbox pattern support to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddOutboxPattern(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Messaging.Outbox.OutboxOptions})">
+            <summary>
+            Adds outbox pattern support to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.DependencyInjection.ServiceCollectionExtensions.AddIdempotency(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds idempotency support to the service collection.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Idempotency.IdempotencyHandler">
+            <summary>
+            Handler for ensuring idempotent message processing.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IdempotencyHandler.HandleAsync``1(System.String,System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IdempotencyHandler.IsProcessedAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IdempotencyHandler.RemoveAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Idempotency.IIdempotencyHandler">
+            <summary>
+            Handler for ensuring idempotent message processing.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyHandler.HandleAsync``1(System.String,System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <summary>
+            Handles a request with idempotency guarantee.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyHandler.IsProcessedAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a request has already been processed.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyHandler.RemoveAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes an idempotency key from the store.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Idempotency.IIdempotencyStore">
+            <summary>
+            Store for idempotency keys and their results.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyStore.StoreResultAsync``1(System.String,Nalam360.Platform.Core.Results.Result{``0},System.Threading.CancellationToken)">
+            <summary>
+            Stores a result for an idempotency key.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyStore.GetResultAsync``1(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a stored result for an idempotency key.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyStore.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if an idempotency key exists.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Idempotency.IIdempotencyStore.RemoveAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes an idempotency key from the store.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.IEventBus">
+            <summary>
+            Event bus interface for publishing domain events.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.IEventBus.PublishAsync``1(``0,System.Threading.CancellationToken)">
+            <summary>
+            Publishes an event to the message bus.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.IEventBus.PublishBatchAsync``1(System.Collections.Generic.IEnumerable{``0},System.Threading.CancellationToken)">
+            <summary>
+            Publishes multiple events to the message bus.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.IIntegrationEvent">
+            <summary>
+            Integration event marker interface.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.IIntegrationEvent.EventId">
+            <summary>
+            Gets the event identifier.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.IIntegrationEvent.OccurredAt">
+            <summary>
+            Gets when the event occurred.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.IntegrationEvent">
+            <summary>
+            Base record for integration events.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.IEventHandler`1">
+            <summary>
+            Event handler interface for consuming events.
+            </summary>
+            <typeparam name="TEvent">The event type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.IEventHandler`1.HandleAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            Handles the event.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Kafka.KafkaEventBus">
+            <summary>
+            Kafka implementation of the event bus.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Kafka.KafkaEventBus.PublishAsync``1(``0,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Kafka.KafkaEventBus.PublishBatchAsync``1(System.Collections.Generic.IEnumerable{``0},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Kafka.KafkaOptions">
+            <summary>
+            Configuration options for Kafka.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Kafka.KafkaOptions.BootstrapServers">
+            <summary>
+            Gets or sets the Kafka bootstrap servers (comma-separated list).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Kafka.KafkaOptions.TopicPrefix">
+            <summary>
+            Gets or sets the topic prefix for events.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Kafka.KafkaOptions.ConsumerGroupId">
+            <summary>
+            Gets or sets the consumer group ID.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Outbox.IOutboxRepository">
+            <summary>
+            Repository for managing outbox messages.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Outbox.IOutboxRepository.AddAsync(Nalam360.Platform.Messaging.Outbox.OutboxMessage,System.Threading.CancellationToken)">
+            <summary>
+            Adds a new outbox message.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Outbox.IOutboxRepository.GetUnprocessedAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Gets unprocessed messages up to the specified limit.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Outbox.IOutboxRepository.MarkAsProcessedAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Marks a message as processed.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Outbox.IOutboxRepository.MarkAsFailedAsync(System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Marks a message as failed with error details.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.Outbox.IOutboxRepository.DeleteOldMessagesAsync(System.DateTime,System.Threading.CancellationToken)">
+            <summary>
+            Deletes messages older than the specified date.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Outbox.OutboxMessage">
+            <summary>
+            Represents an outbox message for transactional messaging pattern.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.Id">
+            <summary>
+            Gets or sets the message identifier.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.EventType">
+            <summary>
+            Gets or sets the event type name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.Payload">
+            <summary>
+            Gets or sets the serialized event payload.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.CreatedAt">
+            <summary>
+            Gets or sets when the message was created.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.ProcessedAt">
+            <summary>
+            Gets or sets when the message was processed.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.Attempts">
+            <summary>
+            Gets or sets the number of processing attempts.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxMessage.ErrorMessage">
+            <summary>
+            Gets or sets the last error message if processing failed.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Outbox.OutboxOptions">
+            <summary>
+            Configuration options for the outbox pattern.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxOptions.ProcessingInterval">
+            <summary>
+            Gets or sets the interval between processing attempts.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxOptions.BatchSize">
+            <summary>
+            Gets or sets the batch size for processing messages.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxOptions.MaxRetries">
+            <summary>
+            Gets or sets the maximum number of retry attempts.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxOptions.CleanupEnabled">
+            <summary>
+            Gets or sets whether to automatically cleanup old messages.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.Outbox.OutboxOptions.CleanupAfterDays">
+            <summary>
+            Gets or sets the number of days after which to cleanup messages.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.Outbox.OutboxProcessor">
+            <summary>
+            Background service for processing outbox messages.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.RabbitMq.RabbitMqEventBus">
+            <summary>
+            RabbitMQ implementation of the event bus.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.RabbitMq.RabbitMqEventBus.PublishAsync``1(``0,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Messaging.RabbitMq.RabbitMqEventBus.PublishBatchAsync``1(System.Collections.Generic.IEnumerable{``0},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions">
+            <summary>
+            Configuration options for RabbitMQ.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.HostName">
+            <summary>
+            Gets or sets the RabbitMQ host name.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.Port">
+            <summary>
+            Gets or sets the RabbitMQ port.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.UserName">
+            <summary>
+            Gets or sets the RabbitMQ username.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.Password">
+            <summary>
+            Gets or sets the RabbitMQ password.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.VirtualHost">
+            <summary>
+            Gets or sets the RabbitMQ virtual host.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Messaging.RabbitMq.RabbitMqOptions.ExchangeName">
+            <summary>
+            Gets or sets the exchange name.
+            </summary>
+        </member>
+    </members>
+</doc>

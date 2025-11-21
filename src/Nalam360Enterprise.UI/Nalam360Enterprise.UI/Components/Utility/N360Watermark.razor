@@ -1,0 +1,273 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetWatermarkClass()" style="@GetWatermarkStyle()" @attributes="@GetHtmlAttributes()">
+        @ChildContent
+        
+        @if (ShowWatermark)
+        {
+            <div class="n360-watermark__overlay" style="@GetOverlayStyle()">
+                @for (int i = 0; i < RepeatCount; i++)
+                {
+                    <div class="n360-watermark__item" style="@GetItemStyle()">
+                        @if (!string.IsNullOrEmpty(ImageUrl))
+                        {
+                            <img src="@ImageUrl" alt="Watermark" class="n360-watermark__image" />
+                        }
+                        @if (!string.IsNullOrEmpty(WatermarkText))
+                        {
+                            <div class="n360-watermark__text">@WatermarkText</div>
+                        }
+                        @if (ShowTimestamp)
+                        {
+                            <div class="n360-watermark__timestamp">@DateTime.Now.ToString(TimestampFormat)</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to watermark
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Watermark text
+    /// </summary>
+    [Parameter] public string? WatermarkText { get; set; }
+    
+    /// <summary>
+    /// Watermark image URL
+    /// </summary>
+    [Parameter] public string? ImageUrl { get; set; }
+    
+    /// <summary>
+    /// Show watermark
+    /// </summary>
+    [Parameter] public bool ShowWatermark { get; set; } = true;
+    
+    /// <summary>
+    /// Watermark opacity (0-1)
+    /// </summary>
+    [Parameter] public double Opacity { get; set; } = 0.15;
+    
+    /// <summary>
+    /// Font size for text watermark
+    /// </summary>
+    [Parameter] public int FontSize { get; set; } = 16;
+    
+    /// <summary>
+    /// Text color
+    /// </summary>
+    [Parameter] public string TextColor { get; set; } = "#000000";
+    
+    /// <summary>
+    /// Rotation angle in degrees
+    /// </summary>
+    [Parameter] public int RotationAngle { get; set; } = -45;
+    
+    /// <summary>
+    /// Gap between watermark items (pixels)
+    /// </summary>
+    [Parameter] public int Gap { get; set; } = 100;
+    
+    /// <summary>
+    /// Show timestamp
+    /// </summary>
+    [Parameter] public bool ShowTimestamp { get; set; }
+    
+    /// <summary>
+    /// Timestamp format
+    /// </summary>
+    [Parameter] public string TimestampFormat { get; set; } = "yyyy-MM-dd HH:mm";
+    
+    /// <summary>
+    /// Z-index for watermark overlay
+    /// </summary>
+    [Parameter] public int ZIndex { get; set; } = 9999;
+    
+    /// <summary>
+    /// Prevent screenshot/print (requires JS)
+    /// </summary>
+    [Parameter] public bool PreventCapture { get; set; }
+    
+    /// <summary>
+    /// Watermark position
+    /// </summary>
+    [Parameter] public WatermarkPosition Position { get; set; } = WatermarkPosition.Repeat;
+    
+    /// <summary>
+    /// Monitor and restore watermark if removed
+    /// </summary>
+    [Parameter] public bool MonitorRemoval { get; set; } = true;
+    
+    /// <summary>
+    /// Callback when watermark tampering detected
+    /// </summary>
+    [Parameter] public EventCallback OnTamperingDetected { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private string _watermarkId = Guid.NewGuid().ToString("N");
+    private int RepeatCount => Position == WatermarkPosition.Repeat ? 50 : 1;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && ShowWatermark)
+        {
+            if (MonitorRemoval)
+            {
+                await JS.InvokeVoidAsync("Nalam360.Watermark.monitor", 
+                    _watermarkId, 
+                    DotNetObjectReference.Create(this));
+            }
+            
+            if (PreventCapture)
+            {
+                await JS.InvokeVoidAsync("Nalam360.Watermark.preventCapture", _watermarkId);
+            }
+            
+            LogAudit("WatermarkApplied", $"Watermark applied: {WatermarkText}");
+        }
+    }
+    
+    [JSInvokable]
+    public async Task OnWatermarkRemoved()
+    {
+        await OnTamperingDetected.InvokeAsync();
+        LogAudit("WatermarkTampered", "Watermark removal detected");
+        
+        // Force re-render to restore watermark
+        StateHasChanged();
+    }
+    
+    private string GetWatermarkClass()
+    {
+        var classes = new List<string> { "n360-watermark" };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetWatermarkStyle()
+    {
+        var styles = new List<string> { "position: relative" };
+        
+        if (!string.IsNullOrEmpty(Style))
+            styles.Add(Style);
+        
+        return string.Join("; ", styles);
+    }
+    
+    private string GetOverlayStyle()
+    {
+        var styles = new List<string>
+        {
+            $"z-index: {ZIndex}",
+            $"opacity: {Opacity}"
+        };
+        
+        if (Position == WatermarkPosition.Repeat)
+        {
+            styles.Add("display: flex");
+            styles.Add("flex-wrap: wrap");
+            styles.Add($"gap: {Gap}px");
+        }
+        else
+        {
+            styles.Add($"justify-content: {GetJustifyContent()}");
+            styles.Add($"align-items: {GetAlignItems()}");
+        }
+        
+        return string.Join("; ", styles);
+    }
+    
+    private string GetItemStyle()
+    {
+        var styles = new List<string>
+        {
+            $"transform: rotate({RotationAngle}deg)",
+            $"color: {TextColor}",
+            $"font-size: {FontSize}px"
+        };
+        
+        return string.Join("; ", styles);
+    }
+    
+    private string GetJustifyContent()
+    {
+        return Position switch
+        {
+            WatermarkPosition.TopLeft or WatermarkPosition.MiddleLeft or WatermarkPosition.BottomLeft => "flex-start",
+            WatermarkPosition.TopCenter or WatermarkPosition.Center or WatermarkPosition.BottomCenter => "center",
+            WatermarkPosition.TopRight or WatermarkPosition.MiddleRight or WatermarkPosition.BottomRight => "flex-end",
+            _ => "center"
+        };
+    }
+    
+    private string GetAlignItems()
+    {
+        return Position switch
+        {
+            WatermarkPosition.TopLeft or WatermarkPosition.TopCenter or WatermarkPosition.TopRight => "flex-start",
+            WatermarkPosition.MiddleLeft or WatermarkPosition.Center or WatermarkPosition.MiddleRight => "center",
+            WatermarkPosition.BottomLeft or WatermarkPosition.BottomCenter or WatermarkPosition.BottomRight => "flex-end",
+            _ => "center"
+        };
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+}
+
+@code {
+    public enum WatermarkPosition
+    {
+        Repeat,
+        Center,
+        TopLeft,
+        TopCenter,
+        TopRight,
+        MiddleLeft,
+        MiddleRight,
+        BottomLeft,
+        BottomCenter,
+        BottomRight
+    }
+}

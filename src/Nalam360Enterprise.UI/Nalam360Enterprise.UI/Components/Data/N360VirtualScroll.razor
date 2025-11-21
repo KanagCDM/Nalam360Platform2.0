@@ -1,0 +1,133 @@
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@typeparam TItem
+@inherits N360ComponentBase
+
+@if (_hasPermission)
+{
+    <div class="n360-virtual-scroll @CssClass" style="@Style" @attributes="AdditionalAttributes">
+        @if (Items != null && Items.Any())
+        {
+            <Virtualize @ref="_virtualizeComponent"
+                        Items="@Items"
+                        Context="item"
+                        ItemSize="@ItemHeight"
+                        OverscanCount="@OverscanCount">
+                <ItemContent>
+                    @if (ItemTemplate != null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        <div class="n360-virtual-scroll__item" style="height: @(ItemHeight)px">
+                            @item?.ToString()
+                        </div>
+                    }
+                </ItemContent>
+                <Placeholder>
+                    @if (PlaceholderTemplate != null)
+                    {
+                        @PlaceholderTemplate
+                    }
+                    else
+                    {
+                        <div class="n360-virtual-scroll__placeholder" style="height: @(ItemHeight)px">
+                            <div class="n360-virtual-scroll__skeleton"></div>
+                        </div>
+                    }
+                </Placeholder>
+            </Virtualize>
+        }
+        else if (EmptyTemplate != null)
+        {
+            @EmptyTemplate
+        }
+        else if (ShowEmptyMessage)
+        {
+            <div class="n360-virtual-scroll__empty">
+                <div class="n360-virtual-scroll__empty-icon">📭</div>
+                <p class="n360-virtual-scroll__empty-text">@EmptyMessage</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ICollection<TItem>? Items { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? PlaceholderTemplate { get; set; }
+    [Parameter] public RenderFragment? EmptyTemplate { get; set; }
+    
+    [Parameter] public float ItemHeight { get; set; } = 50f;
+    [Parameter] public int OverscanCount { get; set; } = 3;
+    
+    [Parameter] public bool ShowEmptyMessage { get; set; } = true;
+    [Parameter] public string EmptyMessage { get; set; } = "No items to display";
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<TItem> OnItemClick { get; set; }
+    [Parameter] public EventCallback OnScrollEnd { get; set; }
+    
+    [Inject] private IPermissionService? PermissionService { get; set; }
+    [Inject] private IAuditService? AuditService { get; set; }
+    
+    private Virtualize<TItem>? _virtualizeComponent;
+    private bool _hasPermission = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+        
+        if (EnableAudit && AuditService != null && _hasPermission)
+        {
+            await AuditService.LogAsync(new AuditMetadata
+            {
+                Action = "VirtualScrollViewed",
+                Resource = AuditResource ?? "VirtualScroll",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    ["ItemCount"] = Items?.Count ?? 0,
+                    ["ItemHeight"] = ItemHeight
+                }
+            });
+        }
+    }
+    
+    private async Task CheckPermissionAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            
+            if (!_hasPermission && !HideIfNoPermission)
+            {
+                _hasPermission = true; // Show but disabled
+            }
+        }
+    }
+    
+    public async Task RefreshAsync()
+    {
+        if (_virtualizeComponent != null)
+        {
+            await _virtualizeComponent.RefreshDataAsync();
+        }
+    }
+    
+    public async Task ScrollToItemAsync(int index)
+    {
+        // Note: Blazor Virtualize doesn't have built-in scroll to index
+        // This is a placeholder for future enhancement
+        await Task.CompletedTask;
+    }
+}

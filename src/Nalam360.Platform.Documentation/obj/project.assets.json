@@ -67,11 +67,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Documentation\\Nalam360.Platform.Documentation.csproj",
+      "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Documentation\\Nalam360.Platform.Documentation.csproj",
       "projectName": "Nalam360.Platform.Documentation",
-      "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Documentation\\Nalam360.Platform.Documentation.csproj",
+      "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Documentation\\Nalam360.Platform.Documentation.csproj",
       "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-      "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Documentation\\obj\\",
+      "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Documentation\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",

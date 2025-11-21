@@ -1,0 +1,52 @@
+.n360-lazy-load {
+    width: 100%;
+    min-height: 50px;
+}
+
+.n360-lazy-load__placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 50px;
+}
+
+.n360-lazy-load__placeholder--default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.n360-lazy-load__skeleton {
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(
+        90deg,
+        var(--neutral-200, #e5e7eb) 25%,
+        var(--neutral-100, #f3f4f6) 50%,
+        var(--neutral-200, #e5e7eb) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .n360-lazy-load__skeleton {
+        background: linear-gradient(
+            90deg,
+            var(--neutral-700, #374151) 25%,
+            var(--neutral-600, #4b5563) 50%,
+            var(--neutral-700, #374151) 75%
+        );
+    }
+}

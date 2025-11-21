@@ -1,0 +1,208 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-resize-observer @GetCssClass()"
+         style="@Style"
+         @ref="_elementRef">
+        @ChildContent
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to observe for size changes
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Callback when element resized
+    /// </summary>
+    [Parameter] public EventCallback<ResizeEventArgs> OnResize { get; set; }
+    
+    /// <summary>
+    /// Debounce resize events in milliseconds
+    /// </summary>
+    [Parameter] public int DebounceDelay { get; set; } = 100;
+    
+    /// <summary>
+    /// Observe width changes
+    /// </summary>
+    [Parameter] public bool ObserveWidth { get; set; } = true;
+    
+    /// <summary>
+    /// Observe height changes
+    /// </summary>
+    [Parameter] public bool ObserveHeight { get; set; } = true;
+    
+    /// <summary>
+    /// Track responsive breakpoints
+    /// </summary>
+    [Parameter] public bool TrackBreakpoints { get; set; }
+    
+    /// <summary>
+    /// Custom breakpoints (default: 576, 768, 992, 1200, 1400)
+    /// </summary>
+    [Parameter] public int[]? Breakpoints { get; set; }
+    
+    /// <summary>
+    /// Minimum size change to trigger callback (pixels)
+    /// </summary>
+    [Parameter] public int Threshold { get; set; } = 1;
+    
+    /// <summary>
+    /// Enable resize observation
+    /// </summary>
+    [Parameter] public bool Enabled { get; set; } = true;
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ElementReference _elementRef;
+    private DotNetObjectReference<N360ResizeObserver>? _objRef;
+    private double _lastWidth;
+    private double _lastHeight;
+    private readonly int[] _defaultBreakpoints = new[] { 576, 768, 992, 1200, 1400 };
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission && Enabled)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            
+            var config = new
+            {
+                debounceDelay = DebounceDelay,
+                observeWidth = ObserveWidth,
+                observeHeight = ObserveHeight,
+                trackBreakpoints = TrackBreakpoints,
+                breakpoints = Breakpoints ?? _defaultBreakpoints,
+                threshold = Threshold
+            };
+            
+            await JS.InvokeVoidAsync("Nalam360.ResizeObserver.observe", _elementRef, _objRef, config);
+            LogAudit("ResizeObserverStarted", "Resize observation started");
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleResize(double width, double height, string? breakpoint)
+    {
+        if (!Enabled) return;
+        
+        // Check threshold
+        var widthChange = Math.Abs(width - _lastWidth);
+        var heightChange = Math.Abs(height - _lastHeight);
+        
+        if (widthChange < Threshold && heightChange < Threshold)
+            return;
+        
+        _lastWidth = width;
+        _lastHeight = height;
+        
+        var eventArgs = new ResizeEventArgs
+        {
+            Width = width,
+            Height = height,
+            WidthChange = widthChange,
+            HeightChange = heightChange,
+            Breakpoint = breakpoint
+        };
+        
+        await OnResize.InvokeAsync(eventArgs);
+        LogAudit("ElementResized", $"Size: {width}x{height}, Breakpoint: {breakpoint}");
+    }
+    
+    /// <summary>
+    /// Get current element size
+    /// </summary>
+    public async Task<(double Width, double Height)> GetSizeAsync()
+    {
+        try
+        {
+            var size = await JS.InvokeAsync<double[]>("Nalam360.ResizeObserver.getSize", _elementRef);
+            return (size[0], size[1]);
+        }
+        catch
+        {
+            return (0, 0);
+        }
+    }
+    
+    /// <summary>
+    /// Disconnect observer
+    /// </summary>
+    public async Task DisconnectAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.ResizeObserver.disconnect", _elementRef);
+        LogAudit("ResizeObserverStopped", "Resize observation stopped");
+    }
+    
+    /// <summary>
+    /// Reconnect observer
+    /// </summary>
+    public async Task ReconnectAsync()
+    {
+        await JS.InvokeVoidAsync("Nalam360.ResizeObserver.reconnect", _elementRef);
+        LogAudit("ResizeObserverRestarted", "Resize observation restarted");
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-resize-observer" };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-resize-observer--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _objRef?.Dispose();
+    }
+    
+    public class ResizeEventArgs
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double WidthChange { get; set; }
+        public double HeightChange { get; set; }
+        public string? Breakpoint { get; set; }
+    }
+}

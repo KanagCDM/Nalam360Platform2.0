@@ -1,0 +1,401 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="@GetScannerClass()" style="@Style" @attributes="@GetHtmlAttributes()">
+        @if (ShowCamera)
+        {
+            <div class="n360-barcode-scanner__camera">
+                <video id="@VideoElementId" 
+                       class="n360-barcode-scanner__video"
+                       autoplay
+                       playsinline>
+                </video>
+                
+                @if (ShowOverlay)
+                {
+                    <div class="n360-barcode-scanner__overlay">
+                        <div class="n360-barcode-scanner__scan-region"></div>
+                        <div class="n360-barcode-scanner__hint">
+                            @ScanHintText
+                        </div>
+                    </div>
+                }
+                
+                <div class="n360-barcode-scanner__controls">
+                    @if (IsScanning)
+                    {
+                        <button class="n360-btn n360-btn--danger" @onclick="StopScanningAsync">
+                            <i class="fas fa-stop"></i> Stop Scanning
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="n360-btn n360-btn--primary" @onclick="StartScanningAsync">
+                            <i class="fas fa-camera"></i> Start Scanning
+                        </button>
+                    }
+                    
+                    @if (AllowToggleCamera && AvailableCameras > 1)
+                    {
+                        <button class="n360-btn n360-btn--secondary" @onclick="ToggleCameraAsync">
+                            <i class="fas fa-sync-alt"></i> Switch Camera
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        
+        @if (ShowResults && ScannedResults.Any())
+        {
+            <div class="n360-barcode-scanner__results">
+                <h4>Scanned Results (@ScannedResults.Count)</h4>
+                <div class="n360-barcode-scanner__result-list">
+                    @foreach (var result in ScannedResults.Take(MaxResultsToShow))
+                    {
+                        <div class="n360-barcode-scanner__result-item">
+                            <div class="n360-barcode-scanner__result-value">
+                                <strong>@result.Format:</strong> @result.Text
+                            </div>
+                            <div class="n360-barcode-scanner__result-meta">
+                                @result.Timestamp.ToString("HH:mm:ss")
+                            </div>
+                            @if (AllowResultActions)
+                            {
+                                <div class="n360-barcode-scanner__result-actions">
+                                    <button class="n360-btn n360-btn--sm" @onclick="() => CopyToClipboard(result.Text)">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="n360-btn n360-btn--sm" @onclick="() => RemoveResult(result)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                
+                @if (ScannedResults.Count > MaxResultsToShow)
+                {
+                    <div class="n360-barcode-scanner__result-more">
+                        +@(ScannedResults.Count - MaxResultsToShow) more results
+                    </div>
+                }
+                
+                @if (AllowClearAll && ScannedResults.Any())
+                {
+                    <button class="n360-btn n360-btn--danger n360-btn--sm" @onclick="ClearAllResults">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                }
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="n360-barcode-scanner__error">
+                <i class="fas fa-exclamation-triangle"></i>
+                @ErrorMessage
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Supported barcode formats to scan
+    /// </summary>
+    [Parameter] public BarcodeFormat[] SupportedFormats { get; set; } = new[]
+    {
+        BarcodeFormat.QRCode,
+        BarcodeFormat.Code128,
+        BarcodeFormat.Code39,
+        BarcodeFormat.EAN13,
+        BarcodeFormat.EAN8,
+        BarcodeFormat.UPC
+    };
+    
+    /// <summary>
+    /// Show camera feed initially
+    /// </summary>
+    [Parameter] public bool ShowCamera { get; set; } = true;
+    
+    /// <summary>
+    /// Show overlay with scan region
+    /// </summary>
+    [Parameter] public bool ShowOverlay { get; set; } = true;
+    
+    /// <summary>
+    /// Hint text shown over camera
+    /// </summary>
+    [Parameter] public string ScanHintText { get; set; } = "Position barcode within frame";
+    
+    /// <summary>
+    /// Show scanned results list
+    /// </summary>
+    [Parameter] public bool ShowResults { get; set; } = true;
+    
+    /// <summary>
+    /// Maximum number of results to display
+    /// </summary>
+    [Parameter] public int MaxResultsToShow { get; set; } = 5;
+    
+    /// <summary>
+    /// Allow toggling between front/back camera
+    /// </summary>
+    [Parameter] public bool AllowToggleCamera { get; set; } = true;
+    
+    /// <summary>
+    /// Allow copy/delete actions on results
+    /// </summary>
+    [Parameter] public bool AllowResultActions { get; set; } = true;
+    
+    /// <summary>
+    /// Allow clearing all results
+    /// </summary>
+    [Parameter] public bool AllowClearAll { get; set; } = true;
+    
+    /// <summary>
+    /// Automatically start scanning on load
+    /// </summary>
+    [Parameter] public bool AutoStart { get; set; }
+    
+    /// <summary>
+    /// Stop scanning after first successful scan
+    /// </summary>
+    [Parameter] public bool StopAfterScan { get; set; }
+    
+    /// <summary>
+    /// Play beep sound on successful scan
+    /// </summary>
+    [Parameter] public bool PlayBeep { get; set; } = true;
+    
+    /// <summary>
+    /// Vibrate device on successful scan (mobile)
+    /// </summary>
+    [Parameter] public bool VibrateOnScan { get; set; } = true;
+    
+    /// <summary>
+    /// Callback when barcode is scanned
+    /// </summary>
+    [Parameter] public EventCallback<ScanResult> OnScanned { get; set; }
+    
+    /// <summary>
+    /// Callback when scanning starts
+    /// </summary>
+    [Parameter] public EventCallback OnStartScanning { get; set; }
+    
+    /// <summary>
+    /// Callback when scanning stops
+    /// </summary>
+    [Parameter] public EventCallback OnStopScanning { get; set; }
+    
+    /// <summary>
+    /// Callback when error occurs
+    /// </summary>
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool IsScanning { get; set; }
+    private string VideoElementId => $"barcode-video-{Guid.NewGuid():N}";
+    private List<ScanResult> ScannedResults { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+    private int AvailableCameras { get; set; }
+    private int CurrentCameraIndex { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoStart && _hasPermission)
+        {
+            await StartScanningAsync();
+        }
+    }
+    
+    private async Task StartScanningAsync()
+    {
+        try
+        {
+            ErrorMessage = null;
+            IsScanning = true;
+            
+            var options = new
+            {
+                videoElementId = VideoElementId,
+                formats = SupportedFormats.Select(f => f.ToString()).ToArray(),
+                playBeep = PlayBeep,
+                vibrateOnScan = VibrateOnScan
+            };
+            
+            var availableCameras = await JS.InvokeAsync<int>("Nalam360.BarcodeScanner.startScanning", 
+                options, 
+                DotNetObjectReference.Create(this));
+            
+            AvailableCameras = availableCameras;
+            
+            await OnStartScanning.InvokeAsync();
+            LogAudit("StartScanning", "Barcode scanning started");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to start camera: {ex.Message}";
+            IsScanning = false;
+            await OnError.InvokeAsync(ErrorMessage);
+        }
+    }
+    
+    private async Task StopScanningAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("Nalam360.BarcodeScanner.stopScanning", VideoElementId);
+            IsScanning = false;
+            
+            await OnStopScanning.InvokeAsync();
+            LogAudit("StopScanning", "Barcode scanning stopped");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to stop camera: {ex.Message}";
+            await OnError.InvokeAsync(ErrorMessage);
+        }
+    }
+    
+    private async Task ToggleCameraAsync()
+    {
+        try
+        {
+            CurrentCameraIndex = (CurrentCameraIndex + 1) % AvailableCameras;
+            await JS.InvokeVoidAsync("Nalam360.BarcodeScanner.switchCamera", VideoElementId, CurrentCameraIndex);
+            
+            LogAudit("ToggleCamera", $"Switched to camera {CurrentCameraIndex}");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to switch camera: {ex.Message}";
+            await OnError.InvokeAsync(ErrorMessage);
+        }
+    }
+    
+    [JSInvokable]
+    public async Task OnBarcodeDetected(string text, string format)
+    {
+        var result = new ScanResult
+        {
+            Text = text,
+            Format = format,
+            Timestamp = DateTime.Now
+        };
+        
+        ScannedResults.Insert(0, result);
+        
+        await OnScanned.InvokeAsync(result);
+        LogAudit("BarcodeScanned", $"Scanned {format}: {text}");
+        
+        if (StopAfterScan)
+        {
+            await StopScanningAsync();
+        }
+        
+        StateHasChanged();
+    }
+    
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        LogAudit("CopyBarcode", $"Copied barcode to clipboard: {text}");
+    }
+    
+    private void RemoveResult(ScanResult result)
+    {
+        ScannedResults.Remove(result);
+        LogAudit("RemoveResult", $"Removed scan result: {result.Text}");
+    }
+    
+    private void ClearAllResults()
+    {
+        var count = ScannedResults.Count;
+        ScannedResults.Clear();
+        LogAudit("ClearResults", $"Cleared {count} scan results");
+    }
+    
+    private string GetScannerClass()
+    {
+        var classes = new List<string> { "n360-barcode-scanner" };
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsScanning)
+            classes.Add("n360-barcode-scanner--scanning");
+        
+        if (!string.IsNullOrEmpty(ErrorMessage))
+            classes.Add("n360-barcode-scanner--error");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (IsScanning)
+        {
+            await StopScanningAsync();
+        }
+    }
+}
+
+@code {
+    public enum BarcodeFormat
+    {
+        QRCode,
+        Code128,
+        Code39,
+        Code93,
+        EAN13,
+        EAN8,
+        UPC,
+        Codabar,
+        DataMatrix,
+        PDF417,
+        Aztec
+    }
+    
+    public class ScanResult
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Format { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+}

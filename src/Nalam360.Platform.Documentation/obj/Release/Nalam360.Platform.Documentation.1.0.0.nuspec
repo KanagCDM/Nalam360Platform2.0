@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Documentation</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Documentation generators for Nalam360 Enterprise Platform.</description>
+    <tags>documentation swagger openapi enterprise</tags>
+    <repository type="git" commit="86ce8c8f59be0afa297dc40bea38695cce1f4d46" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.dll" target="lib\net8.0\Nalam360.Platform.Documentation.dll" />
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Documentation\bin\Release\net8.0\Nalam360.Platform.Documentation.xml" target="lib\net8.0\Nalam360.Platform.Documentation.xml" />
+  </files>
+</package>

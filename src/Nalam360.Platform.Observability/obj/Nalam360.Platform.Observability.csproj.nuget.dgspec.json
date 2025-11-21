@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj": {}
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj": {}
   },
   "projects": {
-    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj": {
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj",
+        "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj",
         "projectName": "Nalam360.Platform.Observability",
-        "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj",
+        "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Observability\\Nalam360.Platform.Observability.csproj",
         "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-        "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Observability\\obj\\",
+        "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Observability\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",

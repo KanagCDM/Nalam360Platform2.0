@@ -1546,11 +1546,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
+      "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
       "projectName": "Nalam360.Platform.Integration",
-      "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
+      "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Integration\\Nalam360.Platform.Integration.csproj",
       "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-      "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Integration\\obj\\",
+      "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Integration\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -1574,8 +1574,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
-              "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
+            "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj": {
+              "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj"
             }
           }
         }

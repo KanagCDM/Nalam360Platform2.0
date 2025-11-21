@@ -1,0 +1,291 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-fullscreen @GetCssClass()"
+         style="@Style"
+         @ref="_containerRef">
+        @ChildContent
+        
+        @if (ShowToggleButton)
+        {
+            <button class="n360-fullscreen__toggle @GetToggleButtonClass()"
+                    @onclick="ToggleAsync"
+                    title="@(_isFullscreen ? ExitButtonTitle : EnterButtonTitle)">
+                <i class="fas fa-@(_isFullscreen ? "compress" : "expand")"></i>
+                @if (ShowButtonText)
+                {
+                    <span>@(_isFullscreen ? ExitButtonText : EnterButtonText)</span>
+                }
+            </button>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to display in fullscreen
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Fullscreen state
+    /// </summary>
+    [Parameter] public bool IsFullscreen { get; set; }
+    
+    /// <summary>
+    /// Show toggle button
+    /// </summary>
+    [Parameter] public bool ShowToggleButton { get; set; } = true;
+    
+    /// <summary>
+    /// Toggle button position
+    /// </summary>
+    [Parameter] public FullscreenButtonPosition ButtonPosition { get; set; } = FullscreenButtonPosition.TopRight;
+    
+    /// <summary>
+    /// Show button text
+    /// </summary>
+    [Parameter] public bool ShowButtonText { get; set; }
+    
+    /// <summary>
+    /// Enter fullscreen button text
+    /// </summary>
+    [Parameter] public string EnterButtonText { get; set; } = "Fullscreen";
+    
+    /// <summary>
+    /// Exit fullscreen button text
+    /// </summary>
+    [Parameter] public string ExitButtonText { get; set; } = "Exit Fullscreen";
+    
+    /// <summary>
+    /// Enter button title (tooltip)
+    /// </summary>
+    [Parameter] public string EnterButtonTitle { get; set; } = "Enter fullscreen (F11)";
+    
+    /// <summary>
+    /// Exit button title (tooltip)
+    /// </summary>
+    [Parameter] public string ExitButtonTitle { get; set; } = "Exit fullscreen (F11)";
+    
+    /// <summary>
+    /// Enable F11 keyboard shortcut
+    /// </summary>
+    [Parameter] public bool EnableKeyboardShortcut { get; set; } = true;
+    
+    /// <summary>
+    /// Use custom keyboard shortcut (e.g., "F11", "Ctrl+F")
+    /// </summary>
+    [Parameter] public string? CustomShortcut { get; set; }
+    
+    /// <summary>
+    /// Callback when entering fullscreen
+    /// </summary>
+    [Parameter] public EventCallback OnEnterFullscreen { get; set; }
+    
+    /// <summary>
+    /// Callback when exiting fullscreen
+    /// </summary>
+    [Parameter] public EventCallback OnExitFullscreen { get; set; }
+    
+    /// <summary>
+    /// Callback when fullscreen change (with state)
+    /// </summary>
+    [Parameter] public EventCallback<bool> OnFullscreenChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ElementReference _containerRef;
+    private DotNetObjectReference<N360Fullscreen>? _objRef;
+    private bool _isFullscreen;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            
+            var config = new
+            {
+                enableKeyboardShortcut = EnableKeyboardShortcut,
+                customShortcut = CustomShortcut ?? "F11"
+            };
+            
+            await JS.InvokeVoidAsync("Nalam360.Fullscreen.initialize", _containerRef, _objRef, config);
+        }
+        
+        // Sync IsFullscreen parameter
+        if (IsFullscreen && !_isFullscreen)
+        {
+            await EnterAsync();
+        }
+        else if (!IsFullscreen && _isFullscreen)
+        {
+            await ExitAsync();
+        }
+    }
+    
+    /// <summary>
+    /// Enter fullscreen mode
+    /// </summary>
+    public async Task EnterAsync()
+    {
+        if (!_hasPermission) return;
+        
+        try
+        {
+            var success = await JS.InvokeAsync<bool>("Nalam360.Fullscreen.enter", _containerRef);
+            if (success)
+            {
+                _isFullscreen = true;
+                IsFullscreen = true;
+                await OnEnterFullscreen.InvokeAsync();
+                await OnFullscreenChange.InvokeAsync(true);
+                LogAudit("FullscreenEntered", "Entered fullscreen mode");
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            LogAudit("FullscreenError", $"Failed to enter fullscreen: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Exit fullscreen mode
+    /// </summary>
+    public async Task ExitAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("Nalam360.Fullscreen.exit");
+            _isFullscreen = false;
+            IsFullscreen = false;
+            await OnExitFullscreen.InvokeAsync();
+            await OnFullscreenChange.InvokeAsync(false);
+            LogAudit("FullscreenExited", "Exited fullscreen mode");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            LogAudit("FullscreenError", $"Failed to exit fullscreen: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Toggle fullscreen mode
+    /// </summary>
+    public async Task ToggleAsync()
+    {
+        if (_isFullscreen)
+            await ExitAsync();
+        else
+            await EnterAsync();
+    }
+    
+    [JSInvokable]
+    public async Task HandleFullscreenChange(bool isFullscreen)
+    {
+        _isFullscreen = isFullscreen;
+        IsFullscreen = isFullscreen;
+        
+        if (isFullscreen)
+        {
+            await OnEnterFullscreen.InvokeAsync();
+        }
+        else
+        {
+            await OnExitFullscreen.InvokeAsync();
+        }
+        
+        await OnFullscreenChange.InvokeAsync(isFullscreen);
+        LogAudit("FullscreenChanged", $"Fullscreen state: {isFullscreen}");
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Check if fullscreen is supported
+    /// </summary>
+    public async Task<bool> IsSupportedAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<bool>("Nalam360.Fullscreen.isSupported");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-fullscreen" };
+        
+        if (_isFullscreen)
+            classes.Add("n360-fullscreen--active");
+        
+        if (!string.IsNullOrEmpty(CssClass))
+            classes.Add(CssClass);
+        
+        if (IsRtl)
+            classes.Add("n360-fullscreen--rtl");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetToggleButtonClass()
+    {
+        var classes = new List<string> { "n360-fullscreen__toggle" };
+        
+        classes.Add($"n360-fullscreen__toggle--{ButtonPosition.ToString().ToLower().Replace("_", "-")}");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _objRef?.Dispose();
+    }
+    
+    public enum FullscreenButtonPosition
+    {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
+}

@@ -1,0 +1,281 @@
+@using Syncfusion.Blazor.Inputs
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@inherits N360ComponentBase
+
+@if (_hasPermission)
+{
+    <div class="n360-signature @CssClass" style="@Style" @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="n360-signature__label">
+                @Label
+                @if (Required)
+                {
+                    <span class="n360-signature__required">*</span>
+                }
+            </label>
+        }
+        
+        <div class="n360-signature__canvas-wrapper" style="@CanvasWrapperStyle">
+            <SfSignature @ref="_signatureComponent"
+                        Disabled="@Disabled"
+                        BackgroundColor="@BackgroundColor"
+                        StrokeColor="@StrokeColor"
+                        MinStrokeWidth="@MinStrokeWidth"
+                        MaxStrokeWidth="@MaxStrokeWidth"
+                        Velocity="@Velocity"
+                        SaveWithBackground="@SaveWithBackground">
+            </SfSignature>
+        </div>
+        
+        <div class="n360-signature__actions">
+            <button type="button" 
+                    class="n360-signature__btn n360-signature__btn--clear" 
+                    @onclick="ClearAsync"
+                    disabled="@(Disabled || !_hasSignature)">
+                🗑️ Clear
+            </button>
+            
+            @if (ShowSaveButton)
+            {
+                <button type="button" 
+                        class="n360-signature__btn n360-signature__btn--save" 
+                        @onclick="SaveAsync"
+                        disabled="@(Disabled || !_hasSignature)">
+                    💾 @SaveButtonText
+                </button>
+            }
+            
+            @if (ShowUndoButton)
+            {
+                <button type="button" 
+                        class="n360-signature__btn n360-signature__btn--undo" 
+                        @onclick="UndoAsync"
+                        disabled="@(Disabled || !_canUndo)">
+                    ↶ Undo
+                </button>
+            }
+            
+            @if (ShowRedoButton)
+            {
+                <button type="button" 
+                        class="n360-signature__btn n360-signature__btn--redo" 
+                        @onclick="RedoAsync"
+                        disabled="@(Disabled || !_canRedo)">
+                    ↷ Redo
+                </button>
+            }
+        </div>
+        
+        @if (!string.IsNullOrEmpty(_validationMessage))
+        {
+            <div class="n360-signature__validation">
+                @_validationMessage
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(HelperText))
+        {
+            <div class="n360-signature__helper">
+                @HelperText
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    
+    // Canvas settings
+    [Parameter] public int CanvasWidth { get; set; } = 600;
+    [Parameter] public int CanvasHeight { get; set; } = 300;
+    [Parameter] public string BackgroundColor { get; set; } = "#ffffff";
+    [Parameter] public string StrokeColor { get; set; } = "#000000";
+    [Parameter] public double MinStrokeWidth { get; set; } = 0.5;
+    [Parameter] public double MaxStrokeWidth { get; set; } = 2.5;
+    [Parameter] public double Velocity { get; set; } = 0.7;
+    [Parameter] public bool SaveWithBackground { get; set; } = true;
+    
+    // Button visibility
+    [Parameter] public bool ShowSaveButton { get; set; } = true;
+    [Parameter] public bool ShowUndoButton { get; set; } = true;
+    [Parameter] public bool ShowRedoButton { get; set; } = true;
+    [Parameter] public string SaveButtonText { get; set; } = "Save";
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public EventCallback<string> OnChange { get; set; }
+    
+    [Inject] private IPermissionService? PermissionService { get; set; }
+    [Inject] private IAuditService? AuditService { get; set; }
+    
+    private SfSignature? _signatureComponent;
+    private bool _hasPermission = true;
+    private bool _hasSignature = false;
+    private bool _canUndo = false;
+    private bool _canRedo = false;
+    private string? _validationMessage;
+    
+    private string CanvasWrapperStyle => $"width: {CanvasWidth}px; height: {CanvasHeight}px;";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissionAsync();
+    }
+    
+    private async Task CheckPermissionAsync()
+    {
+        if (!string.IsNullOrEmpty(RequiredPermission) && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+            
+            if (!_hasPermission && !HideIfNoPermission)
+            {
+                _hasPermission = true;
+                Disabled = true;
+            }
+        }
+    }
+    
+    private async Task ClearAsync()
+    {
+        if (_signatureComponent != null)
+        {
+            await _signatureComponent.ClearAsync();
+            _hasSignature = false;
+            _canUndo = false;
+            _canRedo = false;
+            _validationMessage = null;
+            
+            Value = null;
+            await ValueChanged.InvokeAsync(null);
+            await OnClear.InvokeAsync();
+            
+            if (EnableAudit && AuditService != null)
+            {
+                await AuditService.LogAsync(new AuditMetadata
+                {
+                    Action = "SignatureCleared",
+                    Resource = AuditResource ?? "Signature"
+                });
+            }
+        }
+    }
+    
+    private async Task SaveAsync()
+    {
+        if (_signatureComponent != null && _hasSignature)
+        {
+            try
+            {
+                // Get signature as base64 PNG
+                var signatureData = await _signatureComponent.GetSignatureAsync();
+                
+                if (!string.IsNullOrEmpty(signatureData))
+                {
+                    Value = signatureData;
+                    await ValueChanged.InvokeAsync(signatureData);
+                    await OnSave.InvokeAsync(signatureData);
+                    
+                    if (EnableAudit && AuditService != null)
+                    {
+                        await AuditService.LogAsync(new AuditMetadata
+                        {
+                            Action = "SignatureSaved",
+                            Resource = AuditResource ?? "Signature",
+                            AdditionalData = new Dictionary<string, object>
+                            {
+                                ["DataLength"] = signatureData.Length
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _validationMessage = $"Error saving signature: {ex.Message}";
+            }
+        }
+    }
+    
+    private async Task UndoAsync()
+    {
+        if (_signatureComponent != null && _canUndo)
+        {
+            await _signatureComponent.UndoAsync();
+            _canRedo = true;
+            await UpdateSignatureStateAsync();
+        }
+    }
+    
+    private async Task RedoAsync()
+    {
+        if (_signatureComponent != null && _canRedo)
+        {
+            await _signatureComponent.RedoAsync();
+            _canUndo = true;
+            await UpdateSignatureStateAsync();
+        }
+    }
+    
+    private async Task UpdateSignatureStateAsync()
+    {
+        if (_signatureComponent != null)
+        {
+            var signatureData = await _signatureComponent.GetSignatureAsync();
+            _hasSignature = !string.IsNullOrEmpty(signatureData);
+            
+            if (_hasSignature && OnChange.HasDelegate)
+            {
+                await OnChange.InvokeAsync(signatureData);
+            }
+        }
+    }
+    
+    public async Task<string?> GetSignatureAsync()
+    {
+        if (_signatureComponent != null)
+        {
+            return await _signatureComponent.GetSignatureAsync();
+        }
+        return null;
+    }
+    
+    public async Task LoadSignatureAsync(string base64Data)
+    {
+        if (_signatureComponent != null && !string.IsNullOrEmpty(base64Data))
+        {
+            await _signatureComponent.LoadAsync(base64Data);
+            _hasSignature = true;
+            Value = base64Data;
+        }
+    }
+    
+    public bool Validate()
+    {
+        if (Required && !_hasSignature)
+        {
+            _validationMessage = "Signature is required";
+            return false;
+        }
+        
+        _validationMessage = null;
+        return true;
+    }
+}

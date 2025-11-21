@@ -1,0 +1,177 @@
+.n360-idle-timeout__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.n360-idle-timeout__dialog {
+    background: var(--n360-bg-primary, #ffffff);
+    border-radius: var(--n360-radius-lg, 12px);
+    padding: 2rem;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.n360-idle-timeout__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+    background: var(--n360-warning-bg, #fffbe6);
+    border-radius: 50%;
+    color: var(--n360-warning, #faad14);
+    font-size: 32px;
+}
+
+.n360-idle-timeout__title {
+    margin: 0 0 1rem 0;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--n360-text-primary, #333333);
+}
+
+.n360-idle-timeout__message {
+    margin: 0 0 1.5rem 0;
+    font-size: 16px;
+    text-align: center;
+    color: var(--n360-text-secondary, #666666);
+    line-height: 1.6;
+}
+
+.n360-idle-timeout__countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--n360-bg-secondary, #f5f5f5);
+    border-radius: var(--n360-radius-md, 8px);
+    border: 2px solid var(--n360-warning, #faad14);
+}
+
+.n360-idle-timeout__timer {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--n360-warning, #faad14);
+    line-height: 1;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.n360-idle-timeout__timer-label {
+    font-size: 14px;
+    color: var(--n360-text-secondary, #666666);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.n360-idle-timeout__actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.n360-idle-timeout__actions .n360-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--n360-radius-md, 8px);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.n360-idle-timeout__actions .n360-btn--primary {
+    background: var(--n360-primary, #1890ff);
+    color: white;
+}
+
+.n360-idle-timeout__actions .n360-btn--primary:hover {
+    background: var(--n360-primary-hover, #40a9ff);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+}
+
+.n360-idle-timeout__actions .n360-btn--secondary {
+    background: var(--n360-bg-secondary, #f0f0f0);
+    color: var(--n360-text-primary, #333333);
+    border: 1px solid var(--n360-border-color, #d9d9d9);
+}
+
+.n360-idle-timeout__actions .n360-btn--secondary:hover {
+    background: var(--n360-bg-hover, #e0e0e0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .n360-idle-timeout__dialog {
+        padding: 1.5rem;
+    }
+    
+    .n360-idle-timeout__title {
+        font-size: 20px;
+    }
+    
+    .n360-idle-timeout__message {
+        font-size: 14px;
+    }
+    
+    .n360-idle-timeout__timer {
+        font-size: 36px;
+    }
+    
+    .n360-idle-timeout__actions {
+        flex-direction: column;
+    }
+    
+    .n360-idle-timeout__actions .n360-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

@@ -1,0 +1,54 @@
+.n360-print {
+    display: none;
+}
+
+.n360-print__content {
+    display: none;
+}
+
+/* Print-specific styles */
+@media print {
+    .n360-print {
+        display: block !important;
+    }
+    
+    .n360-print__content {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    /* Hide print button and other UI elements */
+    .n360-print__trigger,
+    button,
+    nav,
+    .sidebar,
+    .header,
+    .footer {
+        display: none !important;
+    }
+    
+    /* Ensure content takes full width */
+    .n360-print__content {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Page break utilities */
+    .page-break-before {
+        page-break-before: always;
+    }
+    
+    .page-break-after {
+        page-break-after: always;
+    }
+    
+    .page-break-inside-avoid {
+        page-break-inside: avoid;
+    }
+    
+    /* Prevent content cut-off */
+    table,
+    img {
+        page-break-inside: avoid;
+    }
+}

@@ -1,0 +1,205 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-print" style="display: none;">
+        <div class="n360-print__content" id="@PrintContentId">
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Content to be printed
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Title for the print document
+    /// </summary>
+    [Parameter] public string? Title { get; set; }
+    
+    /// <summary>
+    /// Custom CSS to apply for printing
+    /// </summary>
+    [Parameter] public string? PrintStyles { get; set; }
+    
+    /// <summary>
+    /// Page orientation: Portrait or Landscape
+    /// </summary>
+    [Parameter] public PrintOrientation Orientation { get; set; } = PrintOrientation.Portrait;
+    
+    /// <summary>
+    /// Paper size: A4, Letter, etc.
+    /// </summary>
+    [Parameter] public PrintPageSize PageSize { get; set; } = PrintPageSize.A4;
+    
+    /// <summary>
+    /// Show header in print
+    /// </summary>
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    
+    /// <summary>
+    /// Show footer in print
+    /// </summary>
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    
+    /// <summary>
+    /// Header content template
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    
+    /// <summary>
+    /// Footer content template
+    /// </summary>
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    
+    /// <summary>
+    /// Page margins in CSS format (e.g., "1cm 2cm")
+    /// </summary>
+    [Parameter] public string Margins { get; set; } = "1cm";
+    
+    /// <summary>
+    /// Hide specific elements during print (CSS selectors)
+    /// </summary>
+    [Parameter] public string[]? HideElements { get; set; }
+    
+    /// <summary>
+    /// Callback when print dialog is opened
+    /// </summary>
+    [Parameter] public EventCallback OnBeforePrint { get; set; }
+    
+    /// <summary>
+    /// Callback when print dialog is closed
+    /// </summary>
+    [Parameter] public EventCallback OnAfterPrint { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private string PrintContentId => $"print-content-{Guid.NewGuid():N}";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+    }
+    
+    /// <summary>
+    /// Trigger the print dialog
+    /// </summary>
+    public async Task PrintAsync()
+    {
+        if (RequiredPermission != null && !_hasPermission)
+            return;
+        
+        await OnBeforePrint.InvokeAsync();
+        
+        var printOptions = new
+        {
+            contentId = PrintContentId,
+            title = Title ?? "Print Document",
+            styles = GetPrintStyles(),
+            orientation = Orientation.ToString().ToLower(),
+            pageSize = GetPageSizeCss(),
+            margins = Margins,
+            showHeader = ShowHeader,
+            showFooter = ShowFooter,
+            hideElements = HideElements ?? Array.Empty<string>()
+        };
+        
+        await JS.InvokeVoidAsync("Nalam360.Print.print", printOptions);
+        
+        await OnAfterPrint.InvokeAsync();
+        
+        LogAudit("Print", $"Printed document: {Title}");
+    }
+    
+    private string GetPrintStyles()
+    {
+        var defaultStyles = @"
+            @page {
+                margin: " + Margins + @";
+                size: " + GetPageSizeCss() + " " + Orientation.ToString().ToLower() + @";
+            }
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 12pt;
+            }
+            .n360-print__content {
+                display: block !important;
+            }
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                .n360-print__content, .n360-print__content * {
+                    visibility: visible;
+                }
+                .n360-print__content {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                }
+            }
+        ";
+        
+        return !string.IsNullOrEmpty(PrintStyles) 
+            ? defaultStyles + "\n" + PrintStyles 
+            : defaultStyles;
+    }
+    
+    private string GetPageSizeCss()
+    {
+        return PageSize switch
+        {
+            PrintPageSize.A4 => "A4",
+            PrintPageSize.A3 => "A3",
+            PrintPageSize.A5 => "A5",
+            PrintPageSize.Letter => "letter",
+            PrintPageSize.Legal => "legal",
+            PrintPageSize.Tabloid => "tabloid",
+            _ => "A4"
+        };
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+}
+
+@code {
+    public enum PrintOrientation
+    {
+        Portrait,
+        Landscape
+    }
+    
+    public enum PrintPageSize
+    {
+        A4,
+        A3,
+        A5,
+        Letter,
+        Legal,
+        Tabloid
+    }
+}

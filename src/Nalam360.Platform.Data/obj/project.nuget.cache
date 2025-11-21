@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "EwyxS8LKey4=",
+  "dgSpecHash": "NlyoK7hrjuE=",
   "success": true,
-  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Data\\Nalam360.Platform.Data.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\mmc2878\\.nuget\\packages\\azure.identity\\1.13.1\\azure.identity.1.13.1.nupkg.sha512",

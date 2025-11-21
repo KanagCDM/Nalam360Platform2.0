@@ -1,0 +1,545 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    <div class="n360-colorpicker-advanced @GetCssClass()"
+         style="@Style">
+        
+        <div class="n360-colorpicker-advanced__main">
+            <!-- Color Wheel/Gradient Picker -->
+            <div class="n360-colorpicker-advanced__picker"
+                 @ref="_pickerRef"
+                 @onmousedown="HandlePickerMouseDown"
+                 @onmousemove="HandlePickerMouseMove"
+                 @onmouseup="HandlePickerMouseUp">
+                <canvas class="n360-colorpicker-advanced__canvas"
+                        @ref="_canvasRef"
+                        width="300"
+                        height="300"></canvas>
+                <div class="n360-colorpicker-advanced__cursor"
+                     style="left: @(_cursorX)px; top: @(_cursorY)px"></div>
+            </div>
+            
+            <!-- Hue Slider -->
+            <div class="n360-colorpicker-advanced__hue-slider">
+                <input type="range"
+                       min="0"
+                       max="360"
+                       @bind="_hue"
+                       @bind:event="oninput"
+                       @bind:after="UpdateFromHSL"
+                       class="n360-colorpicker-advanced__slider" />
+            </div>
+            
+            <!-- Alpha Slider -->
+            @if (ShowAlpha)
+            {
+                <div class="n360-colorpicker-advanced__alpha-slider">
+                    <div class="n360-colorpicker-advanced__alpha-bg"></div>
+                    <input type="range"
+                           min="0"
+                           max="100"
+                           @bind="_alpha"
+                           @bind:event="oninput"
+                           @bind:after="UpdateFromAlpha"
+                           class="n360-colorpicker-advanced__slider" />
+                </div>
+            }
+        </div>
+        
+        <!-- Color Input Formats -->
+        <div class="n360-colorpicker-advanced__inputs">
+            <div class="n360-colorpicker-advanced__format-tabs">
+                <button class="@GetFormatTabClass(ColorInputFormat.Hex)"
+                        @onclick="() => _inputFormat = ColorInputFormat.Hex">HEX</button>
+                <button class="@GetFormatTabClass(ColorInputFormat.RGB)"
+                        @onclick="() => _inputFormat = ColorInputFormat.RGB">RGB</button>
+                <button class="@GetFormatTabClass(ColorInputFormat.HSL)"
+                        @onclick="() => _inputFormat = ColorInputFormat.HSL">HSL</button>
+            </div>
+            
+            @if (_inputFormat == ColorInputFormat.Hex)
+            {
+                <div class="n360-colorpicker-advanced__input-group">
+                    <input type="text"
+                           @bind="_hexValue"
+                           @bind:event="oninput"
+                           @bind:after="UpdateFromHex"
+                           placeholder="#000000"
+                           maxlength="7"
+                           class="n360-colorpicker-advanced__input" />
+                </div>
+            }
+            else if (_inputFormat == ColorInputFormat.RGB)
+            {
+                <div class="n360-colorpicker-advanced__input-group n360-colorpicker-advanced__input-group--triple">
+                    <input type="number" min="0" max="255" @bind="_r" @bind:event="oninput" @bind:after="UpdateFromRGB" placeholder="R" class="n360-colorpicker-advanced__input" />
+                    <input type="number" min="0" max="255" @bind="_g" @bind:event="oninput" @bind:after="UpdateFromRGB" placeholder="G" class="n360-colorpicker-advanced__input" />
+                    <input type="number" min="0" max="255" @bind="_b" @bind:event="oninput" @bind:after="UpdateFromRGB" placeholder="B" class="n360-colorpicker-advanced__input" />
+                </div>
+            }
+            else if (_inputFormat == ColorInputFormat.HSL)
+            {
+                <div class="n360-colorpicker-advanced__input-group n360-colorpicker-advanced__input-group--triple">
+                    <input type="number" min="0" max="360" @bind="_hue" @bind:event="oninput" @bind:after="UpdateFromHSL" placeholder="H" class="n360-colorpicker-advanced__input" />
+                    <input type="number" min="0" max="100" @bind="_saturation" @bind:event="oninput" @bind:after="UpdateFromHSL" placeholder="S" class="n360-colorpicker-advanced__input" />
+                    <input type="number" min="0" max="100" @bind="_lightness" @bind:event="oninput" @bind:after="UpdateFromHSL" placeholder="L" class="n360-colorpicker-advanced__input" />
+                </div>
+            }
+        </div>
+        
+        <!-- Eyedropper Tool -->
+        @if (ShowEyedropper)
+        {
+            <button class="n360-colorpicker-advanced__eyedropper"
+                    @onclick="ActivateEyedropperAsync"
+                    title="Pick color from screen">
+                <i class="fas fa-eye-dropper"></i>
+                Eyedropper
+            </button>
+        }
+        
+        <!-- Color Preview -->
+        <div class="n360-colorpicker-advanced__preview">
+            <div class="n360-colorpicker-advanced__preview-current"
+                 style="background-color: @_currentColor"></div>
+            <div class="n360-colorpicker-advanced__preview-label">@_currentColor</div>
+        </div>
+        
+        <!-- Recent Colors -->
+        @if (ShowRecentColors && _recentColors.Any())
+        {
+            <div class="n360-colorpicker-advanced__recent">
+                <div class="n360-colorpicker-advanced__section-title">Recent Colors</div>
+                <div class="n360-colorpicker-advanced__color-grid">
+                    @foreach (var color in _recentColors)
+                    {
+                        <div class="n360-colorpicker-advanced__color-swatch"
+                             style="background-color: @color"
+                             @onclick="() => SelectRecentColor(color)"
+                             title="@color"></div>
+                    }
+                </div>
+            </div>
+        }
+        
+        <!-- Saved Palettes -->
+        @if (ShowPalettes)
+        {
+            <div class="n360-colorpicker-advanced__palettes">
+                <div class="n360-colorpicker-advanced__section-title">
+                    Saved Palettes
+                    <button class="n360-colorpicker-advanced__palette-save"
+                            @onclick="SaveCurrentColorAsync">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="n360-colorpicker-advanced__color-grid">
+                    @foreach (var color in _savedPalette)
+                    {
+                        <div class="n360-colorpicker-advanced__color-swatch n360-colorpicker-advanced__color-swatch--removable"
+                             style="background-color: @color"
+                             @onclick="() => SelectPaletteColor(color)"
+                             title="@color">
+                            <button class="n360-colorpicker-advanced__swatch-remove"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => RemovePaletteColor(color)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Current color value (hex format)
+    /// </summary>
+    [Parameter] public string Value { get; set; } = "#000000";
+    
+    /// <summary>
+    /// Callback when color changes
+    /// </summary>
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    
+    /// <summary>
+    /// Show alpha channel slider
+    /// </summary>
+    [Parameter] public bool ShowAlpha { get; set; } = true;
+    
+    /// <summary>
+    /// Show eyedropper tool
+    /// </summary>
+    [Parameter] public bool ShowEyedropper { get; set; } = true;
+    
+    /// <summary>
+    /// Show recent colors
+    /// </summary>
+    [Parameter] public bool ShowRecentColors { get; set; } = true;
+    
+    /// <summary>
+    /// Maximum recent colors to store
+    /// </summary>
+    [Parameter] public int MaxRecentColors { get; set; } = 10;
+    
+    /// <summary>
+    /// Show saved color palettes
+    /// </summary>
+    [Parameter] public bool ShowPalettes { get; set; } = true;
+    
+    /// <summary>
+    /// Callback when color selected
+    /// </summary>
+    [Parameter] public EventCallback<ColorChangeEventArgs> OnColorChange { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public bool IsRtl { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private ElementReference _pickerRef;
+    private ElementReference _canvasRef;
+    private ColorInputFormat _inputFormat = ColorInputFormat.Hex;
+    
+    // Color values
+    private int _r, _g, _b;
+    private int _hue, _saturation, _lightness;
+    private int _alpha = 100;
+    private string _hexValue = "#000000";
+    private string _currentColor = "#000000";
+    
+    // Picker state
+    private double _cursorX = 150;
+    private double _cursorY = 150;
+    private bool _isDragging;
+    
+    // Recent & saved colors
+    private List<string> _recentColors = new();
+    private List<string> _savedPalette = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        ParseColor(Value);
+        await LoadSavedDataAsync();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("Nalam360.ColorPicker.initializeCanvas", _canvasRef, _hue);
+        }
+    }
+    
+    private void ParseColor(string color)
+    {
+        if (string.IsNullOrEmpty(color)) color = "#000000";
+        
+        _hexValue = color;
+        _currentColor = color;
+        
+        // Convert hex to RGB
+        if (color.StartsWith("#") && color.Length >= 7)
+        {
+            _r = Convert.ToInt32(color.Substring(1, 2), 16);
+            _g = Convert.ToInt32(color.Substring(3, 2), 16);
+            _b = Convert.ToInt32(color.Substring(5, 2), 16);
+            
+            // Convert RGB to HSL
+            var (h, s, l) = RGBToHSL(_r, _g, _b);
+            _hue = (int)h;
+            _saturation = (int)s;
+            _lightness = (int)l;
+        }
+    }
+    
+    private async Task UpdateFromHex()
+    {
+        if (_hexValue.StartsWith("#") && _hexValue.Length >= 7)
+        {
+            ParseColor(_hexValue);
+            await NotifyColorChange();
+        }
+    }
+    
+    private async Task UpdateFromRGB()
+    {
+        _hexValue = $"#{_r:X2}{_g:X2}{_b:X2}";
+        _currentColor = _hexValue;
+        
+        var (h, s, l) = RGBToHSL(_r, _g, _b);
+        _hue = (int)h;
+        _saturation = (int)s;
+        _lightness = (int)l;
+        
+        await NotifyColorChange();
+    }
+    
+    private async Task UpdateFromHSL()
+    {
+        var (r, g, b) = HSLToRGB(_hue, _saturation, _lightness);
+        _r = r;
+        _g = g;
+        _b = b;
+        _hexValue = $"#{_r:X2}{_g:X2}{_b:X2}";
+        _currentColor = _hexValue;
+        
+        await JS.InvokeVoidAsync("Nalam360.ColorPicker.updateCanvas", _canvasRef, _hue);
+        await NotifyColorChange();
+    }
+    
+    private async Task UpdateFromAlpha()
+    {
+        if (ShowAlpha)
+        {
+            _currentColor = $"rgba({_r},{_g},{_b},{_alpha / 100.0})";
+            await NotifyColorChange();
+        }
+    }
+    
+    private async Task NotifyColorChange()
+    {
+        await ValueChanged.InvokeAsync(_currentColor);
+        
+        var eventArgs = new ColorChangeEventArgs
+        {
+            Hex = _hexValue,
+            RGB = new RGB { R = _r, G = _g, B = _b },
+            HSL = new HSL { H = _hue, S = _saturation, L = _lightness },
+            Alpha = _alpha / 100.0
+        };
+        
+        await OnColorChange.InvokeAsync(eventArgs);
+        AddToRecentColors(_currentColor);
+        LogAudit("ColorChanged", $"Color changed to {_currentColor}");
+    }
+    
+    private void HandlePickerMouseDown(MouseEventArgs e)
+    {
+        _isDragging = true;
+    }
+    
+    private async Task HandlePickerMouseMove(MouseEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _cursorX = Math.Clamp(e.OffsetX, 0, 300);
+            _cursorY = Math.Clamp(e.OffsetY, 0, 300);
+            
+            // Update saturation and lightness based on position
+            _saturation = (int)((_cursorX / 300.0) * 100);
+            _lightness = (int)((1 - _cursorY / 300.0) * 100);
+            
+            await UpdateFromHSL();
+        }
+    }
+    
+    private void HandlePickerMouseUp(MouseEventArgs e)
+    {
+        _isDragging = false;
+    }
+    
+    private async Task ActivateEyedropperAsync()
+    {
+        try
+        {
+            var color = await JS.InvokeAsync<string>("Nalam360.ColorPicker.eyedropper");
+            if (!string.IsNullOrEmpty(color))
+            {
+                ParseColor(color);
+                await NotifyColorChange();
+            }
+        }
+        catch
+        {
+            // Eyedropper not supported
+        }
+    }
+    
+    private void AddToRecentColors(string color)
+    {
+        if (_recentColors.Contains(color))
+            _recentColors.Remove(color);
+        
+        _recentColors.Insert(0, color);
+        
+        if (_recentColors.Count > MaxRecentColors)
+            _recentColors.RemoveAt(_recentColors.Count - 1);
+        
+        _ = SaveDataAsync();
+    }
+    
+    private async Task SelectRecentColor(string color)
+    {
+        ParseColor(color);
+        await NotifyColorChange();
+    }
+    
+    private async Task SaveCurrentColorAsync()
+    {
+        if (!_savedPalette.Contains(_currentColor))
+        {
+            _savedPalette.Add(_currentColor);
+            await SaveDataAsync();
+            LogAudit("ColorSaved", $"Color saved to palette: {_currentColor}");
+        }
+    }
+    
+    private async Task SelectPaletteColor(string color)
+    {
+        ParseColor(color);
+        await NotifyColorChange();
+    }
+    
+    private async Task RemovePaletteColor(string color)
+    {
+        _savedPalette.Remove(color);
+        await SaveDataAsync();
+    }
+    
+    private async Task LoadSavedDataAsync()
+    {
+        try
+        {
+            var data = await JS.InvokeAsync<ColorPickerData>("Nalam360.ColorPicker.loadData");
+            _recentColors = data.RecentColors ?? new();
+            _savedPalette = data.SavedPalette ?? new();
+        }
+        catch
+        {
+            // No saved data
+        }
+    }
+    
+    private async Task SaveDataAsync()
+    {
+        var data = new ColorPickerData
+        {
+            RecentColors = _recentColors,
+            SavedPalette = _savedPalette
+        };
+        await JS.InvokeVoidAsync("Nalam360.ColorPicker.saveData", data);
+    }
+    
+    private (double H, double S, double L) RGBToHSL(int r, int g, int b)
+    {
+        double rn = r / 255.0, gn = g / 255.0, bn = b / 255.0;
+        double max = Math.Max(rn, Math.Max(gn, bn));
+        double min = Math.Min(rn, Math.Min(gn, bn));
+        double h = 0, s = 0, l = (max + min) / 2;
+        
+        if (max != min)
+        {
+            double d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            
+            if (max == rn) h = (gn - bn) / d + (gn < bn ? 6 : 0);
+            else if (max == gn) h = (bn - rn) / d + 2;
+            else h = (rn - gn) / d + 4;
+            
+            h /= 6;
+        }
+        
+        return (h * 360, s * 100, l * 100);
+    }
+    
+    private (int R, int G, int B) HSLToRGB(int h, int s, int l)
+    {
+        double hn = h / 360.0, sn = s / 100.0, ln = l / 100.0;
+        
+        double r, g, b;
+        
+        if (sn == 0)
+        {
+            r = g = b = ln;
+        }
+        else
+        {
+            double q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn;
+            double p = 2 * ln - q;
+            r = HueToRGB(p, q, hn + 1.0 / 3);
+            g = HueToRGB(p, q, hn);
+            b = HueToRGB(p, q, hn - 1.0 / 3);
+        }
+        
+        return ((int)(r * 255), (int)(g * 255), (int)(b * 255));
+    }
+    
+    private double HueToRGB(double p, double q, double t)
+    {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1.0 / 6) return p + (q - p) * 6 * t;
+        if (t < 1.0 / 2) return q;
+        if (t < 2.0 / 3) return p + (q - p) * (2.0 / 3 - t) * 6;
+        return p;
+    }
+    
+    private string GetCssClass()
+    {
+        var classes = new List<string> { "n360-colorpicker-advanced" };
+        if (!string.IsNullOrEmpty(CssClass)) classes.Add(CssClass);
+        if (IsRtl) classes.Add("n360-colorpicker-advanced--rtl");
+        return string.Join(" ", classes);
+    }
+    
+    private string GetFormatTabClass(ColorInputFormat format)
+    {
+        var baseClass = "n360-colorpicker-advanced__format-tab";
+        return _inputFormat == format ? $"{baseClass} {baseClass}--active" : baseClass;
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup
+    }
+    
+    public enum ColorInputFormat { Hex, RGB, HSL }
+    
+    public class ColorChangeEventArgs
+    {
+        public string Hex { get; set; } = string.Empty;
+        public RGB RGB { get; set; } = new();
+        public HSL HSL { get; set; } = new();
+        public double Alpha { get; set; }
+    }
+    
+    public class RGB { public int R { get; set; } public int G { get; set; } public int B { get; set; } }
+    public class HSL { public int H { get; set; } public int S { get; set; } public int L { get; set; } }
+    
+    public class ColorPickerData
+    {
+        public List<string> RecentColors { get; set; } = new();
+        public List<string> SavedPalette { get; set; } = new();
+    }
+}

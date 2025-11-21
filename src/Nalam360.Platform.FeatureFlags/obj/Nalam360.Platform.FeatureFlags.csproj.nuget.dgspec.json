@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj": {}
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj": {}
   },
   "projects": {
-    "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj": {
+    "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
+        "projectUniqueName": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
         "projectName": "Nalam360.Platform.FeatureFlags",
-        "projectPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
+        "projectPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\Nalam360.Platform.FeatureFlags.csproj",
         "packagesPath": "C:\\Users\\mmc2878\\.nuget\\packages\\",
-        "outputPath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.FeatureFlags\\obj\\",
+        "outputPath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.FeatureFlags\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",

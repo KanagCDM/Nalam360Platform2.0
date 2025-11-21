@@ -27,3 +27,18 @@ D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.S
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.pdb
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Release\net8.0\ref\Nalam360.Platform.Serialization.dll
 D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.deps.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.sourcelink.json
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\refint\Nalam360.Platform.Serialization.dll
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\Nalam360.Platform.Serialization.pdb
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\obj\Release\net8.0\ref\Nalam360.Platform.Serialization.dll

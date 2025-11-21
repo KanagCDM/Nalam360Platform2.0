@@ -1,0 +1,165 @@
+.n360-clipboard__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--n360-border-color, #d9d9d9);
+    border-radius: var(--n360-radius-sm, 4px);
+    background: var(--n360-bg-primary, #ffffff);
+    color: var(--n360-text-primary, #333333);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.n360-clipboard__button:hover:not(.n360-clipboard__button--disabled) {
+    background: var(--n360-bg-hover, #f5f5f5);
+    border-color: var(--n360-primary, #1890ff);
+}
+
+.n360-clipboard__button:active:not(.n360-clipboard__button--disabled) {
+    transform: scale(0.98);
+}
+
+.n360-clipboard__button:focus-visible {
+    outline: 2px solid var(--n360-primary, #1890ff);
+    outline-offset: 2px;
+}
+
+/* Variants */
+.n360-clipboard__button--primary {
+    background: var(--n360-primary, #1890ff);
+    border-color: var(--n360-primary, #1890ff);
+    color: white;
+}
+
+.n360-clipboard__button--primary:hover:not(.n360-clipboard__button--disabled) {
+    background: var(--n360-primary-hover, #40a9ff);
+    border-color: var(--n360-primary-hover, #40a9ff);
+}
+
+.n360-clipboard__button--secondary {
+    background: var(--n360-secondary, #6c757d);
+    border-color: var(--n360-secondary, #6c757d);
+    color: white;
+}
+
+.n360-clipboard__button--success {
+    background: var(--n360-success, #52c41a);
+    border-color: var(--n360-success, #52c41a);
+    color: white;
+}
+
+.n360-clipboard__button--danger {
+    background: var(--n360-danger, #ff4d4f);
+    border-color: var(--n360-danger, #ff4d4f);
+    color: white;
+}
+
+.n360-clipboard__button--ghost {
+    background: transparent;
+    border-color: var(--n360-primary, #1890ff);
+    color: var(--n360-primary, #1890ff);
+}
+
+.n360-clipboard__button--ghost:hover:not(.n360-clipboard__button--disabled) {
+    background: var(--n360-primary-bg, #e6f7ff);
+}
+
+.n360-clipboard__button--link {
+    background: transparent;
+    border-color: transparent;
+    color: var(--n360-primary, #1890ff);
+    padding: 0.25rem 0.5rem;
+}
+
+.n360-clipboard__button--link:hover:not(.n360-clipboard__button--disabled) {
+    background: transparent;
+    color: var(--n360-primary-hover, #40a9ff);
+    text-decoration: underline;
+}
+
+/* Sizes */
+.n360-clipboard__button--small {
+    padding: 0.25rem 0.75rem;
+    font-size: 12px;
+}
+
+.n360-clipboard__button--medium {
+    padding: 0.5rem 1rem;
+    font-size: 14px;
+}
+
+.n360-clipboard__button--large {
+    padding: 0.75rem 1.5rem;
+    font-size: 16px;
+}
+
+/* Disabled */
+.n360-clipboard__button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Feedback */
+.n360-clipboard__feedback {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--n360-radius-sm, 4px);
+    font-size: 13px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.n360-clipboard__feedback--success {
+    background: var(--n360-success-bg, #f6ffed);
+    color: var(--n360-success, #52c41a);
+    border: 1px solid var(--n360-success-border, #b7eb8f);
+}
+
+.n360-clipboard__feedback--error {
+    background: var(--n360-danger-bg, #fff1f0);
+    color: var(--n360-danger, #ff4d4f);
+    border: 1px solid var(--n360-danger-border, #ffccc7);
+}
+
+.n360-clipboard__feedback--warning {
+    background: var(--n360-warning-bg, #fffbe6);
+    color: var(--n360-warning, #faad14);
+    border: 1px solid var(--n360-warning-border, #ffe58f);
+}
+
+.n360-clipboard__feedback--info {
+    background: var(--n360-info-bg, #e6f7ff);
+    color: var(--n360-info, #1890ff);
+    border: 1px solid var(--n360-info-border, #91d5ff);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .n360-clipboard__button {
+        font-size: 13px;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .n360-clipboard__feedback {
+        font-size: 12px;
+        padding: 0.2rem 0.6rem;
+    }
+}

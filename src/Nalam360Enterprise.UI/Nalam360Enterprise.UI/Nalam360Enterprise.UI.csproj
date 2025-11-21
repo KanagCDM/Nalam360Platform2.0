@@ -67,4 +67,8 @@
     <PackageReference Include="Syncfusion.Blazor.Schedule" Version="29.1.33" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Nalam360.Platform.Core\Nalam360.Platform.Core.csproj" />
+  </ItemGroup>
+
 </Project>

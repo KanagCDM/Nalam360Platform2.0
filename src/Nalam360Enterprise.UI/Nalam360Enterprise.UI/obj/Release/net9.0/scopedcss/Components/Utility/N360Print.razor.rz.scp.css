@@ -1,0 +1,54 @@
+.n360-print[b-zds5pofnok] {
+    display: none;
+}
+
+.n360-print__content[b-zds5pofnok] {
+    display: none;
+}
+
+/* Print-specific styles */
+@media print {
+    .n360-print[b-zds5pofnok] {
+        display: block !important;
+    }
+    
+    .n360-print__content[b-zds5pofnok] {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    /* Hide print button and other UI elements */
+    .n360-print__trigger[b-zds5pofnok],
+    button[b-zds5pofnok],
+    nav[b-zds5pofnok],
+    .sidebar[b-zds5pofnok],
+    .header[b-zds5pofnok],
+    .footer[b-zds5pofnok] {
+        display: none !important;
+    }
+    
+    /* Ensure content takes full width */
+    .n360-print__content[b-zds5pofnok] {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Page break utilities */
+    .page-break-before[b-zds5pofnok] {
+        page-break-before: always;
+    }
+    
+    .page-break-after[b-zds5pofnok] {
+        page-break-after: always;
+    }
+    
+    .page-break-inside-avoid[b-zds5pofnok] {
+        page-break-inside: avoid;
+    }
+    
+    /* Prevent content cut-off */
+    table[b-zds5pofnok],
+    img[b-zds5pofnok] {
+        page-break-inside: avoid;
+    }
+}

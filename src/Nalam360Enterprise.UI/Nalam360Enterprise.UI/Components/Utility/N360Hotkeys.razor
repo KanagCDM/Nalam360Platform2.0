@@ -1,0 +1,400 @@
+@using Nalam360Enterprise.UI.Core
+@using Nalam360Enterprise.UI.Core.Security
+@using Microsoft.JSInterop
+@inherits N360ComponentBase
+@implements IDisposable
+
+@inject IJSRuntime JS
+@inject IPermissionService? PermissionService
+
+@if (!HideIfNoPermission || _hasPermission)
+{
+    @ChildContent
+    
+    @if (ShowHelp && _showHelpModal)
+    {
+        <div class="n360-hotkeys__overlay" @onclick="CloseHelpModal">
+            <div class="n360-hotkeys__modal" @onclick:stopPropagation="true">
+                <div class="n360-hotkeys__modal-header">
+                    <h3>Keyboard Shortcuts</h3>
+                    <button class="n360-hotkeys__close-btn" @onclick="CloseHelpModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="n360-hotkeys__modal-body">
+                    @if (_hotkeys.Any())
+                    {
+                        @foreach (var group in _hotkeys.GroupBy(h => h.Category ?? "General"))
+                        {
+                            <div class="n360-hotkeys__category">
+                                <h4 class="n360-hotkeys__category-title">@group.Key</h4>
+                                <div class="n360-hotkeys__list">
+                                    @foreach (var hotkey in group.OrderBy(h => h.Key))
+                                    {
+                                        <div class="n360-hotkeys__item">
+                                            <div class="n360-hotkeys__keys">
+                                                @foreach (var key in ParseKeys(hotkey.Key))
+                                                {
+                                                    <kbd class="n360-hotkeys__key">@key</kbd>
+                                                    @if (key != ParseKeys(hotkey.Key).Last())
+                                                    {
+                                                        <span class="n360-hotkeys__plus">+</span>
+                                                    }
+                                                }
+                                            </div>
+                                            <div class="n360-hotkeys__description">@hotkey.Description</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="n360-hotkeys__empty">
+                            <i class="fas fa-keyboard"></i>
+                            <p>No keyboard shortcuts registered</p>
+                        </div>
+                    }
+                </div>
+                
+                <div class="n360-hotkeys__modal-footer">
+                    <button class="n360-btn n360-btn--primary" @onclick="CloseHelpModal">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Content to apply hotkeys to
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Hotkey registrations
+    /// </summary>
+    [Parameter] public List<HotkeyRegistration> Hotkeys { get; set; } = new();
+    
+    /// <summary>
+    /// Scope: Global or Component
+    /// </summary>
+    [Parameter] public HotkeyScope Scope { get; set; } = HotkeyScope.Global;
+    
+    /// <summary>
+    /// Enable hotkeys
+    /// </summary>
+    [Parameter] public bool Enabled { get; set; } = true;
+    
+    /// <summary>
+    /// Show help modal with ? key
+    /// </summary>
+    [Parameter] public bool ShowHelp { get; set; } = true;
+    
+    /// <summary>
+    /// Help trigger key (default: ?)
+    /// </summary>
+    [Parameter] public string HelpKey { get; set; } = "?";
+    
+    /// <summary>
+    /// Prevent default browser behavior
+    /// </summary>
+    [Parameter] public bool PreventDefault { get; set; } = true;
+    
+    /// <summary>
+    /// Stop event propagation
+    /// </summary>
+    [Parameter] public bool StopPropagation { get; set; } = true;
+    
+    /// <summary>
+    /// Ignore hotkeys when typing in inputs
+    /// </summary>
+    [Parameter] public bool IgnoreInputs { get; set; } = true;
+    
+    /// <summary>
+    /// Callback when hotkey pressed
+    /// </summary>
+    [Parameter] public EventCallback<HotkeyPressedEventArgs> OnHotkeyPressed { get; set; }
+    
+    /// <summary>
+    /// Callback when conflict detected
+    /// </summary>
+    [Parameter] public EventCallback<string> OnConflict { get; set; }
+    
+    // Styling
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    
+    // RBAC
+    [Parameter] public string? RequiredPermission { get; set; }
+    [Parameter] public bool HideIfNoPermission { get; set; } = true;
+    
+    // Audit
+    [Parameter] public bool EnableAudit { get; set; }
+    [Parameter] public string? AuditResource { get; set; }
+    
+    private bool _hasPermission = true;
+    private bool _showHelpModal;
+    private List<HotkeyRegistration> _hotkeys = new();
+    private DotNetObjectReference<N360Hotkeys>? _objRef;
+    private Dictionary<string, HotkeyRegistration> _hotkeyMap = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequiredPermission != null && PermissionService != null)
+        {
+            _hasPermission = await PermissionService.HasPermissionAsync(RequiredPermission);
+        }
+        
+        // Validate and register hotkeys
+        ValidateHotkeys();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _hasPermission && Enabled)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            
+            var config = new
+            {
+                scope = Scope.ToString().ToLower(),
+                preventDefault = PreventDefault,
+                stopPropagation = StopPropagation,
+                ignoreInputs = IgnoreInputs,
+                helpKey = HelpKey
+            };
+            
+            var hotkeyConfigs = _hotkeys.Select(h => new
+            {
+                key = h.Key,
+                description = h.Description,
+                category = h.Category
+            }).ToArray();
+            
+            await JS.InvokeVoidAsync("Nalam360.Hotkeys.initialize", _objRef, config, hotkeyConfigs);
+            LogAudit("HotkeysInitialized", $"Registered {_hotkeys.Count} hotkeys");
+        }
+    }
+    
+    protected override void OnParametersSet()
+    {
+        if (Hotkeys != null)
+        {
+            _hotkeys = new List<HotkeyRegistration>(Hotkeys);
+            ValidateHotkeys();
+        }
+    }
+    
+    private void ValidateHotkeys()
+    {
+        _hotkeyMap.Clear();
+        var conflicts = new List<string>();
+        
+        foreach (var hotkey in _hotkeys)
+        {
+            var normalizedKey = NormalizeKey(hotkey.Key);
+            
+            if (_hotkeyMap.ContainsKey(normalizedKey))
+            {
+                conflicts.Add($"Duplicate hotkey: {hotkey.Key}");
+            }
+            else
+            {
+                _hotkeyMap[normalizedKey] = hotkey;
+            }
+        }
+        
+        if (conflicts.Any())
+        {
+            foreach (var conflict in conflicts)
+            {
+                OnConflict.InvokeAsync(conflict);
+                LogAudit("HotkeyConflict", conflict);
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleHotkeyPressed(string key)
+    {
+        if (!Enabled) return;
+        
+        var normalizedKey = NormalizeKey(key);
+        
+        // Check for help key
+        if (ShowHelp && normalizedKey == NormalizeKey(HelpKey))
+        {
+            _showHelpModal = true;
+            StateHasChanged();
+            return;
+        }
+        
+        if (_hotkeyMap.TryGetValue(normalizedKey, out var hotkey))
+        {
+            // Check permission
+            if (!string.IsNullOrEmpty(hotkey.RequiredPermission) && PermissionService != null)
+            {
+                var hasPermission = await PermissionService.HasPermissionAsync(hotkey.RequiredPermission);
+                if (!hasPermission)
+                {
+                    LogAudit("HotkeyDenied", $"Permission denied for hotkey: {key}");
+                    return;
+                }
+            }
+            
+            // Execute callback
+            if (hotkey.Callback != null)
+            {
+                await hotkey.Callback.Invoke();
+            }
+            
+            // Fire event
+            var eventArgs = new HotkeyPressedEventArgs
+            {
+                Key = key,
+                Description = hotkey.Description,
+                Category = hotkey.Category
+            };
+            
+            await OnHotkeyPressed.InvokeAsync(eventArgs);
+            LogAudit("HotkeyPressed", $"Hotkey executed: {key} - {hotkey.Description}");
+        }
+    }
+    
+    /// <summary>
+    /// Register a new hotkey
+    /// </summary>
+    public async Task RegisterAsync(string key, string description, Func<Task> callback, string? category = null, string? requiredPermission = null)
+    {
+        var hotkey = new HotkeyRegistration
+        {
+            Key = key,
+            Description = description,
+            Callback = callback,
+            Category = category,
+            RequiredPermission = requiredPermission
+        };
+        
+        _hotkeys.Add(hotkey);
+        ValidateHotkeys();
+        
+        await JS.InvokeVoidAsync("Nalam360.Hotkeys.register", NormalizeKey(key));
+        LogAudit("HotkeyRegistered", $"Registered hotkey: {key} - {description}");
+    }
+    
+    /// <summary>
+    /// Unregister a hotkey
+    /// </summary>
+    public async Task UnregisterAsync(string key)
+    {
+        var normalizedKey = NormalizeKey(key);
+        _hotkeys.RemoveAll(h => NormalizeKey(h.Key) == normalizedKey);
+        _hotkeyMap.Remove(normalizedKey);
+        
+        await JS.InvokeVoidAsync("Nalam360.Hotkeys.unregister", normalizedKey);
+        LogAudit("HotkeyUnregistered", $"Unregistered hotkey: {key}");
+    }
+    
+    /// <summary>
+    /// Enable hotkeys
+    /// </summary>
+    public async Task EnableAsync()
+    {
+        Enabled = true;
+        await JS.InvokeVoidAsync("Nalam360.Hotkeys.enable");
+        LogAudit("HotkeysEnabled", "Hotkeys enabled");
+    }
+    
+    /// <summary>
+    /// Disable hotkeys
+    /// </summary>
+    public async Task DisableAsync()
+    {
+        Enabled = false;
+        await JS.InvokeVoidAsync("Nalam360.Hotkeys.disable");
+        LogAudit("HotkeysDisabled", "Hotkeys disabled");
+    }
+    
+    /// <summary>
+    /// Show help modal
+    /// </summary>
+    public void ShowHelpModal()
+    {
+        _showHelpModal = true;
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Close help modal
+    /// </summary>
+    public void CloseHelpModal()
+    {
+        _showHelpModal = false;
+        StateHasChanged();
+    }
+    
+    private string NormalizeKey(string key)
+    {
+        // Normalize key combination (e.g., "Ctrl+S", "ctrl+s", "CTRL+S" -> "ctrl+s")
+        return key.ToLowerInvariant()
+            .Replace("control", "ctrl")
+            .Replace(" ", "")
+            .Replace("++", "+plus");
+    }
+    
+    private List<string> ParseKeys(string key)
+    {
+        var keys = key.Split('+').Select(k => k.Trim()).ToList();
+        
+        // Capitalize special keys
+        for (int i = 0; i < keys.Count; i++)
+        {
+            var k = keys[i].ToLowerInvariant();
+            if (k == "ctrl" || k == "control") keys[i] = "Ctrl";
+            else if (k == "alt") keys[i] = "Alt";
+            else if (k == "shift") keys[i] = "Shift";
+            else if (k == "meta" || k == "cmd" || k == "win") keys[i] = "⌘";
+            else keys[i] = keys[i].ToUpperInvariant();
+        }
+        
+        return keys;
+    }
+    
+    private void LogAudit(string action, string details)
+    {
+        if (!EnableAudit) return;
+        // Audit logging implementation
+    }
+    
+    public void Dispose()
+    {
+        _objRef?.Dispose();
+    }
+    
+    public class HotkeyRegistration
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Category { get; set; }
+        public Func<Task>? Callback { get; set; }
+        public string? RequiredPermission { get; set; }
+    }
+    
+    public enum HotkeyScope
+    {
+        Global,
+        Component
+    }
+    
+    public class HotkeyPressedEventArgs
+    {
+        public string Key { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Category { get; set; }
+    }
+}

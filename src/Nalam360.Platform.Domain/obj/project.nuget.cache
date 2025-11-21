@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ZgU8HNjn0go=",
+  "dgSpecHash": "CxMqrI8rwII=",
   "success": true,
-  "projectFilePath": "d:\\Mocero\\Healthcare Platform\\Nalam360EnterprisePlatform\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj",
+  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Domain\\Nalam360.Platform.Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
   ],
