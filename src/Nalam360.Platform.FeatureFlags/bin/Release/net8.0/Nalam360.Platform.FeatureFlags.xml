@@ -9,6 +9,15 @@
             Advanced feature flag service with rollout strategies.
             </summary>
         </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.AdvancedFeatureFlagService.#ctor(Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nalam360.Platform.FeatureFlags.Providers.AdvancedFeatureFlagService"/> class.
+            </summary>
+            <param name="provider">The feature flag provider.</param>
+        </member>
+        <member name="M:Nalam360.Platform.FeatureFlags.Providers.AdvancedFeatureFlagService.IsEnabledAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Nalam360.Platform.FeatureFlags.Providers.IFeatureFlagProvider">
             <summary>
             Feature flag provider interface.

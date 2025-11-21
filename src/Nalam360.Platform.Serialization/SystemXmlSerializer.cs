@@ -11,6 +11,9 @@ public class SystemXmlSerializer : IXmlSerializer
     private readonly XmlWriterSettings _writerSettings;
     private readonly XmlReaderSettings _readerSettings;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SystemXmlSerializer"/> class.
+    /// </summary>
     public SystemXmlSerializer()
     {
         _writerSettings = new XmlWriterSettings

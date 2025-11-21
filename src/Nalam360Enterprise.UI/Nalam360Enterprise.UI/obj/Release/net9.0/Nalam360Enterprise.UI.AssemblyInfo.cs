@@ -17,7 +17,7 @@ using System.Reflection;
     "prise features including RBAC, theming, accessibility, i18n, and schema-driven v" +
     "alidation."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+86ce8c8f59be0afa297dc40bea38695cce1f4d46")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f6567a39d4d6883447fc0933f98db2ca5af1b67")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360 Enterprise UI Component Library")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360Enterprise.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

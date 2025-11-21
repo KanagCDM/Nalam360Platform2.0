@@ -77,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>825411</FileLength>
-      <LastWriteTime>Fri, 21 Nov 2025 01:47:58 GMT</LastWriteTime>
+      <LastWriteTime>Fri, 21 Nov 2025 04:30:47 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Nalam360Enterprise.UI.x188tcvty2.bundle.scp.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\styles\design-tokens.css'))">

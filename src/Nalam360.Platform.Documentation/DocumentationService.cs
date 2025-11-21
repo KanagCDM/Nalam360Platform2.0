@@ -37,6 +37,10 @@ public sealed class DocumentationService : IDocumentationService
     private readonly MarkdownDocumentationGenerator _markdownGenerator;
     private readonly YamlDocumentationGenerator _yamlGenerator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DocumentationService"/> class.
+    /// </summary>
+    /// <param name="parser">The documentation parser.</param>
     public DocumentationService(IDocumentationParser parser)
     {
         _parser = parser;
@@ -44,12 +48,18 @@ public sealed class DocumentationService : IDocumentationService
         _yamlGenerator = new YamlDocumentationGenerator();
     }
 
+    /// <summary>
+    /// Generates Markdown documentation for an assembly.
+    /// </summary>
     public async Task GenerateMarkdownAsync(Assembly assembly, string xmlDocPath, string outputPath, CancellationToken ct = default)
     {
         var assemblyDoc = await _parser.ParseAssemblyAsync(assembly, xmlDocPath, ct);
         await _markdownGenerator.GenerateToFileAsync(assemblyDoc, outputPath, ct);
     }
 
+    /// <summary>
+    /// Generates YAML documentation for an assembly.
+    /// </summary>
     public async Task GenerateYamlAsync(Assembly assembly, string xmlDocPath, string outputPath, CancellationToken ct = default)
     {
         var assemblyDoc = await _parser.ParseAssemblyAsync(assembly, xmlDocPath, ct);

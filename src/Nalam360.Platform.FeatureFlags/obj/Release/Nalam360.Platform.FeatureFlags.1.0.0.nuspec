@@ -6,7 +6,7 @@
     <authors>Nalam360</authors>
     <description>Feature flags for Nalam360 Enterprise Platform.</description>
     <tags>feature-flags toggles enterprise</tags>
-    <repository type="git" commit="86ce8c8f59be0afa297dc40bea38695cce1f4d46" />
+    <repository type="git" commit="9f6567a39d4d6883447fc0933f98db2ca5af1b67" />
     <dependencies>
       <group targetFramework="net8.0">
         <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />

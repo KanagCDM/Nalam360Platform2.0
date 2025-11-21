@@ -44,6 +44,22 @@
             Default implementation of documentation service.
             </summary>
         </member>
+        <member name="M:Nalam360.Platform.Documentation.DocumentationService.#ctor(Nalam360.Platform.Documentation.Parsers.IDocumentationParser)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nalam360.Platform.Documentation.DocumentationService"/> class.
+            </summary>
+            <param name="parser">The documentation parser.</param>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.DocumentationService.GenerateMarkdownAsync(System.Reflection.Assembly,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates Markdown documentation for an assembly.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.DocumentationService.GenerateYamlAsync(System.Reflection.Assembly,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates YAML documentation for an assembly.
+            </summary>
+        </member>
         <member name="T:Nalam360.Platform.Documentation.Generators.IDocumentationGenerator">
             <summary>
             Generates documentation in various formats.
@@ -69,10 +85,22 @@
             Generates documentation in Markdown format.
             </summary>
         </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.MarkdownDocumentationGenerator.Generate(Nalam360.Platform.Documentation.Models.AssemblyDocumentation)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.MarkdownDocumentationGenerator.GenerateToFileAsync(Nalam360.Platform.Documentation.Models.AssemblyDocumentation,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Nalam360.Platform.Documentation.Generators.YamlDocumentationGenerator">
             <summary>
             Generates documentation in YAML format.
             </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.YamlDocumentationGenerator.Generate(Nalam360.Platform.Documentation.Models.AssemblyDocumentation)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Generators.YamlDocumentationGenerator.GenerateToFileAsync(Nalam360.Platform.Documentation.Models.AssemblyDocumentation,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
         <member name="T:Nalam360.Platform.Documentation.Models.AssemblyDocumentation">
             <summary>
@@ -430,6 +458,12 @@
             <summary>
             Default implementation of XML documentation parser.
             </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Parsers.XmlDocumentationParser.ParseAssembly(System.Reflection.Assembly,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Documentation.Parsers.XmlDocumentationParser.ParseAssemblyAsync(System.Reflection.Assembly,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
     </members>
 </doc>

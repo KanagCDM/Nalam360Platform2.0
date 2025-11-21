@@ -12,6 +12,10 @@ public class AdvancedFeatureFlagService : IFeatureFlagService
     private readonly IFeatureFlagProvider _provider;
     private readonly JsonSerializerOptions _jsonOptions;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AdvancedFeatureFlagService"/> class.
+    /// </summary>
+    /// <param name="provider">The feature flag provider.</param>
     public AdvancedFeatureFlagService(IFeatureFlagProvider provider)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -21,6 +25,7 @@ public class AdvancedFeatureFlagService : IFeatureFlagService
         };
     }
 
+    /// <inheritdoc />
     public async Task<bool> IsEnabledAsync(string featureName, CancellationToken cancellationToken = default)
     {
         return await IsEnabledAsync(featureName, new FeatureContext(), cancellationToken);

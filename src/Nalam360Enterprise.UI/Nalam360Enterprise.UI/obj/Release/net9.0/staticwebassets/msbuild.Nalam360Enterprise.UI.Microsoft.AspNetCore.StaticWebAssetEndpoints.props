@@ -40,13 +40,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Nalam360Enterprise.UI.x188tcvty2.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"825411"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ=\u0022"},{"Name":"Last-Modified","Value":"Fri, 21 Nov 2025 01:47:58 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"825411"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ=\u0022"},{"Name":"Last-Modified","Value":"Fri, 21 Nov 2025 04:30:47 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Nalam360Enterprise.UI/Nalam360Enterprise.UI.x188tcvty2.bundle.scp.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Nalam360Enterprise.UI.x188tcvty2.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"x188tcvty2"},{"Name":"integrity","Value":"sha256-xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ="},{"Name":"label","Value":"_content/Nalam360Enterprise.UI/Nalam360Enterprise.UI.bundle.scp.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"825411"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ=\u0022"},{"Name":"Last-Modified","Value":"Fri, 21 Nov 2025 01:47:58 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"825411"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022xfcGmijslFZZMMnTNPBcnWkzkgVyV5nF90lX8rLR5VQ=\u0022"},{"Name":"Last-Modified","Value":"Fri, 21 Nov 2025 04:30:47 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Nalam360Enterprise.UI/styles/design-tokens.4qp8d7dmqg.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\styles\design-tokens.css'))</AssetFile>

@@ -35,6 +35,7 @@ public sealed class XmlDocumentationParser : IDocumentationParser
     private XDocument? _xmlDoc;
     private readonly Dictionary<string, XElement> _memberCache = new();
 
+    /// <inheritdoc />
     public AssemblyDocumentation ParseAssembly(Assembly assembly, string xmlDocPath)
     {
         if (!File.Exists(xmlDocPath))
@@ -78,6 +79,7 @@ public sealed class XmlDocumentationParser : IDocumentationParser
         return assemblyDoc;
     }
 
+    /// <inheritdoc />
     public async Task<AssemblyDocumentation> ParseAssemblyAsync(Assembly assembly, string xmlDocPath, CancellationToken ct = default)
     {
         return await Task.Run(() => ParseAssembly(assembly, xmlDocPath), ct);

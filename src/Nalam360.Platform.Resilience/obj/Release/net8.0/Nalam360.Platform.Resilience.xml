@@ -1,0 +1,298 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Resilience</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering resilience services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddRetryPolicy(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds retry policy to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddRetryPolicy(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Resilience.Polly.RetryOptions})">
+            <summary>
+            Adds retry policy to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddCircuitBreaker(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds circuit breaker to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddCircuitBreaker(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions})">
+            <summary>
+            Adds circuit breaker to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddRateLimiter(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds rate limiter to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddRateLimiter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Resilience.Polly.RateLimiterOptions})">
+            <summary>
+            Adds rate limiter to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddBulkhead(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds bulkhead to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddBulkhead(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Resilience.Polly.BulkheadOptions})">
+            <summary>
+            Adds bulkhead to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.DependencyInjection.ServiceCollectionExtensions.AddResilience(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds all resilience patterns to the service collection.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.IBulkhead">
+            <summary>
+            Abstraction for bulkhead isolation pattern.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IBulkhead.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with bulkhead isolation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IBulkhead.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with bulkhead isolation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.IBulkhead.AvailableCapacity">
+            <summary>
+            Gets the available capacity.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.ICircuitBreaker">
+            <summary>
+            Abstraction for circuit breaker pattern.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.ICircuitBreaker.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with circuit breaker protection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.ICircuitBreaker.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with circuit breaker protection.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.ICircuitBreaker.State">
+            <summary>
+            Gets the current state of the circuit breaker.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.CircuitState">
+            <summary>
+            Circuit breaker state.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Resilience.CircuitState.Closed">
+            <summary>
+            Circuit is closed, requests pass through.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Resilience.CircuitState.Open">
+            <summary>
+            Circuit is open, requests are blocked.
+            </summary>
+        </member>
+        <member name="F:Nalam360.Platform.Resilience.CircuitState.HalfOpen">
+            <summary>
+            Circuit is half-open, testing if service recovered.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.IRateLimiter">
+            <summary>
+            Abstraction for rate limiting.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IRateLimiter.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with rate limiting.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IRateLimiter.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with rate limiting.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IRateLimiter.IsAllowedAsync(System.Threading.CancellationToken)">
+            <summary>
+            Checks if the rate limit has been exceeded.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.IRetryPolicy">
+            <summary>
+            Abstraction for retry policies.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IRetryPolicy.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with retry logic.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.IRetryPolicy.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <summary>
+            Executes an action with retry logic.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.BulkheadOptions">
+            <summary>
+            Configuration options for bulkhead isolation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.BulkheadOptions.MaxParallelization">
+            <summary>
+            Gets or sets the maximum number of parallel executions.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.BulkheadOptions.MaxQueuingActions">
+            <summary>
+            Gets or sets the maximum number of queued actions.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions">
+            <summary>
+            Configuration options for circuit breaker.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions.FailureThreshold">
+            <summary>
+            Gets or sets the failure threshold (0.0 to 1.0).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions.MinimumThroughput">
+            <summary>
+            Gets or sets the minimum throughput before circuit breaker activates.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions.SamplingDuration">
+            <summary>
+            Gets or sets the sampling duration for measuring failures.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.CircuitBreakerOptions.BreakDuration">
+            <summary>
+            Gets or sets the break duration when circuit is open.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.PollyBulkhead">
+            <summary>
+            Polly-based bulkhead implementation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.PollyBulkhead.AvailableCapacity">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyBulkhead.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyBulkhead.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.PollyCircuitBreaker">
+            <summary>
+            Polly-based circuit breaker implementation.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.PollyCircuitBreaker.State">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyCircuitBreaker.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyCircuitBreaker.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.PollyRateLimiter">
+            <summary>
+            Polly-based rate limiter implementation using concurrency limiter.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRateLimiter.#ctor(Microsoft.Extensions.Logging.ILogger{Nalam360.Platform.Resilience.Polly.PollyRateLimiter},Microsoft.Extensions.Options.IOptions{Nalam360.Platform.Resilience.Polly.RateLimiterOptions})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nalam360.Platform.Resilience.Polly.PollyRateLimiter"/> class.
+            </summary>
+            <param name="logger">The logger instance.</param>
+            <param name="options">The rate limiter options.</param>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRateLimiter.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRateLimiter.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRateLimiter.IsAllowedAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.PollyRetryPolicy">
+            <summary>
+            Polly-based retry policy implementation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRetryPolicy.ExecuteAsync``1(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result{``0}}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Resilience.Polly.PollyRetryPolicy.ExecuteAsync(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{Nalam360.Platform.Core.Results.Result}},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.RateLimiterOptions">
+            <summary>
+            Configuration options for rate limiter.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RateLimiterOptions.PermitLimit">
+            <summary>
+            Gets or sets the maximum number of concurrent permits.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RateLimiterOptions.QueueLimit">
+            <summary>
+            Gets or sets the queue limit for waiting requests.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RateLimiterOptions.Window">
+            <summary>
+            Gets or sets the window duration for token bucket.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Resilience.Polly.RetryOptions">
+            <summary>
+            Configuration options for retry policy.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RetryOptions.MaxRetryAttempts">
+            <summary>
+            Gets or sets the maximum number of retry attempts.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RetryOptions.InitialDelay">
+            <summary>
+            Gets or sets the initial delay between retries.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RetryOptions.UseExponentialBackoff">
+            <summary>
+            Gets or sets whether to use exponential backoff.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Resilience.Polly.RetryOptions.UseJitter">
+            <summary>
+            Gets or sets whether to add jitter to retry delays.
+            </summary>
+        </member>
+    </members>
+</doc>

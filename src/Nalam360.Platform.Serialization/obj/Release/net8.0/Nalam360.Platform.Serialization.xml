@@ -66,6 +66,18 @@
             System.Text.Json implementation.
             </summary>
         </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemTextJsonSerializer.#ctor(System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nalam360.Platform.Serialization.SystemTextJsonSerializer"/> class.
+            </summary>
+            <param name="options">Optional JSON serializer options.</param>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemTextJsonSerializer.Serialize``1(``0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemTextJsonSerializer.Deserialize``1(System.String)">
+            <inheritdoc />
+        </member>
         <member name="T:Nalam360.Platform.Serialization.IProtobufSerializer">
             <summary>
             Protobuf serializer interface.
@@ -119,6 +131,11 @@
         <member name="T:Nalam360.Platform.Serialization.SystemXmlSerializer">
             <summary>
             System.Xml.Serialization implementation of XML serializer.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nalam360.Platform.Serialization.SystemXmlSerializer"/> class.
             </summary>
         </member>
         <member name="M:Nalam360.Platform.Serialization.SystemXmlSerializer.Serialize``1(``0)">

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Nalam360.Platform.Resilience</id>
+    <version>1.0.0</version>
+    <authors>Nalam360</authors>
+    <description>Resilience patterns (retry, circuit breaker, rate limiter) for Nalam360 Enterprise Platform using Polly.</description>
+    <tags>resilience polly retry circuit-breaker rate-limiter enterprise</tags>
+    <repository type="git" commit="9f6567a39d4d6883447fc0933f98db2ca5af1b67" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Http.Polly" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Options" version="8.0.2" exclude="Build,Analyzers" />
+        <dependency id="Polly" version="8.2.1" exclude="Build,Analyzers" />
+        <dependency id="Polly.Extensions" version="8.2.1" exclude="Build,Analyzers" />
+        <dependency id="Polly.RateLimiting" version="8.2.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Resilience\bin\Release\net8.0\Nalam360.Platform.Resilience.dll" target="lib\net8.0\Nalam360.Platform.Resilience.dll" />
+    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Resilience\bin\Release\net8.0\Nalam360.Platform.Resilience.xml" target="lib\net8.0\Nalam360.Platform.Resilience.xml" />
+  </files>
+</package>

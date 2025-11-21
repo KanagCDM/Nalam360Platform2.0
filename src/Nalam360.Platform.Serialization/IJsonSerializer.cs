@@ -25,6 +25,10 @@ public class SystemTextJsonSerializer : IJsonSerializer
 {
     private readonly JsonSerializerOptions _options;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SystemTextJsonSerializer"/> class.
+    /// </summary>
+    /// <param name="options">Optional JSON serializer options.</param>
     public SystemTextJsonSerializer(JsonSerializerOptions? options = null)
     {
         _options = options ?? new JsonSerializerOptions
@@ -35,11 +39,13 @@ public class SystemTextJsonSerializer : IJsonSerializer
         };
     }
 
+    /// <inheritdoc />
     public string Serialize<T>(T value)
     {
         return JsonSerializer.Serialize(value, _options);
     }
 
+    /// <inheritdoc />
     public T? Deserialize<T>(string json)
     {
         return JsonSerializer.Deserialize<T>(json, _options);

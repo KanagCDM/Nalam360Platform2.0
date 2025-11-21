@@ -13,12 +13,6 @@
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Caching/obj/Release/net8.0/Nalam360.Platform.Caching.xml
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Caching/obj/Release/net8.0/Nalam360.Platform.Caching.pdb
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.Caching/obj/Release/net8.0/ref/Nalam360.Platform.Caching.dll
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.csproj.AssemblyReference.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.GeneratedMSBuildEditorConfig.editorconfig
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.AssemblyInfoInputs.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.AssemblyInfo.cs
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.csproj.CoreCompileInputs.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.sourcelink.json
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Caching.deps.json
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Caching.dll
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Caching.pdb
@@ -26,6 +20,12 @@ D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Na
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Core.dll
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Core.pdb
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\bin\Release\net8.0\Nalam360.Platform.Core.xml
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.csproj.AssemblyReference.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.AssemblyInfoInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.AssemblyInfo.cs
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.csproj.CoreCompileInputs.cache
+D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.sourcelink.json
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.CB06E44F.Up2Date
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\Nalam360.Platform.Caching.dll
 D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Caching\obj\Release\net8.0\refint\Nalam360.Platform.Caching.dll

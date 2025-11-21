@@ -29,6 +29,7 @@ public interface IDocumentationGenerator
 /// </summary>
 public sealed class MarkdownDocumentationGenerator : IDocumentationGenerator
 {
+    /// <inheritdoc />
     public string Generate(AssemblyDocumentation assemblyDoc)
     {
         var sb = new StringBuilder();
@@ -79,6 +80,7 @@ public sealed class MarkdownDocumentationGenerator : IDocumentationGenerator
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public async Task GenerateToFileAsync(AssemblyDocumentation assemblyDoc, string outputPath, CancellationToken ct = default)
     {
         var content = Generate(assemblyDoc);
@@ -244,6 +246,7 @@ public sealed class MarkdownDocumentationGenerator : IDocumentationGenerator
 /// </summary>
 public sealed class YamlDocumentationGenerator : IDocumentationGenerator
 {
+    /// <inheritdoc />
     public string Generate(AssemblyDocumentation assemblyDoc)
     {
         var sb = new StringBuilder();
@@ -273,6 +276,7 @@ public sealed class YamlDocumentationGenerator : IDocumentationGenerator
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public async Task GenerateToFileAsync(AssemblyDocumentation assemblyDoc, string outputPath, CancellationToken ct = default)
     {
         var content = Generate(assemblyDoc);

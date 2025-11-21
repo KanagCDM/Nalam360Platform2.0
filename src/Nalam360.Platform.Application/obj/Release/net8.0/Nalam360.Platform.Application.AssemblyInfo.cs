@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Application layer for Nalam360 Enterprise Platform with CQRS, Mediator pattern, a" +
     "nd pipeline behaviors."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+86ce8c8f59be0afa297dc40bea38695cce1f4d46")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f6567a39d4d6883447fc0933f98db2ca5af1b67")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
