@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Caching</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Caching.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering caching services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ServiceCollectionExtensions.AddMemoryCaching(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds in-memory caching services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ServiceCollectionExtensions.AddRedisCaching(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Caching.RedisCacheOptions})">
+            <summary>
+            Adds Redis distributed caching services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ServiceCollectionExtensions.AddRedisCaching(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)">
+            <summary>
+            Adds Redis distributed caching services with connection string.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Caching.ICacheService">
+            <summary>
+            Cache service interface for storing and retrieving cached data.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.GetAsync``1(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a value from the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.SetAsync``1(System.String,``0,System.Nullable{System.TimeSpan},System.Threading.CancellationToken)">
+            <summary>
+            Sets a value in the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.GetOrSetAsync``1(System.String,System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{``0}},System.Nullable{System.TimeSpan},System.Threading.CancellationToken)">
+            <summary>
+            Gets a value from the cache or computes it if not found.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.RemoveAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes a value from the cache.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.RemoveByPatternAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes all values matching a pattern.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Caching.ICacheService.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a key exists in the cache.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Caching.MemoryCacheService">
+            <summary>
+            In-memory cache implementation.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Caching.RedisCacheService">
+            <summary>
+            Redis-based distributed cache implementation.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Caching.RedisCacheOptions">
+            <summary>
+            Configuration options for Redis cache.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.ConnectionString">
+            <summary>
+            Redis connection string.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.Password">
+            <summary>
+            Redis password (optional).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.Database">
+            <summary>
+            Redis database number (0-15).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.KeyPrefix">
+            <summary>
+            Key prefix for all cache entries.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.DefaultExpiration">
+            <summary>
+            Default expiration time for cache entries.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.ConnectTimeout">
+            <summary>
+            Connection timeout in milliseconds.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.SyncTimeout">
+            <summary>
+            Sync timeout in milliseconds.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Caching.RedisCacheOptions.AbortOnConnectFail">
+            <summary>
+            Enable connection retry.
+            </summary>
+        </member>
+    </members>
+</doc>

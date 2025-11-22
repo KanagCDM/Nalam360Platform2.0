@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "5ArgSmFUcXk=",
+  "dgSpecHash": "x0O8ppGTC6U=",
   "success": true,
-  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Core\\Nalam360.Platform.Core.csproj",
+  "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
   ],
   "logs": []
 }

@@ -6,21 +6,20 @@
     <authors>Nalam360</authors>
     <description>Application layer for Nalam360 Enterprise Platform with CQRS, Mediator pattern, and pipeline behaviors.</description>
     <tags>cqrs mediator clean-architecture ddd enterprise</tags>
-    <repository type="git" commit="9f6567a39d4d6883447fc0933f98db2ca5af1b67" />
+    <repository type="git" commit="7ab5e41a2a58baff37aa1b107de401d5bc98f915" />
     <dependencies>
-      <group targetFramework="net8.0">
+      <group targetFramework="net10.0">
         <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
         <dependency id="FluentValidation" version="11.9.0" exclude="Build,Analyzers" />
         <dependency id="MediatR" version="12.4.1" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
         <dependency id="Scrutor" version="4.2.2" exclude="Build,Analyzers" />
-        <dependency id="System.Text.Json" version="9.0.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.dll" target="lib\net8.0\Nalam360.Platform.Application.dll" />
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Application\bin\Release\net8.0\Nalam360.Platform.Application.xml" target="lib\net8.0\Nalam360.Platform.Application.xml" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Application/bin/Release/net10.0/Nalam360.Platform.Application.dll" target="lib/net10.0/Nalam360.Platform.Application.dll" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Application/bin/Release/net10.0/Nalam360.Platform.Application.xml" target="lib/net10.0/Nalam360.Platform.Application.xml" />
   </files>
 </package>

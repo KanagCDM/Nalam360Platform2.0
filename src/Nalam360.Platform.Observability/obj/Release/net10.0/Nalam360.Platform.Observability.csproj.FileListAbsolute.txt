@@ -1,0 +1,15 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/bin/Release/net10.0/Nalam360.Platform.Observability.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/bin/Release/net10.0/Nalam360.Platform.Observability.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/bin/Release/net10.0/Nalam360.Platform.Observability.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/bin/Release/net10.0/Nalam360.Platform.Observability.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/refint/Nalam360.Platform.Observability.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/Nalam360.Platform.Observability.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Observability/obj/Release/net10.0/ref/Nalam360.Platform.Observability.dll

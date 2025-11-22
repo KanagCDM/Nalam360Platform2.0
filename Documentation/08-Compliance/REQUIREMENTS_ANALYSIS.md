@@ -1216,7 +1216,7 @@ app.Run();
 All `.csproj` files configured for NuGet:
 ```xml
 <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Nalam360.Platform.Core</PackageId>
     <Version>1.0.0</Version>

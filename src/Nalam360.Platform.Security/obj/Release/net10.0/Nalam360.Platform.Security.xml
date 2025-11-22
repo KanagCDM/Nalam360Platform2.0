@@ -1,0 +1,604 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Security</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Security.Authorization.IClaimsTransformation">
+            <summary>
+            Transforms claims before authorization checks.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IClaimsTransformation.TransformAsync(System.Security.Claims.ClaimsPrincipal,System.Threading.CancellationToken)">
+            <summary>
+            Transforms claims principal.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.RolePermissionClaimsTransformation">
+            <summary>
+            Default claims transformation that adds role and permission claims.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.ClaimsTransformationMiddleware">
+            <summary>
+            Middleware for claims transformation.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.DefaultAuthorizationService">
+            <summary>
+            Default implementation of authorization service.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.IAuthorizationService">
+            <summary>
+            Service for checking permissions and authorization.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IAuthorizationService.HasPermissionAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if the current user has the specified permission.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IAuthorizationService.HasRoleAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if the current user has the specified role.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IAuthorizationService.SatisfiesPolicyAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if the current user satisfies the specified policy.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IAuthorizationService.GetUserPermissionsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all permissions for the current user.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.IAuthorizationService.GetUserRolesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all roles for the current user.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Models.Permission">
+            <summary>
+            Represents a permission in the system.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.Name">
+            <summary>
+            Unique permission identifier (e.g., "users.read", "orders.create").
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.Description">
+            <summary>
+            Human-readable description.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.Resource">
+            <summary>
+            Resource this permission applies to (e.g., "Users", "Orders").
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.Action">
+            <summary>
+            Action being permitted (e.g., "Read", "Create", "Update", "Delete").
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.Category">
+            <summary>
+            Permission category for organization.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Permission.IsSystem">
+            <summary>
+            Whether this is a system-level permission.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Models.Role">
+            <summary>
+            Represents a role in the system.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.Name">
+            <summary>
+            Unique role identifier (e.g., "Admin", "User", "Manager").
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.Description">
+            <summary>
+            Human-readable description.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.Permissions">
+            <summary>
+            Permissions assigned to this role.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.InheritsFrom">
+            <summary>
+            Parent roles this role inherits from.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.IsSystem">
+            <summary>
+            Whether this is a system-level role.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.Role.Priority">
+            <summary>
+            Priority/hierarchy level (higher = more privileged).
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Models.UserPrincipal">
+            <summary>
+            Represents a user's assigned roles and permissions.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.UserPrincipal.UserId">
+            <summary>
+            User identifier.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.UserPrincipal.Roles">
+            <summary>
+            Directly assigned roles.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.UserPrincipal.Permissions">
+            <summary>
+            Directly assigned permissions (overrides).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.UserPrincipal.DeniedPermissions">
+            <summary>
+            Denied permissions (explicit denies).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Models.UserPrincipal.Claims">
+            <summary>
+            Additional claims for context.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Models.AuthorizationResult">
+            <summary>
+            Result of an authorization check.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.IAuthorizationPolicy">
+            <summary>
+            Represents an authorization policy.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Authorization.Policies.IAuthorizationPolicy.Name">
+            <summary>
+            Policy name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Policies.IAuthorizationPolicy.EvaluateAsync(Nalam360.Platform.Security.Authorization.Models.UserPrincipal,System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Evaluates whether the user satisfies this policy.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.PermissionPolicy">
+            <summary>
+            Policy requiring specific permissions.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.RolePolicy">
+            <summary>
+            Policy requiring specific roles.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.CustomPolicy">
+            <summary>
+            Policy based on custom logic.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.CompositePolicy">
+            <summary>
+            Composite policy combining multiple policies.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.IPolicyRegistry">
+            <summary>
+            Registry for managing authorization policies.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Policies.IPolicyRegistry.RegisterPolicy(Nalam360.Platform.Security.Authorization.Policies.IAuthorizationPolicy)">
+            <summary>
+            Registers a policy.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Policies.IPolicyRegistry.GetPolicy(System.String)">
+            <summary>
+            Gets a policy by name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Policies.IPolicyRegistry.GetAllPolicies">
+            <summary>
+            Gets all registered policies.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Policies.PolicyRegistry">
+            <summary>
+            Default policy registry implementation.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.IPermissionStore">
+            <summary>
+            Store for managing permissions.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IPermissionStore.GetPermissionAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a permission by name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IPermissionStore.GetAllPermissionsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all permissions.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IPermissionStore.SavePermissionAsync(Nalam360.Platform.Security.Authorization.Models.Permission,System.Threading.CancellationToken)">
+            <summary>
+            Creates or updates a permission.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IPermissionStore.DeletePermissionAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a permission.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.IRoleStore">
+            <summary>
+            Store for managing roles.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IRoleStore.GetRoleAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a role by name.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IRoleStore.GetAllRolesAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets all roles.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IRoleStore.SaveRoleAsync(Nalam360.Platform.Security.Authorization.Models.Role,System.Threading.CancellationToken)">
+            <summary>
+            Creates or updates a role.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IRoleStore.DeleteRoleAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a role.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IRoleStore.GetRolePermissionsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets all permissions for a role (including inherited).
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore">
+            <summary>
+            Store for managing user principals.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.GetUserPrincipalAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets user principal.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.SaveUserPrincipalAsync(Nalam360.Platform.Security.Authorization.Models.UserPrincipal,System.Threading.CancellationToken)">
+            <summary>
+            Saves user principal.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.AssignRoleAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Assigns role to user.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.RemoveRoleAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Removes role from user.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.GrantPermissionAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Grants permission to user.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.RevokePermissionAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Revokes permission from user.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Authorization.Stores.IUserPrincipalStore.DenyPermissionAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Explicitly denies permission for user.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.InMemoryPermissionStore">
+            <summary>
+            In-memory permission store for development and testing.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.InMemoryRoleStore">
+            <summary>
+            In-memory role store for development and testing.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Authorization.Stores.InMemoryUserPrincipalStore">
+            <summary>
+            In-memory user principal store for development and testing.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Cryptography.AesEncryptionOptions">
+            <summary>
+            Configuration options for AES encryption.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.Cryptography.AesEncryptionOptions.EncryptionKey">
+            <summary>
+            Gets or sets the encryption key.
+            Must be at least 32 characters for AES-256.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Cryptography.AesEncryptionService">
+            <summary>
+            AES-256 encryption service implementation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.AesEncryptionService.Encrypt(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.AesEncryptionService.Decrypt(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.AesEncryptionService.Encrypt(System.Byte[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.AesEncryptionService.Decrypt(System.Byte[])">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Cryptography.IEncryptionService">
+            <summary>
+            Service for encryption and decryption operations.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IEncryptionService.Encrypt(System.String)">
+            <summary>
+            Encrypts a plain text string.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IEncryptionService.Decrypt(System.String)">
+            <summary>
+            Decrypts an encrypted string.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IEncryptionService.Encrypt(System.Byte[])">
+            <summary>
+            Encrypts binary data.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IEncryptionService.Decrypt(System.Byte[])">
+            <summary>
+            Decrypts binary data.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Cryptography.IPasswordHasher">
+            <summary>
+            Service for hashing and verifying passwords.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IPasswordHasher.HashPassword(System.String)">
+            <summary>
+            Hashes a password.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Cryptography.IPasswordHasher.VerifyPassword(System.String,System.String)">
+            <summary>
+            Verifies a password against a hash.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Cryptography.Pbkdf2PasswordHasher">
+            <summary>
+            Password hasher using PBKDF2 with HMAC-SHA256.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.DependencyInjection.AuthorizationServiceCollectionExtensions">
+            <summary>
+            Extension methods for authorization services registration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationServiceCollectionExtensions.AddNalam360Authorization(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds authorization services with in-memory stores.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationServiceCollectionExtensions.AddNalam360Authorization(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions})">
+            <summary>
+            Adds authorization services with configuration.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationServiceCollectionExtensions.UseClaimsTransformation(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+            Adds claims transformation middleware.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions">
+            <summary>
+            Options for authorization configuration.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.PermissionStoreType">
+            <summary>
+            Custom permission store type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.RoleStoreType">
+            <summary>
+            Custom role store type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.UserPrincipalStoreType">
+            <summary>
+            Custom user principal store type.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.Policies">
+            <summary>
+            Policies to register.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.EnableClaimsTransformation">
+            <summary>
+            Enable automatic claims transformation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.AddPermissionPolicy(System.String,System.Boolean,System.String[])">
+            <summary>
+            Adds a permission policy.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.AddRolePolicy(System.String,System.Boolean,System.String[])">
+            <summary>
+            Adds a role policy.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.AddCustomPolicy(Nalam360.Platform.Security.Authorization.Policies.IAuthorizationPolicy)">
+            <summary>
+            Adds a custom policy.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.UsePermissionStore``1">
+            <summary>
+            Uses custom permission store.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.UseRoleStore``1">
+            <summary>
+            Uses custom role store.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.AuthorizationOptions.UseUserPrincipalStore``1">
+            <summary>
+            Uses custom user principal store.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering security services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.ServiceCollectionExtensions.AddAesEncryption(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds AES encryption service to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.ServiceCollectionExtensions.AddAesEncryption(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Security.Cryptography.AesEncryptionOptions})">
+            <summary>
+            Adds AES encryption service to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.ServiceCollectionExtensions.AddAzureKeyVault(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Azure Key Vault service to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.DependencyInjection.ServiceCollectionExtensions.AddAzureKeyVault(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Security.KeyVault.AzureKeyVaultOptions})">
+            <summary>
+            Adds Azure Key Vault service to the service collection with options.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.KeyVault.AzureKeyVaultOptions">
+            <summary>
+            Configuration options for Azure Key Vault.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Security.KeyVault.AzureKeyVaultOptions.VaultUri">
+            <summary>
+            Gets or sets the Key Vault URI.
+            Format: https://{vault-name}.vault.azure.net/
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.KeyVault.AzureKeyVaultService">
+            <summary>
+            Azure Key Vault implementation of the key vault service.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.AzureKeyVaultService.GetSecretAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.AzureKeyVaultService.SetSecretAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.AzureKeyVaultService.DeleteSecretAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.AzureKeyVaultService.ListSecretsAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Security.KeyVault.IKeyVaultService">
+            <summary>
+            Service for managing secrets in a key vault.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.IKeyVaultService.GetSecretAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets a secret from the key vault.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.IKeyVaultService.SetSecretAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Sets a secret in the key vault.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.IKeyVaultService.DeleteSecretAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a secret from the key vault.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.KeyVault.IKeyVaultService.ListSecretsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Lists all secret names in the key vault.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Tokens.ITokenService">
+            <summary>
+            JWT token service interface.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Tokens.ITokenService.GenerateToken(Nalam360.Platform.Security.Tokens.TokenRequest)">
+            <summary>
+            Generates a JWT token.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Tokens.ITokenService.ValidateToken(System.String)">
+            <summary>
+            Validates a JWT token.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Tokens.TokenRequest">
+            <summary>
+            Token generation request.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Tokens.TokenRequest.#ctor(System.String,System.String,System.Nullable{System.TimeSpan},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Token generation request.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Security.Tokens.TokenValidationResult">
+            <summary>
+            Token validation result.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Security.Tokens.TokenValidationResult.#ctor(System.Boolean,System.String,System.Collections.Generic.Dictionary{System.String,System.Object},System.String)">
+            <summary>
+            Token validation result.
+            </summary>
+        </member>
+    </members>
+</doc>

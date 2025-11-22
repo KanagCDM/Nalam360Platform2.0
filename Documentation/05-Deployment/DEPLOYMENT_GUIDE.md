@@ -262,7 +262,7 @@ Before publishing, update package metadata in each module:
 
 ```xml
 <PropertyGroup>
-  <TargetFramework>net8.0</TargetFramework> <!-- or net9.0 for UI -->
+  <TargetFramework>net10.0</TargetFramework> <!-- or net9.0 for UI -->
   <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   <PackageId>Nalam360.Platform.Core</PackageId>
   <Version>1.0.0</Version>

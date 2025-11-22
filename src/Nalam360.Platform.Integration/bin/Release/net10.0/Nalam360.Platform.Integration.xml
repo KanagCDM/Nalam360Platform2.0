@@ -1,0 +1,241 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Integration</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering integration services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddAzureBlobStorage(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Azure Blob Storage service to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddAzureBlobStorage(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Integration.Storage.AzureBlobStorageOptions})">
+            <summary>
+            Adds Azure Blob Storage service to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddAwsS3Storage(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds AWS S3 storage service to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddAwsS3Storage(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Integration.Storage.AwsS3Options})">
+            <summary>
+            Adds AWS S3 storage service to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddGcpStorage(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds Google Cloud Storage service to the service collection.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddGcpStorage(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Nalam360.Platform.Integration.Storage.GcpStorageOptions})">
+            <summary>
+            Adds Google Cloud Storage service to the service collection with options.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.DependencyInjection.ServiceCollectionExtensions.AddGrpcClient(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adds gRPC client configuration to the service collection.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Grpc.BaseGrpcClient`1">
+            <summary>
+            Base class for gRPC client wrappers.
+            </summary>
+            <typeparam name="TClient">The gRPC client type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Grpc.BaseGrpcClient`1.DisposeAsync">
+            <summary>
+            Disposes the gRPC channel.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Grpc.GrpcClientOptions">
+            <summary>
+            Configuration options for gRPC clients.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Grpc.GrpcClientOptions.ServerAddress">
+            <summary>
+            Gets or sets the gRPC server address.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Grpc.GrpcClientOptions.MaxReceiveMessageSize">
+            <summary>
+            Gets or sets the maximum receive message size in bytes.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Grpc.GrpcClientOptions.MaxSendMessageSize">
+            <summary>
+            Gets or sets the maximum send message size in bytes.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Http.ITypedHttpClient`1">
+            <summary>
+            Typed HTTP client interface for external API integration.
+            </summary>
+            <typeparam name="TClient">The client type.</typeparam>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Http.ITypedHttpClient`1.GetAsync``1(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets data from an endpoint.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Http.ITypedHttpClient`1.PostAsync``2(System.String,``0,System.Threading.CancellationToken)">
+            <summary>
+            Posts data to an endpoint.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.AwsS3Options">
+            <summary>
+            Configuration options for AWS S3.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.AwsS3Options.AccessKey">
+            <summary>
+            Gets or sets the AWS access key.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.AwsS3Options.SecretKey">
+            <summary>
+            Gets or sets the AWS secret key.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.AwsS3Options.Region">
+            <summary>
+            Gets or sets the AWS region.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.AwsS3StorageService">
+            <summary>
+            AWS S3 storage implementation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.UploadAsync(System.String,System.String,System.IO.Stream,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.DownloadAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.DeleteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.ExistsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.ListBlobsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AwsS3StorageService.GetSharedAccessUrlAsync(System.String,System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.AzureBlobStorageOptions">
+            <summary>
+            Configuration options for Azure Blob Storage.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.AzureBlobStorageOptions.ConnectionString">
+            <summary>
+            Gets or sets the Azure Storage connection string.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.AzureBlobStorageService">
+            <summary>
+            Azure Blob Storage implementation.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.UploadAsync(System.String,System.String,System.IO.Stream,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.DownloadAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.DeleteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.ExistsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.ListBlobsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.AzureBlobStorageService.GetSharedAccessUrlAsync(System.String,System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.GcpStorageService">
+            <summary>
+            Google Cloud Storage implementation of blob storage service.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.GcpStorageOptions">
+            <summary>
+            Configuration options for Google Cloud Storage.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.GcpStorageOptions.ProjectId">
+            <summary>
+            GCP project ID.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.GcpStorageOptions.CredentialsJson">
+            <summary>
+            Service account credentials JSON content.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.GcpStorageOptions.ServiceAccountKeyPath">
+            <summary>
+            Path to service account key file (alternative to CredentialsJson).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.GcpStorageOptions.DefaultContentType">
+            <summary>
+            Default content type for uploaded blobs.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Integration.Storage.GcpStorageOptions.DefaultBucket">
+            <summary>
+            Default bucket name.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Integration.Storage.IBlobStorageService">
+            <summary>
+            Abstraction for blob storage operations.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.UploadAsync(System.String,System.String,System.IO.Stream,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Uploads a blob to storage.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.DownloadAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Downloads a blob from storage.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.DeleteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a blob from storage.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.ExistsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if a blob exists.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.ListBlobsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Lists blobs in a container.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Integration.Storage.IBlobStorageService.GetSharedAccessUrlAsync(System.String,System.String,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Gets a shared access URL for a blob.
+            </summary>
+        </member>
+    </members>
+</doc>

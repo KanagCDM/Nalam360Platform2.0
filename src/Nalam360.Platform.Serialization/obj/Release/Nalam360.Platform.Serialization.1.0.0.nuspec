@@ -6,16 +6,16 @@
     <authors>Nalam360</authors>
     <description>Serialization abstractions for Nalam360 Enterprise Platform with JSON, XML, and Protobuf support.</description>
     <tags>serialization json xml protobuf enterprise</tags>
-    <repository type="git" commit="9f6567a39d4d6883447fc0933f98db2ca5af1b67" />
+    <repository type="git" commit="7ab5e41a2a58baff37aa1b107de401d5bc98f915" />
     <dependencies>
-      <group targetFramework="net8.0">
+      <group targetFramework="net10.0">
         <dependency id="Google.Protobuf" version="3.25.2" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.1" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.dll" target="lib\net8.0\Nalam360.Platform.Serialization.dll" />
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Serialization\bin\Release\net8.0\Nalam360.Platform.Serialization.xml" target="lib\net8.0\Nalam360.Platform.Serialization.xml" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.dll" target="lib/net10.0/Nalam360.Platform.Serialization.dll" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.xml" target="lib/net10.0/Nalam360.Platform.Serialization.xml" />
   </files>
 </package>
