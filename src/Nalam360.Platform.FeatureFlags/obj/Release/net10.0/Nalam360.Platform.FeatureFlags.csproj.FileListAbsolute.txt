@@ -1,0 +1,15 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net10.0/Nalam360.Platform.FeatureFlags.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net10.0/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net10.0/Nalam360.Platform.FeatureFlags.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net10.0/Nalam360.Platform.FeatureFlags.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/refint/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/Nalam360.Platform.FeatureFlags.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net10.0/ref/Nalam360.Platform.FeatureFlags.dll

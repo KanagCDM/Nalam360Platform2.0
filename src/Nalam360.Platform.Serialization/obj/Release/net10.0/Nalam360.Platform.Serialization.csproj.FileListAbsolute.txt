@@ -1,0 +1,15 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/bin/Release/net10.0/Nalam360.Platform.Serialization.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/refint/Nalam360.Platform.Serialization.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/Nalam360.Platform.Serialization.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/obj/Release/net10.0/ref/Nalam360.Platform.Serialization.dll

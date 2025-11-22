@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Validation</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Validation.Attributes.AlphanumericAttribute">
+            <summary>
+            Validates that a string contains only alphanumeric characters.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.StrongPasswordAttribute">
+            <summary>
+            Validates that a string contains at least one uppercase, lowercase, digit, and special character.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.EmailDomainAttribute">
+            <summary>
+            Validates that a string is a valid email address with custom domain restrictions.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.NumericRangeAttribute">
+            <summary>
+            Validates that a numeric value falls within a specified range.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.FutureDateAttribute">
+            <summary>
+            Validates that a date is not in the past.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.PastDateAttribute">
+            <summary>
+            Validates that a date is not in the future.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.MinimumCountAttribute">
+            <summary>
+            Validates that a collection contains a minimum number of items.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.MaximumCountAttribute">
+            <summary>
+            Validates that a collection contains a maximum number of items.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.RegexPatternAttribute">
+            <summary>
+            Validates that a string matches a specific regex pattern.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.Attributes.ComparePropertyAttribute">
+            <summary>
+            Validates that a property value matches another property value (e.g., password confirmation).
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.IAttributeValidationService">
+            <summary>
+            Service for validating objects using data annotation attributes.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.IAttributeValidationService.Validate(System.Object)">
+            <summary>
+            Validates an object using data annotation attributes.
+            </summary>
+            <param name="instance">The object to validate.</param>
+            <returns>A Result containing validation errors if any.</returns>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.IAttributeValidationService.Validate``1(``0)">
+            <summary>
+            Validates an object using data annotation attributes.
+            </summary>
+            <typeparam name="T">The type of the object to validate.</typeparam>
+            <param name="instance">The object to validate.</param>
+            <returns>A Result containing validation errors if any.</returns>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.IAttributeValidationService.ValidateProperty(System.Object,System.String)">
+            <summary>
+            Validates a specific property of an object.
+            </summary>
+            <param name="instance">The object containing the property.</param>
+            <param name="propertyName">The name of the property to validate.</param>
+            <returns>A Result containing validation errors if any.</returns>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.IAttributeValidationService.ValidateAndThrow(System.Object)">
+            <summary>
+            Validates an object and throws a ValidationException if validation fails.
+            </summary>
+            <param name="instance">The object to validate.</param>
+            <exception cref="T:System.ComponentModel.DataAnnotations.ValidationException">Thrown when validation fails.</exception>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.AttributeValidationService">
+            <summary>
+            Default implementation of IAttributeValidationService.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.DependencyInjection.ValidationServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering validation services.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.DependencyInjection.ValidationServiceCollectionExtensions.AddAttributeValidation(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds attribute-based validation services to the service collection.
+            </summary>
+            <param name="services">The service collection.</param>
+            <returns>The service collection for chaining.</returns>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.ModelState.ModelStateError">
+            <summary>
+            Represents a validation error in model state.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateError.#ctor(System.String,System.String)">
+            <summary>
+            Represents a validation error in model state.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.ModelState.ModelStateDictionary">
+            <summary>
+            Represents the validation state of a model.
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.IsValid">
+            <summary>
+            Gets whether the model state is valid (no errors).
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.Errors">
+            <summary>
+            Gets all validation errors.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.AddError(System.String,System.String)">
+            <summary>
+            Adds an error for a specific property.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.AddErrors(System.Collections.Generic.IEnumerable{System.ComponentModel.DataAnnotations.ValidationResult})">
+            <summary>
+            Adds multiple errors from validation results.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.GetErrors(System.String)">
+            <summary>
+            Gets errors for a specific property.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.Clear">
+            <summary>
+            Clears all errors.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionary.ClearProperty(System.String)">
+            <summary>
+            Clears errors for a specific property.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Validation.ModelState.ModelStateDictionaryExtensions">
+            <summary>
+            Extension methods for ModelStateDictionary.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionaryExtensions.TryValidate(Nalam360.Platform.Validation.ModelState.ModelStateDictionary,System.Object)">
+            <summary>
+            Validates an object and populates the ModelStateDictionary with errors.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionaryExtensions.TryValidateProperty(Nalam360.Platform.Validation.ModelState.ModelStateDictionary,System.Object,System.String)">
+            <summary>
+            Validates a specific property and updates the ModelStateDictionary.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionaryExtensions.ToDictionary(Nalam360.Platform.Validation.ModelState.ModelStateDictionary)">
+            <summary>
+            Converts ModelStateDictionary errors to a dictionary format.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Validation.ModelState.ModelStateDictionaryExtensions.GetErrorMessage(Nalam360.Platform.Validation.ModelState.ModelStateDictionary)">
+            <summary>
+            Gets a formatted error message containing all validation errors.
+            </summary>
+        </member>
+    </members>
+</doc>

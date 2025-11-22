@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "zkbIRRUAc0g=",
+  "dgSpecHash": "35Sb5EW4a+4=",
   "success": true,
-  "projectFilePath": "D:\\Nalam\\Nalam360Platform2.0\\src\\Nalam360.Platform.Serialization\\Nalam360.Platform.Serialization.csproj",
+  "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Serialization/Nalam360.Platform.Serialization.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\mmc2878\\.nuget\\packages\\google.protobuf\\3.25.2\\google.protobuf.3.25.2.nupkg.sha512",
-    "C:\\Users\\mmc2878\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.1\\microsoft.extensions.dependencyinjection.abstractions.8.0.1.nupkg.sha512"
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/google.protobuf/3.25.2/google.protobuf.3.25.2.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.1/microsoft.extensions.dependencyinjection.abstractions.8.0.1.nupkg.sha512"
   ],
   "logs": []
 }

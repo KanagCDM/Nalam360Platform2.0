@@ -6,9 +6,9 @@
     <authors>Nalam360</authors>
     <description>Data access layer for Nalam360 Enterprise Platform with Repository, UnitOfWork, and Specification patterns.</description>
     <tags>repository unit-of-work specification ef-core ddd enterprise</tags>
-    <repository type="git" commit="9f6567a39d4d6883447fc0933f98db2ca5af1b67" />
+    <repository type="git" commit="7ab5e41a2a58baff37aa1b107de401d5bc98f915" />
     <dependencies>
-      <group targetFramework="net8.0">
+      <group targetFramework="net10.0">
         <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
         <dependency id="Nalam360.Platform.Domain" version="1.0.0" exclude="Build,Analyzers" />
         <dependency id="Azure.Identity" version="1.13.1" exclude="Build,Analyzers" />
@@ -18,12 +18,11 @@
         <dependency id="Microsoft.EntityFrameworkCore.Relational" version="8.0.11" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.Caching.Memory" version="9.0.0" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="9.0.0" exclude="Build,Analyzers" />
-        <dependency id="System.Formats.Asn1" version="9.0.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Data\bin\Release\net8.0\Nalam360.Platform.Data.dll" target="lib\net8.0\Nalam360.Platform.Data.dll" />
-    <file src="D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.Data\bin\Release\net8.0\Nalam360.Platform.Data.xml" target="lib\net8.0\Nalam360.Platform.Data.xml" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Data/bin/Release/net10.0/Nalam360.Platform.Data.dll" target="lib/net10.0/Nalam360.Platform.Data.dll" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Data/bin/Release/net10.0/Nalam360.Platform.Data.xml" target="lib/net10.0/Nalam360.Platform.Data.xml" />
   </files>
 </package>

@@ -1,0 +1,14 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Release/net10.0/Nalam360.Platform.Tenancy.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Release/net10.0/Nalam360.Platform.Tenancy.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Release/net10.0/Nalam360.Platform.Tenancy.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Release/net10.0/Nalam360.Platform.Tenancy.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/refint/Nalam360.Platform.Tenancy.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/Nalam360.Platform.Tenancy.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/obj/Release/net10.0/ref/Nalam360.Platform.Tenancy.dll

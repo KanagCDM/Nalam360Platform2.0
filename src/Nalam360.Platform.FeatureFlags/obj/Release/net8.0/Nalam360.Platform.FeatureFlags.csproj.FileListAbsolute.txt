@@ -12,33 +12,48 @@
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/ref/Nalam360.Platform.FeatureFlags.dll
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.deps.json
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.dll
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.pdb
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.xml
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.sourcelink.json
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.dll
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\refint\Nalam360.Platform.FeatureFlags.dll
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.xml
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.pdb
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\ref\Nalam360.Platform.FeatureFlags.dll
-D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.deps.json
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.dll
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.pdb
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\bin\Release\net8.0\Nalam360.Platform.FeatureFlags.xml
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.sourcelink.json
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.dll
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\refint\Nalam360.Platform.FeatureFlags.dll
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.xml
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\Nalam360.Platform.FeatureFlags.pdb
-D:\Nalam\Nalam360Platform2.0\src\Nalam360.Platform.FeatureFlags\obj\Release\net8.0\ref\Nalam360.Platform.FeatureFlags.dll
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.deps.json
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.sourcelink.json
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/refint/Nalam360.Platform.FeatureFlags.dll
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/ref/Nalam360.Platform.FeatureFlags.dll
+D:/Mocero/Healthcare Platform/Nalam360EnterprisePlatform/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.deps.json
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.sourcelink.json
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/refint/Nalam360.Platform.FeatureFlags.dll
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+D:/Nalam/Nalam360Platform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/ref/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/bin/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/refint/Nalam360.Platform.FeatureFlags.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/Nalam360.Platform.FeatureFlags.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.FeatureFlags/obj/Release/net8.0/ref/Nalam360.Platform.FeatureFlags.dll
