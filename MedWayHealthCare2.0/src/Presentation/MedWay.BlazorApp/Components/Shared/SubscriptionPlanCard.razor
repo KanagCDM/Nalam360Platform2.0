@@ -1,0 +1,161 @@
+@using MedWay.HospitalOnboarding.Application.DTOs
+
+<div class="subscription-plan-card">
+    <div class="plan-header" style="background: @GetGradient();">
+        <h4>@Plan.Name</h4>
+        @if (IsPopular)
+        {
+            <span class="popular-badge">POPULAR</span>
+        }
+    </div>
+    <div class="plan-body">
+        <div class="price-section">
+            <span class="currency">$</span>
+            <span class="price">@Plan.BaseMonthlyPrice</span>
+            <span class="period">/month</span>
+        </div>
+        <p class="description">@Plan.Description</p>
+        <ul class="features-list">
+            <li><span class="e-icons e-check"></span> @Plan.IncludedUsers users included</li>
+            <li><span class="e-icons e-check"></span> @Plan.IncludedBranches branches included</li>
+            <li><span class="e-icons e-check"></span> @Plan.IncludedFacilities.Count facilities</li>
+        </ul>
+        @if (OnSelect.HasDelegate)
+        {
+            <button class="select-button" @onclick="HandleSelect">
+                @(IsSelected ? "Selected" : "Select Plan")
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public SubscriptionPlanDto Plan { get; set; } = null!;
+
+    [Parameter]
+    public bool IsPopular { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnSelect { get; set; }
+
+    private async Task HandleSelect()
+    {
+        await OnSelect.InvokeAsync(Plan.Id);
+    }
+
+    private string GetGradient()
+    {
+        return Plan.Code switch
+        {
+            "BASIC" => "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            "STANDARD" => "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+            "PREMIUM" => "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+            _ => "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)"
+        };
+    }
+}
+
+<style>
+    .subscription-plan-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .subscription-plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .plan-header {
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .plan-header h4 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .popular-badge {
+        background: rgba(255, 255, 255, 0.3);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .plan-body {
+        padding: 24px;
+    }
+
+    .price-section {
+        text-align: center;
+        margin-bottom: 16px;
+    }
+
+    .currency {
+        font-size: 20px;
+        color: #7f8c8d;
+        vertical-align: top;
+    }
+
+    .price {
+        font-size: 40px;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .period {
+        font-size: 14px;
+        color: #7f8c8d;
+    }
+
+    .description {
+        text-align: center;
+        color: #7f8c8d;
+        margin-bottom: 20px;
+    }
+
+    .features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 24px 0;
+    }
+
+    .features-list li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .features-list .e-icons {
+        color: #27ae60;
+        font-size: 16px;
+    }
+
+    .select-button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.3s;
+    }
+
+    .select-button:hover {
+        opacity: 0.9;
+    }
+</style>

@@ -1,0 +1,130 @@
+@inject ITimeProvider TimeProvider
+
+<div class="trial-countdown @CssClass">
+    <div class="countdown-icon">
+        <span class="e-icons e-time"></span>
+    </div>
+    <div class="countdown-content">
+        <h4>Trial Period</h4>
+        @if (DaysRemaining > 0)
+        {
+            <p class="days-remaining">@DaysRemaining days remaining</p>
+            <p class="expiry-date">Expires on @TrialEndDate.ToString("MMMM dd, yyyy")</p>
+            @if (DaysRemaining <= 7)
+            {
+                <div class="warning-message">
+                    <span class="e-icons e-warning"></span>
+                    <span>Your trial is ending soon. Subscribe to continue using all features.</span>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="expired">Trial has expired</p>
+            <div class="warning-message urgent">
+                <span class="e-icons e-circle-close"></span>
+                <span>Please subscribe to reactivate your account.</span>
+            </div>
+        }
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: @ProgressPercentage%"></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public DateTime TrialEndDate { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+
+    [Inject]
+    private ITimeProvider TimeProvider { get; set; } = null!;
+
+    private int DaysRemaining => Math.Max(0, (TrialEndDate - TimeProvider.UtcNow).Days);
+    
+    private int ProgressPercentage
+    {
+        get
+        {
+            const int trialDays = 30; // Assuming 30-day trial
+            var daysUsed = trialDays - DaysRemaining;
+            return (int)((daysUsed / (double)trialDays) * 100);
+        }
+    }
+}
+
+<style>
+    .trial-countdown {
+        display: flex;
+        gap: 16px;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+    }
+
+    .countdown-icon {
+        font-size: 48px;
+        opacity: 0.9;
+    }
+
+    .countdown-content {
+        flex: 1;
+    }
+
+    .countdown-content h4 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .days-remaining {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+    }
+
+    .expiry-date {
+        margin: 0 0 12px 0;
+        opacity: 0.9;
+        font-size: 14px;
+    }
+
+    .expired {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ff6b6b;
+        margin: 0 0 12px 0;
+    }
+
+    .warning-message {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .warning-message.urgent {
+        background: rgba(255, 107, 107, 0.3);
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        transition: width 0.3s;
+    }
+</style>

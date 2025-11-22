@@ -1,0 +1,441 @@
+{
+  "info": {
+    "name": "MedWay Hospital Onboarding API",
+    "description": "Complete API collection for Hospital Onboarding System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "medway-hospital-onboarding-v1"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (System Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@medway.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login (Hospital Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hospital.admin@example.com\",\n  \"password\": \"HospitalAdmin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hospital Management",
+      "item": [
+        {
+          "name": "Register Hospital (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"City General Hospital\",\n  \"registrationNumber\": \"CGH-2025-001\",\n  \"taxNumber\": \"TAX123456789\",\n  \"address\": {\n    \"street\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10001\",\n    \"country\": \"United States\"\n  },\n  \"primaryEmail\": \"admin@citygeneralhospital.com\",\n  \"primaryPhone\": \"+1-555-0100\",\n  \"establishedDate\": \"2020-01-15T00:00:00Z\",\n  \"trialDays\": 30\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "register"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "body": {}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"hospitalId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"message\": \"Hospital registered successfully. Trial period activated.\",\n  \"trialEndsOn\": \"2025-12-22T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Hospital by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Hospitals (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals?page=1&pageSize=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Hospital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Hospital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Incomplete documentation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "reject"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Suspend Hospital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Payment overdue\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/suspend",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "suspend"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscription Plans",
+      "item": [
+        {
+          "name": "Get All Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscription-plans"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/public",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscription-plans", "public"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionPlanId\": \"{{plan_id}}\",\n  \"durationMonths\": 12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/subscribe",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "subscribe"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Branch Management",
+      "item": [
+        {
+          "name": "Add Branch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Downtown Branch\",\n  \"branchCode\": \"DTN-001\",\n  \"address\": {\n    \"street\": \"456 Downtown Ave\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10002\",\n    \"country\": \"United States\"\n  },\n  \"phone\": \"+1-555-0200\",\n  \"email\": \"downtown@citygeneralhospital.com\",\n  \"openingDate\": \"2025-02-01T00:00:00Z\",\n  \"operatingHours\": \"Mon-Fri: 8AM-8PM, Sat-Sun: 9AM-5PM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/branches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "branches"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hospital Branches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/branches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "branches"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Facility Management",
+      "item": [
+        {
+          "name": "Get All Global Facilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/facilities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "facilities"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Facility to Hospital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"globalFacilityId\": \"{{facility_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/facilities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "facilities"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment Management",
+      "item": [
+        {
+          "name": "Get Hospital Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hospitals/{{hospital_id}}/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hospitals", "{{hospital_id}}", "payments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 299.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentGateway\": \"Stripe\",\n  \"cardToken\": \"tok_visa\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/process",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "process"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hospital_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "facility_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

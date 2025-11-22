@@ -1,0 +1,313 @@
+@page "/admin/approvals"
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Cards
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Notifications
+@using MedWay.HospitalOnboarding.Application.DTOs
+@inject IApiClient ApiClient
+
+<PageTitle>Hospital Approvals</PageTitle>
+
+<div class="approvals-page">
+    <SfCard>
+        <CardHeader Title="Pending Hospital Approvals" />
+        <CardContent>
+            @if (isLoading)
+            {
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Loading pending approvals...</p>
+                </div>
+            }
+            else if (!pendingHospitals.Any())
+            {
+                <div class="empty-state">
+                    <span class="e-icons e-check-circle" style="font-size: 64px; color: #27ae60;"></span>
+                    <h3>All Clear!</h3>
+                    <p>There are no pending hospital approvals at this time.</p>
+                </div>
+            }
+            else
+            {
+                <SfGrid DataSource="@pendingHospitals" AllowPaging="true" AllowSorting="true">
+                    <GridPageSettings PageSize="20"></GridPageSettings>
+                    <GridColumns>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Name)" HeaderText="Hospital Name" Width="200"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.RegistrationNumber)" HeaderText="Reg. Number" Width="140"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.City)" HeaderText="City" Width="120"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.State)" HeaderText="State" Width="120"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Email)" HeaderText="Email" Width="200"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Phone)" HeaderText="Phone" Width="140"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.CreatedAt)" HeaderText="Submitted On" Width="140" Format="d" Type="ColumnType.Date"></GridColumn>
+                        <GridColumn HeaderText="Actions" Width="200">
+                            <Template>
+                                @{
+                                    var hospital = context as HospitalSummaryDto;
+                                    <div class="action-buttons">
+                                        <SfButton CssClass="e-small e-success" IconCss="e-icons e-check" 
+                                                  OnClick="@(() => OpenApproveDialog(hospital!.Id, hospital.Name))">
+                                            Approve
+                                        </SfButton>
+                                        <SfButton CssClass="e-small e-danger" IconCss="e-icons e-close" 
+                                                  OnClick="@(() => OpenRejectDialog(hospital!.Id, hospital.Name))">
+                                            Reject
+                                        </SfButton>
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+<!-- Approve Dialog -->
+<SfDialog @ref="approveDialog" Width="400px" IsModal="true" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>Approve Hospital</Header>
+        <Content>
+            <p>Are you sure you want to approve <strong>@selectedHospitalName</strong>?</p>
+            <p class="note">The hospital will be activated and the admin will be notified via email.</p>
+        </Content>
+        <FooterTemplate>
+            <SfButton CssClass="e-success" OnClick="ConfirmApprove" IsPrimary="true" Disabled="isSubmitting">
+                @(isSubmitting ? "Processing..." : "Approve")
+            </SfButton>
+            <SfButton CssClass="e-secondary" OnClick="CloseApproveDialog">Cancel</SfButton>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+<!-- Reject Dialog -->
+<SfDialog @ref="rejectDialog" Width="500px" IsModal="true" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>Reject Hospital</Header>
+        <Content>
+            <p>You are about to reject <strong>@selectedHospitalName</strong>.</p>
+            <div class="form-group">
+                <label>Rejection Reason (Required)</label>
+                <SfTextBox @bind-Value="rejectionReason" Multiline="true" Placeholder="Enter detailed reason for rejection..." />
+                <small class="help-text">Minimum 10 characters. The hospital admin will receive this message.</small>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <SfButton CssClass="e-danger" OnClick="ConfirmReject" IsPrimary="true" 
+                      Disabled="@(isSubmitting || string.IsNullOrWhiteSpace(rejectionReason) || rejectionReason.Length < 10)">
+                @(isSubmitting ? "Processing..." : "Reject Hospital")
+            </SfButton>
+            <SfButton CssClass="e-secondary" OnClick="CloseRejectDialog">Cancel</SfButton>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+<SfToast @ref="toastRef" />
+
+@code {
+    private SfDialog? approveDialog;
+    private SfDialog? rejectDialog;
+    private SfToast? toastRef;
+    private List<HospitalSummaryDto> pendingHospitals = new();
+    private Guid selectedHospitalId;
+    private string selectedHospitalName = string.Empty;
+    private string rejectionReason = string.Empty;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPendingHospitals();
+    }
+
+    private async Task LoadPendingHospitals()
+    {
+        try
+        {
+            isLoading = true;
+            var response = await ApiClient.GetAsync<PagedResult<HospitalSummaryDto>>(
+                "/api/v1/hospitals?status=PendingApproval&pageSize=100");
+            
+            if (response != null)
+            {
+                pendingHospitals = response.Items;
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to load pending approvals: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenApproveDialog(Guid hospitalId, string hospitalName)
+    {
+        selectedHospitalId = hospitalId;
+        selectedHospitalName = hospitalName;
+        if (approveDialog != null)
+        {
+            await approveDialog.ShowAsync();
+        }
+    }
+
+    private async Task CloseApproveDialog()
+    {
+        if (approveDialog != null)
+        {
+            await approveDialog.HideAsync();
+        }
+    }
+
+    private async Task ConfirmApprove()
+    {
+        try
+        {
+            isSubmitting = true;
+            await ApiClient.PostAsync($"/api/v1/hospitals/{selectedHospitalId}/approve", 
+                new { approvedBy = "SystemAdmin" });
+            
+            await ShowToast("Success", $"{selectedHospitalName} has been approved!", "e-toast-success");
+            await CloseApproveDialog();
+            await LoadPendingHospitals();
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to approve hospital: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task OpenRejectDialog(Guid hospitalId, string hospitalName)
+    {
+        selectedHospitalId = hospitalId;
+        selectedHospitalName = hospitalName;
+        rejectionReason = string.Empty;
+        if (rejectDialog != null)
+        {
+            await rejectDialog.ShowAsync();
+        }
+    }
+
+    private async Task CloseRejectDialog()
+    {
+        if (rejectDialog != null)
+        {
+            await rejectDialog.HideAsync();
+        }
+    }
+
+    private async Task ConfirmReject()
+    {
+        try
+        {
+            isSubmitting = true;
+            await ApiClient.PostAsync($"/api/v1/hospitals/{selectedHospitalId}/reject",
+                new { reason = rejectionReason, rejectedBy = "SystemAdmin" });
+
+            await ShowToast("Success", $"{selectedHospitalName} has been rejected.", "e-toast-success");
+            await CloseRejectDialog();
+            await LoadPendingHospitals();
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to reject hospital: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ShowToast(string title, string content, string cssClass)
+    {
+        if (toastRef != null)
+        {
+            await toastRef.ShowAsync(new ToastModel
+            {
+                Title = title,
+                Content = content,
+                CssClass = cssClass,
+                Icon = cssClass == "e-toast-success" ? "e-success toast-icons" : "e-error toast-icons"
+            });
+        }
+    }
+}
+
+<style>
+    .approvals-page {
+        padding: 24px;
+    }
+
+    .loading-container {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state h3 {
+        margin: 16px 0 8px 0;
+        color: #2c3e50;
+    }
+
+    .empty-state p {
+        color: #7f8c8d;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .form-group {
+        margin-top: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .help-text {
+        display: block;
+        margin-top: 8px;
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .note {
+        background: #e8f5e9;
+        padding: 12px;
+        border-radius: 4px;
+        color: #2e7d32;
+        font-size: 14px;
+    }
+</style>

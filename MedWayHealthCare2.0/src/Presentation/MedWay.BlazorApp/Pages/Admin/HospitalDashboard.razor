@@ -1,0 +1,350 @@
+@page "/admin/hospitals/dashboard"
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Cards
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Notifications
+@using MedWay.HospitalOnboarding.Application.DTOs
+@inject IApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Hospital Dashboard</PageTitle>
+
+<div class="hospital-dashboard">
+    <div class="dashboard-header">
+        <h2>Hospital Management Dashboard</h2>
+        <SfButton CssClass="e-success" IconCss="e-icons e-plus" OnClick="NavigateToRegistration">
+            Register New Hospital
+        </SfButton>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading dashboard data...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <SfCard>
+                <CardContent>
+                    <div class="stat-card">
+                        <div class="stat-icon active">
+                            <span class="e-icons e-check-circle"></span>
+                        </div>
+                        <div class="stat-details">
+                            <h3>@stats.ActiveHospitals</h3>
+                            <p>Active Hospitals</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+
+            <SfCard>
+                <CardContent>
+                    <div class="stat-card">
+                        <div class="stat-icon pending">
+                            <span class="e-icons e-time"></span>
+                        </div>
+                        <div class="stat-details">
+                            <h3>@stats.PendingApprovals</h3>
+                            <p>Pending Approvals</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+
+            <SfCard>
+                <CardContent>
+                    <div class="stat-card">
+                        <div class="stat-icon trial">
+                            <span class="e-icons e-star"></span>
+                        </div>
+                        <div class="stat-details">
+                            <h3>@stats.InTrial</h3>
+                            <p>In Trial</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+
+            <SfCard>
+                <CardContent>
+                    <div class="stat-card">
+                        <div class="stat-icon revenue">
+                            <span class="e-icons e-money"></span>
+                        </div>
+                        <div class="stat-details">
+                            <h3>@stats.TotalRevenue.ToString("C")</h3>
+                            <p>Monthly Revenue</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+        </div>
+
+        <!-- Hospitals Grid -->
+        <SfCard>
+            <CardHeader Title="All Hospitals" />
+            <CardContent>
+                <SfGrid DataSource="@hospitals" AllowPaging="true" AllowSorting="true" AllowFiltering="true"
+                        AllowResizing="true" GridLines="GridLine.Both">
+                    <GridPageSettings PageSize="20" PageSizes="new int[] { 10, 20, 50, 100 }"></GridPageSettings>
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <GridColumns>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Name)" HeaderText="Hospital Name" Width="200"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.RegistrationNumber)" HeaderText="Reg. Number" Width="150"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Status)" HeaderText="Status" Width="120">
+                            <Template>
+                                @{
+                                    var hospital = context as HospitalSummaryDto;
+                                    <span class="status-badge status-@hospital!.Status.ToLower()">@hospital.Status</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.City)" HeaderText="City" Width="120"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.State)" HeaderText="State" Width="120"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Email)" HeaderText="Email" Width="180"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.Phone)" HeaderText="Phone" Width="150"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.IsInTrial)" HeaderText="Trial" Width="80" DisplayAsCheckBox="true"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.MonthlySubscriptionCost)" HeaderText="Monthly Cost" Width="130" Format="C2"></GridColumn>
+                        <GridColumn Field="@nameof(HospitalSummaryDto.CreatedAt)" HeaderText="Created" Width="150" Format="d" Type="ColumnType.Date"></GridColumn>
+                        <GridColumn HeaderText="Actions" Width="180">
+                            <Template>
+                                @{
+                                    var hospital = context as HospitalSummaryDto;
+                                    <div class="action-buttons">
+                                        <SfButton CssClass="e-small e-info" OnClick="@(() => ViewDetails(hospital!.Id))">View</SfButton>
+                                        @if (hospital!.Status == "PendingApproval")
+                                        {
+                                            <SfButton CssClass="e-small e-success" OnClick="@(() => ApproveHospital(hospital.Id))">Approve</SfButton>
+                                        }
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </CardContent>
+        </SfCard>
+    }
+</div>
+
+<SfToast @ref="toastRef" />
+
+@code {
+    private SfToast? toastRef;
+    private List<HospitalSummaryDto> hospitals = new();
+    private DashboardStats stats = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Get all hospitals (in real app, this would be paginated)
+            var response = await ApiClient.GetAsync<PagedResult<HospitalSummaryDto>>(
+                "/api/v1/hospitals?pageSize=100");
+
+            if (response != null)
+            {
+                hospitals = response.Items;
+
+                // Calculate stats
+                stats = new DashboardStats
+                {
+                    ActiveHospitals = hospitals.Count(h => h.Status == "Active"),
+                    PendingApprovals = hospitals.Count(h => h.Status == "PendingApproval"),
+                    InTrial = hospitals.Count(h => h.IsInTrial),
+                    TotalRevenue = hospitals.Where(h => h.MonthlySubscriptionCost.HasValue)
+                        .Sum(h => h.MonthlySubscriptionCost!.Value)
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to load dashboard: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void NavigateToRegistration()
+    {
+        Navigation.NavigateTo("/admin/hospitals/register");
+    }
+
+    private void ViewDetails(Guid hospitalId)
+    {
+        Navigation.NavigateTo($"/admin/hospitals/{hospitalId}");
+    }
+
+    private async Task ApproveHospital(Guid hospitalId)
+    {
+        try
+        {
+            await ApiClient.PostAsync($"/api/v1/hospitals/{hospitalId}/approve", new { });
+            await ShowToast("Success", "Hospital approved successfully", "e-toast-success");
+            await LoadDashboardData();
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to approve hospital: {ex.Message}", "e-toast-danger");
+        }
+    }
+
+    private async Task ShowToast(string title, string content, string cssClass)
+    {
+        if (toastRef != null)
+        {
+            await toastRef.ShowAsync(new ToastModel
+            {
+                Title = title,
+                Content = content,
+                CssClass = cssClass,
+                Icon = cssClass == "e-toast-success" ? "e-success toast-icons" : "e-error toast-icons"
+            });
+        }
+    }
+
+    private class DashboardStats
+    {
+        public int ActiveHospitals { get; set; }
+        public int PendingApprovals { get; set; }
+        public int InTrial { get; set; }
+        public decimal TotalRevenue { get; set; }
+    }
+}
+
+<style>
+    .hospital-dashboard {
+        padding: 24px;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .stat-icon.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .stat-icon.pending {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .stat-icon.trial {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+
+    .stat-icon.revenue {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+    }
+
+    .stat-details h3 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .stat-details p {
+        margin: 4px 0 0 0;
+        font-size: 14px;
+        color: #7f8c8d;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-pendingapproval {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-draft {
+        background: #e7e7e7;
+        color: #6c757d;
+    }
+
+    .status-suspended {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .loading-container {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>

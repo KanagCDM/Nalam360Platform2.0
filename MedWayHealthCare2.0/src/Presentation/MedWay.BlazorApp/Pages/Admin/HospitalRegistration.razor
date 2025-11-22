@@ -1,0 +1,387 @@
+@page "/admin/hospitals/register"
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Notifications
+@inject NavigationManager NavigationManager
+@inject IApiClient ApiClient
+@inject SfToast Toast
+
+<div class="hospital-registration-page">
+    <div class="page-header">
+        <h2>Hospital Registration</h2>
+        <p class="subtitle">Register your hospital for a 30-day free trial</p>
+    </div>
+
+    <div class="registration-form-container">
+        <SfCard>
+            <CardHeader Title="Hospital Information" />
+            <CardContent>
+                <EditForm Model="@model" OnValidSubmit="@HandleRegistration">
+                    <DataAnnotationsValidator />
+                    
+                    <!-- Hospital Basic Info -->
+                    <div class="form-section">
+                        <h4>Basic Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hospitalName">Hospital Name *</label>
+                                <SfTextBox @bind-Value="@model.Name" 
+                                           Placeholder="Enter hospital name"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.Name)" />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="regNumber">Registration Number *</label>
+                                <SfTextBox @bind-Value="@model.RegistrationNumber" 
+                                           Placeholder="e.g., CGH-2025-001"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.RegistrationNumber)" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="taxNumber">Tax Number</label>
+                                <SfTextBox @bind-Value="@model.TaxNumber" 
+                                           Placeholder="Optional"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="establishedDate">Established Date *</label>
+                                <SfDatePicker @bind-Value="@model.EstablishedDate"
+                                              Format="dd/MM/yyyy"
+                                              FloatLabelType="FloatLabelType.Auto"
+                                              CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.EstablishedDate)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Section -->
+                    <div class="form-section">
+                        <h4>Registered Address</h4>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="street">Street Address *</label>
+                                <SfTextBox @bind-Value="@model.Address.Street" 
+                                           Placeholder="123 Main Street"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.Address.Street)" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="city">City *</label>
+                                <SfTextBox @bind-Value="@model.Address.City" 
+                                           Placeholder="City"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.Address.City)" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="state">State/Province *</label>
+                                <SfTextBox @bind-Value="@model.Address.State" 
+                                           Placeholder="State"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.Address.State)" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="postalCode">Postal Code *</label>
+                                <SfTextBox @bind-Value="@model.Address.PostalCode" 
+                                           Placeholder="10001"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.Address.PostalCode)" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="country">Country *</label>
+                                <SfDropDownList TValue="string" 
+                                                TItem="CountryItem"
+                                                @bind-Value="@model.Address.Country"
+                                                DataSource="@countries"
+                                                Placeholder="Select country"
+                                                FloatLabelType="FloatLabelType.Auto"
+                                                CssClass="e-outline">
+                                    <DropDownListFieldSettings Value="Name" Text="Name"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                                <ValidationMessage For="@(() => model.Address.Country)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Section -->
+                    <div class="form-section">
+                        <h4>Contact Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">Primary Email *</label>
+                                <SfTextBox @bind-Value="@model.PrimaryEmail" 
+                                           Type="InputType.Email"
+                                           Placeholder="admin@hospital.com"
+                                           FloatLabelType="FloatLabelType.Auto"
+                                           CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.PrimaryEmail)" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone">Primary Phone *</label>
+                                <SfMaskedTextBox @bind-Value="@model.PrimaryPhone"
+                                                 Mask="+0-000-000-0000"
+                                                 Placeholder="+1-555-000-0000"
+                                                 FloatLabelType="FloatLabelType.Auto"
+                                                 CssClass="e-outline" />
+                                <ValidationMessage For="@(() => model.PrimaryPhone)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trial Period Info -->
+                    <div class="trial-info-section">
+                        <SfMessage Severity="MessageSeverity.Info">
+                            <strong>Free 30-Day Trial</strong> - No credit card required. Full access to all features.
+                        </SfMessage>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <SfButton CssClass="e-outline" OnClick="@HandleCancel">Cancel</SfButton>
+                        <SfButton IsPrimary="true" 
+                                  Type="ButtonType.Submit"
+                                  Disabled="@isSubmitting"
+                                  IconCss="@(isSubmitting ? "e-icons e-refresh" : "")">
+                            @(isSubmitting ? "Registering..." : "Register Hospital")
+                        </SfButton>
+                    </div>
+                </EditForm>
+            </CardContent>
+        </SfCard>
+    </div>
+</div>
+
+<SfToast @ref="toastObj" />
+
+@code {
+    private HospitalRegistrationModel model = new();
+    private List<CountryItem> countries = new();
+    private bool isSubmitting = false;
+    private SfToast toastObj;
+
+    protected override void OnInitialized()
+    {
+        LoadCountries();
+    }
+
+    private void LoadCountries()
+    {
+        countries = new List<CountryItem>
+        {
+            new() { Name = "United States" },
+            new() { Name = "Canada" },
+            new() { Name = "United Kingdom" },
+            new() { Name = "Australia" },
+            new() { Name = "India" },
+            new() { Name = "Germany" },
+            new() { Name = "France" },
+            // Add more countries
+        };
+    }
+
+    private async Task HandleRegistration()
+    {
+        isSubmitting = true;
+        try
+        {
+            var response = await ApiClient.PostAsync<RegisterHospitalRequest, RegisterHospitalResponse>(
+                "/api/v1/hospitals/register",
+                new RegisterHospitalRequest
+                {
+                    Name = model.Name,
+                    RegistrationNumber = model.RegistrationNumber,
+                    TaxNumber = model.TaxNumber,
+                    Address = model.Address,
+                    PrimaryEmail = model.PrimaryEmail,
+                    PrimaryPhone = model.PrimaryPhone,
+                    EstablishedDate = model.EstablishedDate,
+                    TrialDays = 30
+                });
+
+            if (response.IsSuccess)
+            {
+                await toastObj.ShowAsync(new ToastModel
+                {
+                    Title = "Success!",
+                    Content = "Hospital registered successfully. Check your email for login credentials.",
+                    CssClass = "e-toast-success",
+                    Icon = "e-success toast-icons"
+                });
+
+                await Task.Delay(2000);
+                NavigationManager.NavigateTo("/admin/hospitals");
+            }
+            else
+            {
+                await toastObj.ShowAsync(new ToastModel
+                {
+                    Title = "Registration Failed",
+                    Content = response.ErrorMessage ?? "An error occurred during registration.",
+                    CssClass = "e-toast-danger",
+                    Icon = "e-error toast-icons"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await toastObj.ShowAsync(new ToastModel
+            {
+                Title = "Error",
+                Content = $"Unexpected error: {ex.Message}",
+                CssClass = "e-toast-danger",
+                Icon = "e-error toast-icons"
+            });
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void HandleCancel()
+    {
+        NavigationManager.NavigateTo("/admin/hospitals");
+    }
+
+    // Models
+    public class HospitalRegistrationModel
+    {
+        [Required]
+        [StringLength(200)]
+        public string Name { get; set; } = "";
+
+        [Required]
+        [StringLength(50)]
+        public string RegistrationNumber { get; set; } = "";
+
+        [StringLength(50)]
+        public string? TaxNumber { get; set; }
+
+        [Required]
+        public AddressModel Address { get; set; } = new();
+
+        [Required]
+        [EmailAddress]
+        public string PrimaryEmail { get; set; } = "";
+
+        [Required]
+        [Phone]
+        public string PrimaryPhone { get; set; } = "";
+
+        [Required]
+        public DateTime EstablishedDate { get; set; } = DateTime.Today;
+    }
+
+    public class AddressModel
+    {
+        [Required] public string Street { get; set; } = "";
+        [Required] public string City { get; set; } = "";
+        [Required] public string State { get; set; } = "";
+        [Required] public string PostalCode { get; set; } = "";
+        [Required] public string Country { get; set; } = "";
+    }
+
+    public class CountryItem
+    {
+        public string Name { get; set; } = "";
+    }
+}
+
+<style>
+    .hospital-registration-page {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .page-header h2 {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .form-section h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #0078D4;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-group label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .trial-info-section {
+        margin: 2rem 0;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .form-actions .e-btn {
+        min-width: 120px;
+    }
+</style>

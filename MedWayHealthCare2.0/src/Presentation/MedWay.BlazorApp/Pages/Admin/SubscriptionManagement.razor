@@ -1,0 +1,495 @@
+@page "/hospitals/{hospitalId:guid}/subscription"
+@using Syncfusion.Blazor.Cards
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Notifications
+@using MedWay.HospitalOnboarding.Application.DTOs
+@inject IApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Subscription Management</PageTitle>
+
+<div class="subscription-management">
+    <div class="page-header">
+        <h2>Choose Your Subscription Plan</h2>
+        <p>Select a plan that fits your hospital's needs. You can upgrade or downgrade anytime.</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading subscription plans...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Subscription Plans Grid -->
+        <div class="plans-grid">
+            @foreach (var plan in subscriptionPlans)
+            {
+                <SfCard CssClass="@($"plan-card {(selectedPlanId == plan.Id ? "selected" : "")}")">
+                    <CardHeader>
+                        <div class="plan-header">
+                            <h3>@plan.Name</h3>
+                            @if (plan.Code == "PREMIUM")
+                            {
+                                <span class="popular-badge">MOST POPULAR</span>
+                            }
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div class="plan-content">
+                            <!-- Price -->
+                            <div class="price-section">
+                                <span class="currency">$</span>
+                                <span class="price">@plan.BaseMonthlyPrice</span>
+                                <span class="period">/month</span>
+                            </div>
+
+                            <!-- Description -->
+                            <p class="plan-description">@plan.Description</p>
+
+                            <!-- Features -->
+                            <div class="features-list">
+                                <div class="feature">
+                                    <span class="e-icons e-check"></span>
+                                    <span>Up to @plan.IncludedUsers users</span>
+                                </div>
+                                <div class="feature">
+                                    <span class="e-icons e-check"></span>
+                                    <span>Up to @plan.IncludedBranches branches</span>
+                                </div>
+                                @foreach (var facility in plan.IncludedFacilities.Take(5))
+                                {
+                                    <div class="feature">
+                                        <span class="e-icons e-check"></span>
+                                        <span>@facility.Name</span>
+                                    </div>
+                                }
+                                @if (plan.IncludedFacilities.Count > 5)
+                                {
+                                    <div class="feature">
+                                        <span class="e-icons e-check"></span>
+                                        <span>+@(plan.IncludedFacilities.Count - 5) more facilities</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Additional Pricing -->
+                            <div class="additional-pricing">
+                                <small>Additional users: $@plan.PricePerAdditionalUser/user</small>
+                                <small>Additional branches: $@plan.PricePerAdditionalBranch/branch</small>
+                            </div>
+
+                            <!-- Select Button -->
+                            <SfButton CssClass="@(selectedPlanId == plan.Id ? "e-success" : "e-primary")"
+                                      OnClick="@(() => SelectPlan(plan.Id))"
+                                      IsPrimary="true">
+                                @(selectedPlanId == plan.Id ? "Selected" : "Select Plan")
+                            </SfButton>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            }
+        </div>
+
+        <!-- Configuration Section (shown when plan is selected) -->
+        @if (selectedPlanId != null)
+        {
+            <SfCard CssClass="configuration-card">
+                <CardHeader Title="Configure Your Subscription" />
+                <CardContent>
+                    <div class="configuration-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Number of Users</label>
+                                <SfNumericTextBox @bind-Value="numberOfUsers" Min="1" Max="10000" Step="1"
+                                                  Format="n0" ShowSpinButton="true">
+                                </SfNumericTextBox>
+                                <small class="help-text">
+                                    @if (numberOfUsers > selectedPlan!.IncludedUsers)
+                                    {
+                                        <text>Extra: @(numberOfUsers - selectedPlan.IncludedUsers) users × $@selectedPlan.PricePerAdditionalUser = $@((numberOfUsers - selectedPlan.IncludedUsers) * selectedPlan.PricePerAdditionalUser)</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Included in base plan</text>
+                                    }
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Number of Branches</label>
+                                <SfNumericTextBox @bind-Value="numberOfBranches" Min="1" Max="1000" Step="1"
+                                                  Format="n0" ShowSpinButton="true">
+                                </SfNumericTextBox>
+                                <small class="help-text">
+                                    @if (numberOfBranches > selectedPlan!.IncludedBranches)
+                                    {
+                                        <text>Extra: @(numberOfBranches - selectedPlan.IncludedBranches) branches × $@selectedPlan.PricePerAdditionalBranch = $@((numberOfBranches - selectedPlan.IncludedBranches) * selectedPlan.PricePerAdditionalBranch)</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Included in base plan</text>
+                                    }
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Cost Summary -->
+                        <div class="cost-summary">
+                            <h4>Cost Summary</h4>
+                            <div class="summary-line">
+                                <span>Base Plan (@selectedPlan!.Name)</span>
+                                <span>$@selectedPlan.BaseMonthlyPrice.ToString("N2")</span>
+                            </div>
+                            @if (numberOfUsers > selectedPlan.IncludedUsers)
+                            {
+                                <div class="summary-line">
+                                    <span>Additional Users (@(numberOfUsers - selectedPlan.IncludedUsers))</span>
+                                    <span>$@((numberOfUsers - selectedPlan.IncludedUsers) * selectedPlan.PricePerAdditionalUser).ToString("N2")</span>
+                                </div>
+                            }
+                            @if (numberOfBranches > selectedPlan.IncludedBranches)
+                            {
+                                <div class="summary-line">
+                                    <span>Additional Branches (@(numberOfBranches - selectedPlan.IncludedBranches))</span>
+                                    <span>$@((numberOfBranches - selectedPlan.IncludedBranches) * selectedPlan.PricePerAdditionalBranch).ToString("N2")</span>
+                                </div>
+                            }
+                            <div class="summary-line total">
+                                <span>Total Monthly Cost</span>
+                                <span>$@calculatedCost.ToString("N2")</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <SfButton CssClass="e-success" OnClick="ActivateSubscription" IsPrimary="true" Disabled="isSubmitting">
+                                @(isSubmitting ? "Processing..." : "Activate Subscription")
+                            </SfButton>
+                            <SfButton CssClass="e-secondary" OnClick="@(() => selectedPlanId = null)">
+                                Cancel
+                            </SfButton>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+        }
+    }
+</div>
+
+<SfToast @ref="toastRef" />
+
+@code {
+    [Parameter]
+    public Guid HospitalId { get; set; }
+
+    private SfToast? toastRef;
+    private List<SubscriptionPlanDto> subscriptionPlans = new();
+    private Guid? selectedPlanId;
+    private SubscriptionPlanDto? selectedPlan => subscriptionPlans.FirstOrDefault(p => p.Id == selectedPlanId);
+    private int numberOfUsers = 1;
+    private int numberOfBranches = 1;
+    private decimal calculatedCost = 0;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubscriptionPlans();
+    }
+
+    protected override void OnParametersSet()
+    {
+        CalculateCost();
+    }
+
+    private async Task LoadSubscriptionPlans()
+    {
+        try
+        {
+            isLoading = true;
+            var plans = await ApiClient.GetAsync<List<SubscriptionPlanDto>>("/api/v1/subscription-plans?publicOnly=true");
+            if (plans != null)
+            {
+                subscriptionPlans = plans;
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to load subscription plans: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectPlan(Guid planId)
+    {
+        selectedPlanId = planId;
+        var plan = selectedPlan;
+        if (plan != null)
+        {
+            numberOfUsers = plan.IncludedUsers;
+            numberOfBranches = plan.IncludedBranches;
+        }
+        CalculateCost();
+    }
+
+    private void CalculateCost()
+    {
+        if (selectedPlan == null)
+        {
+            calculatedCost = 0;
+            return;
+        }
+
+        calculatedCost = selectedPlan.BaseMonthlyPrice;
+
+        if (numberOfUsers > selectedPlan.IncludedUsers)
+        {
+            calculatedCost += (numberOfUsers - selectedPlan.IncludedUsers) * selectedPlan.PricePerAdditionalUser;
+        }
+
+        if (numberOfBranches > selectedPlan.IncludedBranches)
+        {
+            calculatedCost += (numberOfBranches - selectedPlan.IncludedBranches) * selectedPlan.PricePerAdditionalBranch;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ActivateSubscription()
+    {
+        if (selectedPlanId == null) return;
+
+        try
+        {
+            isSubmitting = true;
+
+            var command = new
+            {
+                hospitalId = HospitalId,
+                subscriptionPlanId = selectedPlanId.Value,
+                numberOfUsers = numberOfUsers,
+                numberOfBranches = numberOfBranches,
+                additionalFacilityIds = new List<Guid>()
+            };
+
+            var response = await ApiClient.PostAsync<decimal>(
+                $"/api/v1/hospitals/{HospitalId}/subscribe", command);
+
+            await ShowToast("Success", $"Subscription activated! Monthly cost: ${response:N2}", "e-toast-success");
+
+            // Navigate back to hospital details
+            await Task.Delay(2000);
+            Navigation.NavigateTo($"/admin/hospitals/{HospitalId}");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to activate subscription: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ShowToast(string title, string content, string cssClass)
+    {
+        if (toastRef != null)
+        {
+            await toastRef.ShowAsync(new ToastModel
+                {
+                    Title = title,
+                    Content = content,
+                    CssClass = cssClass,
+                    Icon = cssClass == "e-toast-success" ? "e-success toast-icons" : "e-error toast-icons"
+                });
+        }
+    }
+}
+
+<style>
+    .subscription-management {
+        padding: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .page-header h2 {
+        font-size: 32px;
+        margin-bottom: 8px;
+        color: #2c3e50;
+    }
+
+    .page-header p {
+        font-size: 16px;
+        color: #7f8c8d;
+    }
+
+    .plans-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .plan-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .plan-card.selected {
+        border: 2px solid #667eea;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    }
+
+    .plan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .popular-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .plan-content {
+        text-align: center;
+    }
+
+    .price-section {
+        margin: 24px 0;
+    }
+
+    .currency {
+        font-size: 24px;
+        color: #7f8c8d;
+        vertical-align: top;
+    }
+
+    .price {
+        font-size: 48px;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .period {
+        font-size: 16px;
+        color: #7f8c8d;
+    }
+
+    .plan-description {
+        color: #7f8c8d;
+        margin-bottom: 24px;
+        min-height: 40px;
+    }
+
+    .features-list {
+        text-align: left;
+        margin: 24px 0;
+    }
+
+    .feature {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .feature .e-icons {
+        color: #27ae60;
+        font-size: 18px;
+    }
+
+    .additional-pricing {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 20px 0;
+        color: #95a5a6;
+        font-size: 13px;
+    }
+
+    .configuration-card {
+        margin-top: 32px;
+    }
+
+    .configuration-form {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .help-text {
+        display: block;
+        margin-top: 8px;
+        color: #7f8c8d;
+        font-size: 13px;
+    }
+
+    .cost-summary {
+        background: #f8f9fa;
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+    }
+
+    .cost-summary h4 {
+        margin: 0 0 16px 0;
+        color: #2c3e50;
+    }
+
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        color: #7f8c8d;
+    }
+
+    .summary-line.total {
+        border-top: 2px solid #dee2e6;
+        padding-top: 12px;
+        margin-top: 12px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+</style>

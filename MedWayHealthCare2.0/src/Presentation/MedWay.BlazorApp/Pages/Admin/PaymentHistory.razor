@@ -1,0 +1,156 @@
+@page "/hospitals/{hospitalId:guid}/payments"
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Cards
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Notifications
+@using MedWay.HospitalOnboarding.Application.DTOs
+@inject IApiClient ApiClient
+
+<PageTitle>Payment History</PageTitle>
+
+<div class="payment-history">
+    <SfCard>
+        <CardHeader>
+            <div class="card-header-content">
+                <h3>Payment History</h3>
+                <SfButton CssClass="e-success" IconCss="e-icons e-plus" OnClick="ProcessNewPayment">
+                    Process Payment
+                </SfButton>
+            </div>
+        </CardHeader>
+        <CardContent>
+            @if (isLoading)
+            {
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Loading payments...</p>
+                </div>
+            }
+            else
+            {
+                <SfGrid DataSource="@payments" AllowPaging="true" AllowSorting="true" AllowFiltering="true">
+                    <GridPageSettings PageSize="15" PageSizes="new int[] { 10, 15, 25, 50 }"></GridPageSettings>
+                    <GridColumns>
+                        <GridColumn Field="@nameof(PaymentDto.InvoiceNumber)" HeaderText="Invoice #" Width="150"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.Amount)" HeaderText="Amount" Width="120" Format="C2"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.Currency)" HeaderText="Currency" Width="80"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.Status)" HeaderText="Status" Width="120">
+                            <Template>
+                                @{
+                                    var payment = context as PaymentDto;
+                                    <PaymentStatusBadge Status="@payment!.Status" />
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.PaymentMethod)" HeaderText="Method" Width="130"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.TransactionId)" HeaderText="Transaction ID" Width="180"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.BillingPeriodStart)" HeaderText="Billing Period" Width="200">
+                            <Template>
+                                @{
+                                    var payment = context as PaymentDto;
+                                    <span>@payment!.BillingPeriodStart.ToString("MMM dd") - @payment.BillingPeriodEnd.ToString("MMM dd, yyyy")</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.DueDate)" HeaderText="Due Date" Width="120" Format="d" Type="ColumnType.Date"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.PaidAt)" HeaderText="Paid Date" Width="120" Format="d" Type="ColumnType.Date"></GridColumn>
+                        <GridColumn Field="@nameof(PaymentDto.CreatedAt)" HeaderText="Created" Width="120" Format="d" Type="ColumnType.Date"></GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfToast @ref="toastRef" />
+
+@code {
+    [Parameter]
+    public Guid HospitalId { get; set; }
+
+    private SfToast? toastRef;
+    private List<PaymentDto> payments = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPayments();
+    }
+
+    private async Task LoadPayments()
+    {
+        try
+        {
+            isLoading = true;
+            var result = await ApiClient.GetAsync<List<PaymentDto>>($"/api/v1/hospitals/{HospitalId}/payments");
+            if (result != null)
+            {
+                payments = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Failed to load payments: {ex.Message}", "e-toast-danger");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ProcessNewPayment()
+    {
+        // TODO: Open payment processing dialog
+        await ShowToast("Info", "Payment processing dialog will be implemented", "e-toast-info");
+    }
+
+    private async Task ShowToast(string title, string content, string cssClass)
+    {
+        if (toastRef != null)
+        {
+            await toastRef.ShowAsync(new ToastModel
+            {
+                Title = title,
+                Content = content,
+                CssClass = cssClass
+            });
+        }
+    }
+}
+
+<style>
+    .payment-history {
+        padding: 24px;
+    }
+
+    .card-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .card-header-content h3 {
+        margin: 0;
+    }
+
+    .loading-container {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>

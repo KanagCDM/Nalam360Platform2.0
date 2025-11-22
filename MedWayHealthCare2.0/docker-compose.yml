@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # SQL Server (Primary)
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: medway-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=MedWay@2025!StrongPassword
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+      - ./db-init/sqlserver:/docker-entrypoint-initdb.d
+    networks:
+      - medway-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "MedWay@2025!StrongPassword" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # PostgreSQL (Alternative)
+  postgres:
+    image: postgres:16-alpine
+    container_name: medway-postgres
+    environment:
+      - POSTGRES_DB=medway_hospital
+      - POSTGRES_USER=medway_admin
+      - POSTGRES_PASSWORD=MedWay@2025!PostgresPass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db-init/postgres:/docker-entrypoint-initdb.d
+    networks:
+      - medway-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medway_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Caching)
+  redis:
+    image: redis:7-alpine
+    container_name: medway-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - medway-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # MedWay WebAPI
+  medway-api:
+    build:
+      context: .
+      dockerfile: src/Presentation/MedWay.WebAPI/Dockerfile
+    container_name: medway-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=MedWayHospital;User Id=sa;Password=MedWay@2025!StrongPassword;TrustServerCertificate=True;
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=medway_hospital;Username=medway_admin;Password=MedWay@2025!PostgresPass;
+      - ConnectionStrings__Redis=redis:6379
+      - JwtSettings__SecretKey=MedWayHospitalOnboarding2025SuperSecretKeyMinimum32Characters!
+      - JwtSettings__Issuer=MedWayHospitalSystem
+      - JwtSettings__Audience=MedWayUsers
+      - JwtSettings__ExpirationMinutes=60
+      - Database__Provider=SqlServer
+      - MultiTenancy__Enabled=true
+      - Logging__LogLevel__Default=Information
+    ports:
+      - "5000:80"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - medway-network
+    volumes:
+      - ./logs:/app/logs
+
+  # MedWay Blazor App
+  medway-blazor:
+    build:
+      context: .
+      dockerfile: src/Presentation/MedWay.BlazorApp/Dockerfile
+    container_name: medway-blazor
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ApiSettings__BaseUrl=http://medway-api
+    ports:
+      - "5001:80"
+    depends_on:
+      - medway-api
+    networks:
+      - medway-network
+
+  # Seq (Centralized Logging)
+  seq:
+    image: datalust/seq:latest
+    container_name: medway-seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"
+      - "5342:5341"
+    volumes:
+      - seq-data:/data
+    networks:
+      - medway-network
+
+  # pgAdmin (PostgreSQL Management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: medway-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@medway.com
+      - PGADMIN_DEFAULT_PASSWORD=MedWay@2025!
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - medway-network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  sqlserver-data:
+  postgres-data:
+  redis-data:
+  seq-data:
+  pgadmin-data:
+
+networks:
+  medway-network:
+    driver: bridge
