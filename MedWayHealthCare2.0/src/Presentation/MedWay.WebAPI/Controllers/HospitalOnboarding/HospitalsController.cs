@@ -91,15 +91,30 @@ public class HospitalsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all hospitals (System Admin only)
+    /// Get all hospitals with pagination and optional filtering (System Admin only)
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "SuperAdmin,SystemAdmin")]
-    [ProducesResponseType(typeof(List<HospitalDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllHospitals()
+    [ProducesResponseType(typeof(PagedResult<HospitalSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllHospitals(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        [FromQuery] string? searchTerm = null)
     {
-        // TODO: Implement GetAllHospitalsQuery with pagination
-        return Ok(new List<HospitalDto>());
+        var query = new GetAllHospitalsQuery(
+            pageNumber,
+            pageSize,
+            string.IsNullOrWhiteSpace(status) ? null : Enum.Parse<HospitalStatus>(status),
+            searchTerm);
+
+        var result = await _mediator.Send(query);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error.Message });
+
+        return Ok(result.Value);
     }
 
     /// <summary>
@@ -109,22 +124,51 @@ public class HospitalsController : ControllerBase
     [Authorize(Roles = "SuperAdmin,SystemAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ApproveHospital(Guid id)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveHospital(Guid id, [FromBody] ApproveHospitalRequest request)
     {
-        // TODO: Implement ApproveHospitalCommand
+        var command = new ApproveHospitalCommand(id, request.ApprovedBy ?? User.Identity?.Name ?? "System");
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code switch
+            {
+                "NotFound" => NotFound(new { error = result.Error.Message }),
+                _ => BadRequest(new { error = result.Error.Message })
+            };
+        }
+
         return Ok(new { message = "Hospital approved successfully" });
     }
 
     /// <summary>
-    /// Reject hospital registration (System Admin only)
+    /// Reject hospital registration with reason (System Admin only)
     /// </summary>
     [HttpPost("{id:guid}/reject")]
     [Authorize(Roles = "SuperAdmin,SystemAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RejectHospital(Guid id, [FromBody] RejectHospitalRequest request)
     {
-        // TODO: Implement RejectHospitalCommand
-        return Ok(new { message = "Hospital rejected" });
+        var command = new RejectHospitalCommand(
+            id, 
+            request.Reason, 
+            request.RejectedBy ?? User.Identity?.Name ?? "System");
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code switch
+            {
+                "NotFound" => NotFound(new { error = result.Error.Message }),
+                _ => BadRequest(new { error = result.Error.Message })
+            };
+        }
+
+        return Ok(new { message = "Hospital rejected", reason = request.Reason });
     }
 
     /// <summary>
@@ -133,22 +177,67 @@ public class HospitalsController : ControllerBase
     [HttpPost("{id:guid}/suspend")]
     [Authorize(Roles = "SuperAdmin,SystemAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SuspendHospital(Guid id, [FromBody] SuspendHospitalRequest request)
     {
-        // TODO: Implement SuspendHospitalCommand
-        return Ok(new { message = "Hospital suspended" });
+        var command = new SuspendHospitalCommand(
+            id, 
+            request.Reason, 
+            request.SuspendedBy ?? User.Identity?.Name ?? "System");
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code switch
+            {
+                "NotFound" => NotFound(new { error = result.Error.Message }),
+                _ => BadRequest(new { error = result.Error.Message })
+            };
+        }
+
+        return Ok(new { message = "Hospital suspended", reason = request.Reason });
     }
 
     /// <summary>
-    /// Activate subscription for hospital
+    /// Activate subscription for hospital with plan selection
     /// </summary>
     [HttpPost("{id:guid}/subscribe")]
     [Authorize(Roles = "HospitalAdmin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ActivateSubscriptionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateSubscription(Guid id, [FromBody] ActivateSubscriptionRequest request)
     {
-        // TODO: Implement ActivateSubscriptionCommand
-        return Ok(new { message = "Subscription activated" });
+        var command = new ActivateSubscriptionCommand(
+            id,
+            request.SubscriptionPlanId,
+            request.NumberOfUsers,
+            request.NumberOfBranches,
+            request.AdditionalFacilityIds ?? new List<Guid>());
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code switch
+            {
+                "NotFound" => NotFound(new { error = result.Error.Message }),
+                _ => BadRequest(new { error = result.Error.Message })
+            };
+        }
+
+        var response = new ActivateSubscriptionResponse
+        {
+            Message = "Subscription activated successfully",
+            MonthlyCost = result.Value,
+            SubscriptionPlanId = request.SubscriptionPlanId,
+            NumberOfUsers = request.NumberOfUsers,
+            NumberOfBranches = request.NumberOfBranches
+        };
+
+        return Ok(response);
     }
 }
 
@@ -181,6 +270,36 @@ public record RegisterHospitalResponse
     public DateTime TrialEndsOn { get; init; }
 }
 
-public record RejectHospitalRequest(string Reason);
-public record SuspendHospitalRequest(string Reason);
-public record ActivateSubscriptionRequest(Guid SubscriptionPlanId, int DurationMonths);
+public record ApproveHospitalRequest
+{
+    public string? ApprovedBy { get; init; }
+}
+
+public record RejectHospitalRequest
+{
+    public string Reason { get; init; } = null!;
+    public string? RejectedBy { get; init; }
+}
+
+public record SuspendHospitalRequest
+{
+    public string Reason { get; init; } = null!;
+    public string? SuspendedBy { get; init; }
+}
+
+public record ActivateSubscriptionRequest
+{
+    public Guid SubscriptionPlanId { get; init; }
+    public int NumberOfUsers { get; init; }
+    public int NumberOfBranches { get; init; }
+    public List<Guid>? AdditionalFacilityIds { get; init; }
+}
+
+public record ActivateSubscriptionResponse
+{
+    public string Message { get; init; } = null!;
+    public decimal MonthlyCost { get; init; }
+    public Guid SubscriptionPlanId { get; init; }
+    public int NumberOfUsers { get; init; }
+    public int NumberOfBranches { get; init; }
+}

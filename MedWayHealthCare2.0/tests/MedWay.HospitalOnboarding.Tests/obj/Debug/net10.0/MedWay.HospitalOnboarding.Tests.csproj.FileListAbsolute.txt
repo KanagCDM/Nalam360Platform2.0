@@ -1,0 +1,6 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/tests/MedWay.HospitalOnboarding.Tests/obj/Debug/net10.0/MedWay.HospitalOnboarding.Tests.sourcelink.json
