@@ -1,0 +1,12 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/bin/Release/net10.0/MedWay.Infrastructure.AI.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/bin/Release/net10.0/MedWay.Infrastructure.AI.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/bin/Release/net10.0/MedWay.Infrastructure.AI.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/refint/MedWay.Infrastructure.AI.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/MedWay.Infrastructure.AI.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure.AI/obj/Release/net10.0/ref/MedWay.Infrastructure.AI.dll

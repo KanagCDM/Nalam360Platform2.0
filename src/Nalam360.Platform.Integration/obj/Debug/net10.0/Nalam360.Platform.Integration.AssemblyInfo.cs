@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Integration features for Nalam360 Enterprise Platform with HTTP clients and exter" +
     "nal service wrappers."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ab5e41a2a58baff37aa1b107de401d5bc98f915")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8145150a903ff0751f6366fdfef53a62671e44e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Integration")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Integration")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

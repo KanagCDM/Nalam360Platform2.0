@@ -1,0 +1,12 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/bin/Release/net10.0/MedWay.BillingManagement.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/bin/Release/net10.0/MedWay.BillingManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/bin/Release/net10.0/MedWay.BillingManagement.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/refint/MedWay.BillingManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/MedWay.BillingManagement.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/BillingManagement/MedWay.BillingManagement/obj/Release/net10.0/ref/MedWay.BillingManagement.dll

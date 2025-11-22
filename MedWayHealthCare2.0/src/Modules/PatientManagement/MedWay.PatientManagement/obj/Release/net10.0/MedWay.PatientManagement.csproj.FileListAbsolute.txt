@@ -1,0 +1,12 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/bin/Release/net10.0/MedWay.PatientManagement.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/bin/Release/net10.0/MedWay.PatientManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/bin/Release/net10.0/MedWay.PatientManagement.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/refint/MedWay.PatientManagement.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/MedWay.PatientManagement.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement/obj/Release/net10.0/ref/MedWay.PatientManagement.dll

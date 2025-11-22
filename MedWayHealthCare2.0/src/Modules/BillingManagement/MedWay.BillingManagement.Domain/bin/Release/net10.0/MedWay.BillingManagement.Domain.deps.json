@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MedWay.BillingManagement.Domain/1.0.0": {
+        "dependencies": {
+          "MedWay.Domain": "1.0.0"
+        },
+        "runtime": {
+          "MedWay.BillingManagement.Domain.dll": {}
+        }
+      },
+      "MedWay.Domain/1.0.0": {
+        "runtime": {
+          "MedWay.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MedWay.BillingManagement.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MedWay.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

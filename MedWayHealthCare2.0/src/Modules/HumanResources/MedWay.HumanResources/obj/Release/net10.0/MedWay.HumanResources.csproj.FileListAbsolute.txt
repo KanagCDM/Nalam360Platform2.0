@@ -1,0 +1,12 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/bin/Release/net10.0/MedWay.HumanResources.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/bin/Release/net10.0/MedWay.HumanResources.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/bin/Release/net10.0/MedWay.HumanResources.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/refint/MedWay.HumanResources.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/MedWay.HumanResources.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/HumanResources/MedWay.HumanResources/obj/Release/net10.0/ref/MedWay.HumanResources.dll

@@ -1,0 +1,12 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/bin/Release/net10.0/MedWay.Infrastructure.deps.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/bin/Release/net10.0/MedWay.Infrastructure.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/bin/Release/net10.0/MedWay.Infrastructure.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.sourcelink.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/refint/MedWay.Infrastructure.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/MedWay.Infrastructure.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Infrastructure/MedWay.Infrastructure/obj/Release/net10.0/ref/MedWay.Infrastructure.dll

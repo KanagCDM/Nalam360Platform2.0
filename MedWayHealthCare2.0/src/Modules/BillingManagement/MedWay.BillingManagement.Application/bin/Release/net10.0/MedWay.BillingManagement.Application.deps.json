@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MedWay.BillingManagement.Application/1.0.0": {
+        "runtime": {
+          "MedWay.BillingManagement.Application.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MedWay.BillingManagement.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
