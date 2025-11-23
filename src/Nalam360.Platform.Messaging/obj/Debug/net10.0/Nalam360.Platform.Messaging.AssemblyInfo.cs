@@ -12,10 +12,10 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nalam360")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
-[assembly: System.Reflection.AssemblyDescriptionAttribute(("Messaging abstractions for Nalam360 Enterprise Platform with event bus and integr" +
-    "ation events."))]
+[assembly: System.Reflection.AssemblyDescriptionAttribute(("Cloud-agnostic messaging abstractions for Nalam360 Enterprise Platform with Kafka" +
+    " (primary), RabbitMQ, and optional Azure Service Bus support."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f80615a8f3132e07e6198c9e41eac6b5c782db60")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60f3c35c914c3775e935643b11bbe6ba08f8d37a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

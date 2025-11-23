@@ -10,8 +10,8 @@
     <PackageId>Nalam360.Platform.Messaging</PackageId>
     <Version>1.0.0</Version>
     <Authors>Nalam360</Authors>
-    <Description>Messaging abstractions for Nalam360 Enterprise Platform with event bus and integration events.</Description>
-    <PackageTags>messaging;event-bus;rabbitmq;kafka;azure-service-bus;enterprise</PackageTags>
+    <Description>Cloud-agnostic messaging abstractions for Nalam360 Enterprise Platform with Kafka (primary), RabbitMQ, and optional Azure Service Bus support.</Description>
+    <PackageTags>messaging;event-bus;kafka;cloud-agnostic;on-premise;rabbitmq;azure-service-bus;enterprise</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,9 +19,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    <!-- Primary: Cloud-agnostic messaging -->
     <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.5" />
+    
+    <!-- Optional: On-premise messaging -->
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    
+    <!-- Optional: Azure-specific (cloud dependency) -->
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.5" Condition="'$(EnableAzureDependencies)' == 'true'" />
+    
+    <!-- Core dependencies -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />

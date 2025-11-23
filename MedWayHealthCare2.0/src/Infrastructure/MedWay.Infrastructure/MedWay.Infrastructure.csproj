@@ -19,9 +19,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Database: Cloud-agnostic (works on-premise and Azure) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+    
+    <!-- Caching: Cloud-agnostic (works on-premise and Azure) -->
     <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+    
+    <!-- Messaging: Kafka for cloud-agnostic support -->
+    <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
   </ItemGroup>
 
 </Project>

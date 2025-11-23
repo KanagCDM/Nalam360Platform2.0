@@ -1,19 +1,49 @@
 # MedWayHealthCare 2.0 - Complete Hospital Management System
 
-## Overview
-MedWayHealthCare 2.0 is a comprehensive, enterprise-grade Hospital Management System built on the Nalam360 Enterprise Platform. It supports multiple hospital branches with complete patient care, operational management, and administrative capabilities.
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D)](https://redis.io/)
+[![Kafka](https://img.shields.io/badge/Kafka-3.x-231F20)](https://kafka.apache.org/)
+[![Cloud-Agnostic](https://img.shields.io/badge/Cloud-Agnostic-brightgreen)](CLOUD_AGNOSTIC_SUMMARY.md)
+
+## 🎯 Overview
+MedWayHealthCare 2.0 is a comprehensive, enterprise-grade Hospital Management System built on the Nalam360 Enterprise Platform with **ZERO cloud dependencies** and **plug-and-play cloud migration** capability.
+
+**Key Features:**
+- ✅ **Cloud-Agnostic Architecture** - Runs on-premise, Azure, AWS, GCP
+- ✅ **100% Open-Source Stack** - PostgreSQL + Redis + Kafka
+- ✅ **Configuration-Only Migration** - Same code, different environments
+- ✅ **Built on Nalam360 Platform** - Enterprise-grade patterns (DDD, CQRS, Result<T>)
+- ✅ **Production-Ready** - Docker Compose, monitoring, security
+
+## 🚀 Quick Start (On-Premise)
+
+```bash
+# One-command deployment
+./quick-start-onpremise.sh
+
+# Services started:
+# ✅ PostgreSQL 16 (localhost:5432)
+# ✅ Redis 7 (localhost:6379)
+# ✅ Kafka 7.5 (localhost:9092)
+# ✅ MedWay API (localhost:5001)
+```
+
+**See:** [CLOUD_AGNOSTIC_SUMMARY.md](CLOUD_AGNOSTIC_SUMMARY.md) for deployment details.
+
+---
 
 ## Architecture
 
-### Technology Stack
-- **Platform**: Nalam360 Enterprise Platform (NET 10.0)
-- **Architecture**: Clean Architecture + DDD + CQRS
+### Technology Stack (Cloud-Agnostic)
+- **Platform**: Nalam360 Enterprise Platform (.NET 10.0)
+- **Architecture**: Clean Architecture + DDD + CQRS + Result<T>
 - **Frontend**: Blazor Server (.NET 9.0)
 - **Backend**: ASP.NET Core Web API (.NET 10.0)
-- **Database**: PostgreSQL with multi-tenancy support
-- **Caching**: Redis for distributed caching
-- **Messaging**: RabbitMQ/Azure Service Bus for event-driven communication
-- **AI Services**: Azure OpenAI for intelligent features
+- **Database**: PostgreSQL 16 (works on-premise, Azure, AWS, GCP)
+- **Caching**: Redis 7 (works on-premise, Azure, AWS, GCP)
+- **Messaging**: Apache Kafka 3.x (works on-premise, Azure Event Hubs, AWS MSK, Confluent Cloud)
+- **AI Services**: Azure OpenAI (optional)
 
 ### System Architecture
 ```

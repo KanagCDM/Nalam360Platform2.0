@@ -1,32 +1,16 @@
-# MedWayHealthCare 2.0 - Cloud-Agnostic On-Premise Deployment
-# Uses: PostgreSQL (Database), Redis (Cache), Kafka (Messaging)
-# 100% Open-Source, Zero Cloud Dependencies
+# MedWayHealthCare 2.0 - Cloud-Agnostic Docker Compose
+# Stack: PostgreSQL + Redis + Kafka (100% Open-Source, Zero Cloud Dependencies)
+# Deployment: On-Premise | Azure | AWS | GCP - Configuration-Based Migration
 
 version: '3.8'
 
 services:
   #############################################################################
-  # INFRASTRUCTURE - Cloud-Agnostic Open-Source Stack
-  #############################################################################
-  
   # PostgreSQL 16 - Primary Database (Cloud-Agnostic)
+  #############################################################################
   postgres:
     image: postgres:16-alpine
     container_name: medway-postgres
-    environment:
-      - POSTGRES_DB=medway_hospital
-      - POSTGRES_USER=medway_admin
-      - POSTGRES_PASSWORD=MedWay@2025!PostgresPass
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./db-init/postgres:/docker-entrypoint-initdb.d
-    networks:
-      - medway-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medway_admin"]
-      interval: 10s
     environment:
       POSTGRES_DB: medway
       POSTGRES_USER: medway_app
@@ -46,7 +30,9 @@ services:
       timeout: 5s
       retries: 5
   
+  #############################################################################
   # Redis 7 - Distributed Cache (Cloud-Agnostic)
+  #############################################################################
   redis:
     image: redis:7-alpine
     container_name: medway-redis
@@ -64,7 +50,9 @@ services:
       timeout: 3s
       retries: 5
   
-  # Zookeeper - Kafka Dependency
+  #############################################################################
+  # Apache Kafka - Event Streaming (Cloud-Agnostic)
+  #############################################################################
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: medway-zookeeper
@@ -76,8 +64,7 @@ services:
     networks:
       - medway-network
     restart: unless-stopped
-  
-  # Apache Kafka - Event Streaming (Cloud-Agnostic)
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: medway-kafka
@@ -104,10 +91,8 @@ services:
       retries: 5
 
   #############################################################################
-  # APPLICATION SERVICES
+  # MedWayHealthCare Application Services
   #############################################################################
-
-  # MedWay WebAPI - REST API
   medway-api:
     build:
       context: .
@@ -124,87 +109,91 @@ services:
       - Caching__Provider=Redis
       - Caching__Redis__ConnectionString=redis:6379
       
-      # Messaging: Kafka (Cloud-Agnostic - Works On-Premise & Azure Event Hubs)
+      # Messaging: Kafka (Cloud-Agnostic - Same protocol works with Azure Event Hubs)
       - Messaging__Provider=Kafka
       - Messaging__Kafka__BootstrapServers=kafka:9092
       - Messaging__Kafka__GroupId=medway-healthcare
       - Messaging__Kafka__EnableAutoCommit=false
-      - ConnectionStrings__Redis=redis:6379
-      - JwtSettings__SecretKey=MedWayHospitalOnboarding2025SuperSecretKeyMinimum32Characters!
-      - JwtSettings__Issuer=MedWayHospitalSystem
-      - JwtSettings__Audience=MedWayUsers
-      - JwtSettings__ExpirationMinutes=60
-      - Database__Provider=SqlServer
+      
+      # Security
+      - Authentication__JwtSecret=MedWay_JWT_Secret_Key_Change_In_Production_2025
+      - Authentication__JwtIssuer=MedWayHealthCare
+      - Authentication__JwtAudience=MedWayHealthCareAPI
+      - Authentication__JwtExpirationMinutes=60
+      
+      # Multi-Tenancy
       - MultiTenancy__Enabled=true
+      
+      # Logging
       - Logging__LogLevel__Default=Information
     ports:
       - "5000:80"
     depends_on:
-      sqlserver:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - medway-network
+    restart: unless-stopped
     volumes:
-      - ./logs:/app/logs
+      - ./logs/api:/app/logs
 
-  # MedWay Blazor App
-  medway-blazor:
-    build:
-      context: .
-      dockerfile: src/Presentation/MedWay.BlazorApp/Dockerfile
-    container_name: medway-blazor
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80
-      - ApiSettings__BaseUrl=http://medway-api
-    ports:
-      - "5001:80"
-    depends_on:
-      - medway-api
-    networks:
-      - medway-network
-
-  # Seq (Centralized Logging)
-  seq:
-    image: datalust/seq:latest
-    container_name: medway-seq
-    environment:
-      - ACCEPT_EULA=Y
-    ports:
-      - "5341:80"
-      - "5342:5341"
-    volumes:
-      - seq-data:/data
-    networks:
-      - medway-network
-
-  # pgAdmin (PostgreSQL Management)
+  #############################################################################
+  # Optional: Management UIs
+  #############################################################################
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: medway-pgadmin
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@medway.com
-      - PGADMIN_DEFAULT_PASSWORD=MedWay@2025!
+      PGADMIN_DEFAULT_EMAIL: admin@medway.local
+      PGADMIN_DEFAULT_PASSWORD: admin@123
     ports:
       - "5050:80"
-    depends_on:
-      - postgres
     networks:
       - medway-network
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+    profiles: ["management"]
 
-volumes:
-  sqlserver-data:
-  postgres-data:
-  redis-data:
-  seq-data:
-  pgadmin-data:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: medway-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: medway-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - medway-network
+    restart: unless-stopped
+    profiles: ["management"]
 
+#############################################################################
+# Networks
+#############################################################################
 networks:
   medway-network:
     driver: bridge
+    name: medway-network
+
+#############################################################################
+# Volumes
+#############################################################################
+volumes:
+  postgres_data:
+    driver: local
+    name: medway-postgres-data
+  redis_data:
+    driver: local
+    name: medway-redis-data
+  kafka_data:
+    driver: local
+    name: medway-kafka-data
+  zookeeper_data:
+    driver: local
+    name: medway-zookeeper-data
