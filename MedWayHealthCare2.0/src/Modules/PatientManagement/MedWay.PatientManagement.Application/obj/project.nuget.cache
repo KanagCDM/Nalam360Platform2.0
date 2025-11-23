@@ -1,17 +1,20 @@
 {
   "version": 2,
-  "dgSpecHash": "4e8YNYVluT8=",
+  "dgSpecHash": "1iQRfjm8VrY=",
   "success": true,
   "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/PatientManagement/MedWay.PatientManagement.Application/MedWay.PatientManagement.Application.csproj",
   "expectedPackageFiles": [
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/fluentvalidation/11.9.0/fluentvalidation.11.9.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/mediatr/13.1.0/mediatr.13.1.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.dependencymodel/6.0.0/microsoft.extensions.dependencymodel.6.0.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.identitymodel.abstractions/8.14.0/microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.identitymodel.jsonwebtokens/8.14.0/microsoft.identitymodel.jsonwebtokens.8.14.0.nupkg.sha512",
     "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.identitymodel.logging/8.14.0/microsoft.identitymodel.logging.8.14.0.nupkg.sha512",
-    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.identitymodel.tokens/8.14.0/microsoft.identitymodel.tokens.8.14.0.nupkg.sha512"
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.identitymodel.tokens/8.14.0/microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/scrutor/4.2.2/scrutor.4.2.2.nupkg.sha512"
   ],
   "logs": []
 }

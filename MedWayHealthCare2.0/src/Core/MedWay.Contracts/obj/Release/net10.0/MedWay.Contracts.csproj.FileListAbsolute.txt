@@ -10,3 +10,8 @@
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/obj/Release/net10.0/refint/MedWay.Contracts.dll
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/obj/Release/net10.0/MedWay.Contracts.pdb
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/obj/Release/net10.0/ref/MedWay.Contracts.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/bin/Release/net10.0/Nalam360.Platform.Core.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/bin/Release/net10.0/Nalam360.Platform.Core.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/bin/Release/net10.0/Nalam360.Platform.Core.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/obj/Release/net10.0/MedWay.Contracts.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Contracts/obj/Release/net10.0/MedWay.C.F148992D.Up2Date

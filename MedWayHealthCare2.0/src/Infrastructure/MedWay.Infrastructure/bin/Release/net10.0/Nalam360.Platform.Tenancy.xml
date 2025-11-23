@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Tenancy</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Tenancy.ITenantProvider">
+            <summary>
+            Tenant context provider interface.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Tenancy.ITenantProvider.GetCurrentTenantId">
+            <summary>
+            Gets the current tenant identifier.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Tenancy.ITenantProvider.SetCurrentTenantId(System.String)">
+            <summary>
+            Sets the current tenant identifier.
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Tenancy.TenantContext">
+            <summary>
+            Tenant context.
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Tenancy.TenantContext.#ctor(System.String,System.String)">
+            <summary>
+            Tenant context.
+            </summary>
+        </member>
+    </members>
+</doc>

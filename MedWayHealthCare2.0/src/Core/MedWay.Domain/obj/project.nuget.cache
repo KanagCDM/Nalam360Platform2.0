@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "Q5znZkhXIyw=",
+  "dgSpecHash": "M/dpAre4f2A=",
   "success": true,
   "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/MedWay.Domain.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
+  ],
   "logs": []
 }

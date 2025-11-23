@@ -10,3 +10,11 @@
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/obj/Release/net10.0/refint/MedWay.Domain.dll
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/obj/Release/net10.0/MedWay.Domain.pdb
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/obj/Release/net10.0/ref/MedWay.Domain.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Core.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Core.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Core.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/obj/Release/net10.0/MedWay.Domain.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Core/MedWay.Domain/obj/Release/net10.0/MedWay.D.6EAF9C36.Up2Date

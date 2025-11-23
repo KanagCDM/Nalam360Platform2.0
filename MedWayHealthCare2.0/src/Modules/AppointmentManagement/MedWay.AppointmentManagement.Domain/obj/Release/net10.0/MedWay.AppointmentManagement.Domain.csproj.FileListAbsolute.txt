@@ -14,3 +14,9 @@
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/MedWay.Domain.pdb
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/obj/Release/net10.0/MedWay.AppointmentManagement.Domain.csproj.AssemblyReference.cache
 /Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/obj/Release/net10.0/MedWay.A.18DEEDF7.Up2Date
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Core.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.dll
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Core.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Core.xml
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.pdb
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Modules/AppointmentManagement/MedWay.AppointmentManagement.Domain/bin/Release/net10.0/Nalam360.Platform.Domain.xml

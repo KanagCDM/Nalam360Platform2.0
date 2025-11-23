@@ -1,19 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\MedWay.Domain\MedWay.Domain.csproj" />
-    <ProjectReference Include="..\MedWay.PatientManagement.Domain\MedWay.PatientManagement.Domain.csproj" />
-    <ProjectReference Include="..\..\..\Core\MedWay.Application\MedWay.Application.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MediatR" Version="13.1.0" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MedWay Core References -->
+    <ProjectReference Include="..\..\..\Core\MedWay.Domain\MedWay.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Core\MedWay.Application\MedWay.Application.csproj" />
+    <!-- Module Domain Reference -->
+    <ProjectReference Include="..\MedWay.PatientManagement.Domain\MedWay.PatientManagement.Domain.csproj" />
+    <!-- Nalam360 Platform References (inherited through MedWay.Application) -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="13.1.0" />
+    <PackageReference Include="FluentValidation" Version="11.9.0" />
+  </ItemGroup>
 
 </Project>

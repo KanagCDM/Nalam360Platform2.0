@@ -6,19 +6,23 @@
     <authors>Nalam360</authors>
     <description>Data access layer for Nalam360 Enterprise Platform with Repository, UnitOfWork, and Specification patterns.</description>
     <tags>repository unit-of-work specification ef-core ddd enterprise</tags>
-    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <repository type="git" commit="f80615a8f3132e07e6198c9e41eac6b5c782db60" />
     <dependencies>
-      <group targetFramework="net8.0">
+      <group targetFramework="net10.0">
         <dependency id="Nalam360.Platform.Core" version="1.0.0" exclude="Build,Analyzers" />
         <dependency id="Nalam360.Platform.Domain" version="1.0.0" exclude="Build,Analyzers" />
-        <dependency id="Microsoft.EntityFrameworkCore" version="8.0.0" exclude="Build,Analyzers" />
-        <dependency id="Microsoft.EntityFrameworkCore.Relational" version="8.0.0" exclude="Build,Analyzers" />
-        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Azure.Identity" version="1.13.1" exclude="Build,Analyzers" />
+        <dependency id="Dapper" version="2.1.35" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Data.SqlClient" version="5.2.2" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore" version="8.0.11" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Relational" version="8.0.11" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Caching.Memory" version="9.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="9.0.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Data\bin\Debug\net8.0\Nalam360.Platform.Data.dll" target="lib\net8.0\Nalam360.Platform.Data.dll" />
-    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Data\bin\Debug\net8.0\Nalam360.Platform.Data.xml" target="lib\net8.0\Nalam360.Platform.Data.xml" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Data/bin/Debug/net10.0/Nalam360.Platform.Data.dll" target="lib/net10.0/Nalam360.Platform.Data.dll" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Data/bin/Debug/net10.0/Nalam360.Platform.Data.xml" target="lib/net10.0/Nalam360.Platform.Data.xml" />
   </files>
 </package>

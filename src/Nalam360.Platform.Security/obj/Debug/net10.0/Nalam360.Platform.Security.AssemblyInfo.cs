@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Security features for Nalam360 Enterprise Platform including JWT, encryption, and" +
     " password hashing."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8145150a903ff0751f6366fdfef53a62671e44e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f80615a8f3132e07e6198c9e41eac6b5c782db60")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Security")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Security")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

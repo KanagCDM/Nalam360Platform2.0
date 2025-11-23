@@ -6,4 +6,22 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- MedWay Core References -->
+    <ProjectReference Include="../../Core/MedWay.Domain/MedWay.Domain.csproj" />
+    <ProjectReference Include="../../Core/MedWay.Application/MedWay.Application.csproj" />
+    <!-- Nalam360 Platform Infrastructure References -->
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Data/Nalam360.Platform.Data.csproj" />
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Caching/Nalam360.Platform.Caching.csproj" />
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Messaging/Nalam360.Platform.Messaging.csproj" />
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Security/Nalam360.Platform.Security.csproj" />
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Tenancy/Nalam360.Platform.Tenancy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+  </ItemGroup>
+
 </Project>

@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Nalam360 Platform References -->
+    <ProjectReference Include="../../../../src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj" />
+  </ItemGroup>
+
 </Project>

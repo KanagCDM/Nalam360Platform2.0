@@ -1,0 +1,164 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Core</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Core.DependencyInjection.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering core services
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.DependencyInjection.ServiceCollectionExtensions.AddPlatformCore(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers core platform services
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.PlatformException">
+            <summary>
+            Base exception for all platform exceptions
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.NotFoundException">
+            <summary>
+            Exception thrown when a requested resource is not found
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.ValidationException">
+            <summary>
+            Exception thrown when a validation error occurs
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.BusinessRuleException">
+            <summary>
+            Exception thrown when a business rule is violated
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.ConflictException">
+            <summary>
+            Exception thrown when a conflict occurs (e.g., duplicate resource)
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.UnauthorizedException">
+            <summary>
+            Exception thrown when unauthorized access is attempted
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Exceptions.ForbiddenException">
+            <summary>
+            Exception thrown when forbidden access is attempted
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Identity.GuidProvider">
+            <summary>
+            Default GUID provider implementation
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Identity.IGuidProvider">
+            <summary>
+            Abstraction for GUID generation to enable testability
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Identity.IGuidProvider.NewGuid">
+            <summary>
+            Creates a new GUID
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Identity.IGuidProvider.NewSequentialGuid">
+            <summary>
+            Creates a new sequential GUID optimized for database indexing
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Results.Either`2">
+            <summary>
+            Either monad representing a value that can be one of two types
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Results.Error">
+            <summary>
+            Represents an error with a code and message
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Results.Result`1">
+            <summary>
+            Represents the outcome of an operation that can either succeed or fail
+            </summary>
+            <typeparam name="T">The type of the value returned on success</typeparam>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Results.Result">
+            <summary>
+            Represents the outcome of an operation without a return value
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Security.CryptoRandomNumberGenerator">
+            <summary>
+            Cryptographically secure random number generator
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Security.IRandomNumberGenerator">
+            <summary>
+            Abstraction for cryptographically secure random number generation
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Security.IRandomNumberGenerator.GetInt32(System.Int32,System.Int32)">
+            <summary>
+            Generates a random integer between min (inclusive) and max (exclusive)
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Security.IRandomNumberGenerator.GetBytes(System.Byte[])">
+            <summary>
+            Fills the buffer with cryptographically strong random bytes
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Security.IRandomNumberGenerator.GetBytes(System.Span{System.Byte})">
+            <summary>
+            Fills the span with cryptographically strong random bytes
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Core.Security.IRandomNumberGenerator.GetString(System.Int32,System.String)">
+            <summary>
+            Generates a random string of specified length using the given character set
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Time.ITimeProvider">
+            <summary>
+            Abstraction for time operations to enable testability
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.UtcNow">
+            <summary>
+            Gets the current UTC date and time
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.Now">
+            <summary>
+            Gets the current local date and time
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.UtcNowOffset">
+            <summary>
+            Gets the current UTC offset
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.NowOffset">
+            <summary>
+            Gets the current local offset
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.UnixTimestampSeconds">
+            <summary>
+            Gets the current Unix timestamp in seconds
+            </summary>
+        </member>
+        <member name="P:Nalam360.Platform.Core.Time.ITimeProvider.UnixTimestampMilliseconds">
+            <summary>
+            Gets the current Unix timestamp in milliseconds
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Core.Time.SystemTimeProvider">
+            <summary>
+            Default implementation using system time
+            </summary>
+        </member>
+    </members>
+</doc>

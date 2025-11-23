@@ -6,13 +6,13 @@
     <authors>Nalam360</authors>
     <description>Multi-tenancy support for Nalam360 Enterprise Platform.</description>
     <tags>multi-tenancy saas enterprise</tags>
-    <repository type="git" commit="edd3982f1a38baeeb42aa78fcc49d92c1dd57152" />
+    <repository type="git" commit="f80615a8f3132e07e6198c9e41eac6b5c782db60" />
     <dependencies>
-      <group targetFramework="net8.0" />
+      <group targetFramework="net10.0" />
     </dependencies>
   </metadata>
   <files>
-    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\bin\Debug\net8.0\Nalam360.Platform.Tenancy.dll" target="lib\net8.0\Nalam360.Platform.Tenancy.dll" />
-    <file src="D:\Mocero\Healthcare Platform\Nalam360EnterprisePlatform\src\Nalam360.Platform.Tenancy\bin\Debug\net8.0\Nalam360.Platform.Tenancy.xml" target="lib\net8.0\Nalam360.Platform.Tenancy.xml" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Debug/net10.0/Nalam360.Platform.Tenancy.dll" target="lib/net10.0/Nalam360.Platform.Tenancy.dll" />
+    <file src="/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/src/Nalam360.Platform.Tenancy/bin/Debug/net10.0/Nalam360.Platform.Tenancy.xml" target="lib/net10.0/Nalam360.Platform.Tenancy.xml" />
   </files>
 </package>

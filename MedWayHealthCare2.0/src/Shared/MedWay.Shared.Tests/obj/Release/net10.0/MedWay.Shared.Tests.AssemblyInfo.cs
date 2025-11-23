@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MedWay.Shared.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8145150a903ff0751f6366fdfef53a62671e44e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f80615a8f3132e07e6198c9e41eac6b5c782db60")]
 [assembly: System.Reflection.AssemblyProductAttribute("MedWay.Shared.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MedWay.Shared.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

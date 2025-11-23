@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nalam360.Platform.Domain</name>
+    </assembly>
+    <members>
+        <member name="T:Nalam360.Platform.Domain.Events.DomainEventDispatcher">
+            <summary>
+            Default implementation of domain event dispatcher using service provider
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Events.IDomainEventDispatcher">
+            <summary>
+            Dispatches domain events to their handlers
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Events.IDomainEventHandler`1">
+            <summary>
+            Handles domain events
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.AggregateRoot`1">
+            <summary>
+            Base class for aggregate roots
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Domain.Primitives.AggregateRoot`1.AddDomainEvent(Nalam360.Platform.Domain.Primitives.IDomainEvent)">
+            <summary>
+            Adds a domain event to be dispatched
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Domain.Primitives.AggregateRoot`1.ClearDomainEvents">
+            <summary>
+            Clears all domain events
+            </summary>
+        </member>
+        <member name="M:Nalam360.Platform.Domain.Primitives.AggregateRoot`1.RemoveDomainEvent(Nalam360.Platform.Domain.Primitives.IDomainEvent)">
+            <summary>
+            Removes a specific domain event
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.AggregateRoot">
+            <summary>
+            Base class for aggregate roots with GUID identifiers
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.IAggregateRoot">
+            <summary>
+            Marker interface for aggregate roots
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.Entity`1">
+            <summary>
+            Base class for all entities with strongly-typed identifiers
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.Entity">
+            <summary>
+            Base class for entities with GUID identifiers
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.IDomainEvent">
+            <summary>
+            Base interface for all domain events
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.DomainEvent">
+            <summary>
+            Base class for domain events
+            </summary>
+        </member>
+        <member name="T:Nalam360.Platform.Domain.Primitives.ValueObject">
+            <summary>
+            Base class for value objects
+            </summary>
+        </member>
+    </members>
+</doc>

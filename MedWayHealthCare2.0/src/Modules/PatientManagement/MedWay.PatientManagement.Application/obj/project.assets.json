@@ -2,6 +2,19 @@
   "version": 3,
   "targets": {
     "net10.0": {
+      "FluentValidation/11.9.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/FluentValidation.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/FluentValidation.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "MediatR/13.1.0": {
         "type": "package",
         "dependencies": {
@@ -48,6 +61,19 @@
         },
         "build": {
           "buildTransitive/net6.0/_._": {}
+        }
+      },
+      "Microsoft.Extensions.DependencyModel/6.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.Extensions.Logging.Abstractions/8.0.0": {
@@ -131,12 +157,31 @@
           }
         }
       },
+      "Scrutor/4.2.2": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0",
+          "Microsoft.Extensions.DependencyModel": "6.0.0"
+        },
+        "compile": {
+          "lib/net6.0/Scrutor.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Scrutor.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "MedWay.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
+          "FluentValidation": "11.9.0",
           "MedWay.Domain": "1.0.0",
-          "MediatR": "13.1.0"
+          "MediatR": "13.1.0",
+          "Nalam360.Platform.Application": "1.0.0"
         },
         "compile": {
           "bin/placeholder/MedWay.Application.dll": {}
@@ -148,6 +193,10 @@
       "MedWay.Domain/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Nalam360.Platform.Core": "1.0.0",
+          "Nalam360.Platform.Domain": "1.0.0"
+        },
         "compile": {
           "bin/placeholder/MedWay.Domain.dll": {}
         },
@@ -167,10 +216,80 @@
         "runtime": {
           "bin/placeholder/MedWay.PatientManagement.Domain.dll": {}
         }
+      },
+      "Nalam360.Platform.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "FluentValidation": "11.9.0",
+          "MediatR": "12.4.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
+          "Nalam360.Platform.Core": "1.0.0",
+          "Scrutor": "4.2.2"
+        },
+        "compile": {
+          "bin/placeholder/Nalam360.Platform.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Nalam360.Platform.Application.dll": {}
+        }
+      },
+      "Nalam360.Platform.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Nalam360.Platform.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Nalam360.Platform.Core.dll": {}
+        }
+      },
+      "Nalam360.Platform.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
+          "Nalam360.Platform.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Nalam360.Platform.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Nalam360.Platform.Domain.dll": {}
+        }
       }
     }
   },
   "libraries": {
+    "FluentValidation/11.9.0": {
+      "sha512": "VneVlTvwYDkfHV5av3QrQ0amALgrLX6LV94wlYyEsh0B/klJBW7C8y2eAtj5tOZ3jH6CAVpr4s1ZGgew/QWyig==",
+      "type": "package",
+      "path": "fluentvalidation/11.9.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "fluent-validation-icon.png",
+        "fluentvalidation.11.9.0.nupkg.sha512",
+        "fluentvalidation.nuspec",
+        "lib/net5.0/FluentValidation.dll",
+        "lib/net5.0/FluentValidation.xml",
+        "lib/net6.0/FluentValidation.dll",
+        "lib/net6.0/FluentValidation.xml",
+        "lib/net7.0/FluentValidation.dll",
+        "lib/net7.0/FluentValidation.xml",
+        "lib/net8.0/FluentValidation.dll",
+        "lib/net8.0/FluentValidation.xml",
+        "lib/netstandard2.0/FluentValidation.dll",
+        "lib/netstandard2.0/FluentValidation.xml",
+        "lib/netstandard2.1/FluentValidation.dll",
+        "lib/netstandard2.1/FluentValidation.xml"
+      ]
+    },
     "MediatR/13.1.0": {
       "sha512": "YkKqc0a5ZyZ7ccVyf+cuO2M6UYLduldVTN5oI0nvk3SnthyLD0nSy6vhpPQtf3ovcNOsPo+qjMqaUThe4wGeCA==",
       "type": "package",
@@ -236,6 +355,25 @@
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
         "microsoft.extensions.dependencyinjection.abstractions.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
+    "Microsoft.Extensions.DependencyModel/6.0.0": {
+      "sha512": "TD5QHg98m3+QhgEV1YVoNMl5KtBw/4rjfxLHO0e/YV9bPUBDKntApP4xdrVtGgCeQZHVfC2EXIGsdpRNrr87Pg==",
+      "type": "package",
+      "path": "microsoft.extensions.dependencymodel/6.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net461/Microsoft.Extensions.DependencyModel.dll",
+        "lib/net461/Microsoft.Extensions.DependencyModel.xml",
+        "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.dll",
+        "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.xml",
+        "microsoft.extensions.dependencymodel.6.0.0.nupkg.sha512",
+        "microsoft.extensions.dependencymodel.nuspec",
         "useSharedDesignerContext.txt"
       ]
     },
@@ -408,6 +546,29 @@
         "microsoft.identitymodel.tokens.nuspec"
       ]
     },
+    "Scrutor/4.2.2": {
+      "sha512": "t5VIYA7WJXoJJo7s4DoHakMGwTu+MeEnZumMOhTCH7kz9xWha24G7dJNxWrHPlu0ZdZAS4jDZCxxAnyaBh7uYw==",
+      "type": "package",
+      "path": "scrutor/4.2.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net461/Scrutor.dll",
+        "lib/net461/Scrutor.pdb",
+        "lib/net461/Scrutor.xml",
+        "lib/net6.0/Scrutor.dll",
+        "lib/net6.0/Scrutor.pdb",
+        "lib/net6.0/Scrutor.xml",
+        "lib/netcoreapp3.1/Scrutor.dll",
+        "lib/netcoreapp3.1/Scrutor.pdb",
+        "lib/netcoreapp3.1/Scrutor.xml",
+        "lib/netstandard2.0/Scrutor.dll",
+        "lib/netstandard2.0/Scrutor.pdb",
+        "lib/netstandard2.0/Scrutor.xml",
+        "scrutor.4.2.2.nupkg.sha512",
+        "scrutor.nuspec"
+      ]
+    },
     "MedWay.Application/1.0.0": {
       "type": "project",
       "path": "../../../Core/MedWay.Application/MedWay.Application.csproj",
@@ -422,10 +583,26 @@
       "type": "project",
       "path": "../MedWay.PatientManagement.Domain/MedWay.PatientManagement.Domain.csproj",
       "msbuildProject": "../MedWay.PatientManagement.Domain/MedWay.PatientManagement.Domain.csproj"
+    },
+    "Nalam360.Platform.Application/1.0.0": {
+      "type": "project",
+      "path": "../../../../../src/Nalam360.Platform.Application/Nalam360.Platform.Application.csproj",
+      "msbuildProject": "../../../../../src/Nalam360.Platform.Application/Nalam360.Platform.Application.csproj"
+    },
+    "Nalam360.Platform.Core/1.0.0": {
+      "type": "project",
+      "path": "../../../../../src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj",
+      "msbuildProject": "../../../../../src/Nalam360.Platform.Core/Nalam360.Platform.Core.csproj"
+    },
+    "Nalam360.Platform.Domain/1.0.0": {
+      "type": "project",
+      "path": "../../../../../src/Nalam360.Platform.Domain/Nalam360.Platform.Domain.csproj",
+      "msbuildProject": "../../../../../src/Nalam360.Platform.Domain/Nalam360.Platform.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "FluentValidation >= 11.9.0",
       "MedWay.Application >= 1.0.0",
       "MedWay.Domain >= 1.0.0",
       "MedWay.PatientManagement.Domain >= 1.0.0",
@@ -486,6 +663,10 @@
       "net10.0": {
         "targetAlias": "net10.0",
         "dependencies": {
+          "FluentValidation": {
+            "target": "Package",
+            "version": "[11.9.0, )"
+          },
           "MediatR": {
             "target": "Package",
             "version": "[13.1.0, )"
