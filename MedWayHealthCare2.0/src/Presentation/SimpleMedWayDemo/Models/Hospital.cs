@@ -19,6 +19,9 @@ public class Hospital
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
     public HospitalStatus Status { get; set; } = HospitalStatus.Pending;
     public bool IsEmailVerified { get; set; } = false;
+    
+    // Navigation properties
+    public virtual ICollection<HospitalSubscription> Subscriptions { get; set; } = new List<HospitalSubscription>();
 }
 
 public enum HospitalStatus
