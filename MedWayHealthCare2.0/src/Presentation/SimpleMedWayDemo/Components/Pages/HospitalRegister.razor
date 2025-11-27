@@ -1,0 +1,634 @@
+@page "/hospital/register"
+@rendermode InteractiveServer
+@using SimpleMedWayDemo.Models
+@inject HospitalService HospitalService
+@inject EmailVerificationService EmailVerificationService
+@inject NavigationManager Navigation
+
+<div class="registration-container">
+    <div class="registration-header">
+        <h1>🏥 Hospital Registration</h1>
+        <p>Register your hospital to join the MedWay Healthcare Platform</p>
+    </div>
+
+    @if (showSuccess)
+    {
+        <div class="alert alert-success">
+            <h3>✅ Registration Successful!</h3>
+            <p>Your hospital registration has been submitted successfully.</p>
+            <p>Registration ID: <strong>@hospital.Id</strong></p>
+            <p>Status: <strong>@hospital.Status</strong></p>
+            <p>You will be notified once your registration is reviewed and approved.</p>
+            <button class="btn btn-primary" @onclick="ResetForm">Register Another Hospital</button>
+        </div>
+    }
+    else
+    {
+        <div class="registration-form">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            <form @onsubmit="HandleSubmit">
+                <!-- Hospital Information Section -->
+                <div class="form-section">
+                    <h2>Hospital Information</h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hospital Name <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.Name" class="form-control" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Registration Number <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.RegistrationNumber" class="form-control" required />
+                            <small>Unique hospital registration/license number</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone Number <span class="required">*</span></label>
+                            <input type="tel" @bind="hospital.PhoneNumber" class="form-control" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email Address <span class="required">*</span></label>
+                            <input type="email" @bind="hospital.Email" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="url" @bind="hospital.Website" class="form-control" placeholder="https://example.com" />
+                    </div>
+                </div>
+
+                <!-- Address Section -->
+                <div class="form-section">
+                    <h2>Hospital Address</h2>
+                    
+                    <div class="form-group">
+                        <label>Street Address <span class="required">*</span></label>
+                        <textarea @bind="hospital.Address" class="form-control" rows="2" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.City" class="form-control" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>State/Province <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.State" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Country <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.Country" class="form-control" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Postal Code <span class="required">*</span></label>
+                            <input type="text" @bind="hospital.PostalCode" class="form-control" required />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Contact Section -->
+                <div class="form-section">
+                    <h2>Hospital Administrator Contact</h2>
+                    
+                    <div class="form-group">
+                        <label>Administrator Name <span class="required">*</span></label>
+                        <input type="text" @bind="hospital.AdminName" class="form-control" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Administrator Email <span class="required">*</span></label>
+                            <div class="email-verification-container">
+                                <input type="email" @bind="adminEmail" class="form-control" required disabled="@isEmailVerified" />
+                                @if (!isEmailVerified && !isOtpSent)
+                                {
+                                    <button type="button" class="btn btn-secondary" @onclick="SendOtpEmail" disabled="@isSendingOtp">
+                                        @if (isSendingOtp)
+                                        {
+                                            <span>Sending...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Send OTP</span>
+                                        }
+                                    </button>
+                                }
+                                @if (isEmailVerified)
+                                {
+                                    <span class="verification-badge verified">✓ Verified</span>
+                                }
+                            </div>
+                            @if (!isEmailVerified)
+                            {
+                                <small>We'll send a verification code to this email</small>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label>Administrator Phone <span class="required">*</span></label>
+                            <input type="tel" @bind="hospital.AdminPhone" class="form-control" required />
+                        </div>
+                    </div>
+
+                    @if (isOtpSent && !isEmailVerified)
+                    {
+                        <div class="otp-verification-section">
+                            <div class="alert alert-info">
+                                <p><strong>📧 Verification Code Sent!</strong></p>
+                                <p>A 6-digit code has been sent to <strong>@adminEmail</strong></p>
+                                <p>Please check your email and enter the code below.</p>
+                                <p><small>Code expires in 10 minutes</small></p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Enter Verification Code <span class="required">*</span></label>
+                                <input type="text" @bind="otpCode" class="form-control otp-input" maxlength="6" placeholder="Enter 6-digit code" />
+                            </div>
+
+                            <div class="otp-actions">
+                                <button type="button" class="btn btn-secondary" @onclick="ResendOtp" disabled="@isSendingOtp">
+                                    @if (isSendingOtp)
+                                    {
+                                        <span>Resending...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Resend Code</span>
+                                    }
+                                </button>
+                                <button type="button" class="btn btn-primary" @onclick="VerifyOtp" disabled="@isVerifyingOtp">
+                                    @if (isVerifyingOtp)
+                                    {
+                                        <span>Verifying...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Verify Code</span>
+                                    }
+                                </button>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(otpErrorMessage))
+                            {
+                                <div class="alert alert-danger">@otpErrorMessage</div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" @onclick="ResetForm">Clear Form</button>
+                    <button type="submit" class="btn btn-primary" disabled="@(!isEmailVerified || isSubmitting)">
+                        @if (isSubmitting)
+                        {
+                            <span>Submitting...</span>
+                        }
+                        else if (!isEmailVerified)
+                        {
+                            <span>Verify Email First</span>
+                        }
+                        else
+                        {
+                            <span>Register Hospital</span>
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>
+
+<style>
+    .registration-container {
+        padding: 30px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .registration-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        color: white;
+    }
+
+    .registration-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+
+    .registration-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .registration-form {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .form-section {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-section:last-of-type {
+        border-bottom: none;
+    }
+
+    .form-section h2 {
+        margin: 0 0 25px 0;
+        font-size: 1.5rem;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        flex: 1;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .required {
+        color: #e74c3c;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #999;
+        font-size: 14px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 14px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: #e0e0e0;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #d0d0d0;
+    }
+
+    .alert {
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        text-align: center;
+    }
+
+    .alert-success h3 {
+        margin: 0 0 15px 0;
+        font-size: 1.5rem;
+    }
+
+    .alert-success p {
+        margin: 10px 0;
+    }
+
+    .alert-success strong {
+        color: #0c3d14;
+    }
+
+    .alert-success .btn {
+        margin-top: 20px;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+
+    .email-verification-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .email-verification-container input {
+        flex: 1;
+    }
+
+    .email-verification-container .btn {
+        padding: 12px 20px;
+        white-space: nowrap;
+    }
+
+    .verification-badge {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .verification-badge.verified {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .otp-verification-section {
+        margin-top: 25px;
+        padding: 25px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        border: 2px solid #667eea;
+    }
+
+    .otp-input {
+        text-align: center;
+        font-size: 24px;
+        letter-spacing: 8px;
+        font-weight: 600;
+    }
+
+    .otp-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+
+    @@media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .registration-header h1 {
+            font-size: 2rem;
+        }
+
+        .registration-form {
+            padding: 25px;
+        }
+    }
+</style>
+
+@code {
+    private Hospital hospital = new();
+    private string adminEmail = "";
+    private string otpCode = "";
+    private bool isSubmitting = false;
+    private bool showSuccess = false;
+    private string errorMessage = "";
+    private bool isOtpSent = false;
+    private bool isEmailVerified = false;
+    private bool isSendingOtp = false;
+    private bool isVerifyingOtp = false;
+    private string otpErrorMessage = "";
+
+    private async Task SendOtpEmail()
+    {
+        otpErrorMessage = "";
+        
+        if (string.IsNullOrWhiteSpace(adminEmail))
+        {
+            otpErrorMessage = "Please enter an email address";
+            return;
+        }
+
+        // Basic email validation
+        if (!adminEmail.Contains("@") || !adminEmail.Contains("."))
+        {
+            otpErrorMessage = "Please enter a valid email address";
+            return;
+        }
+
+        try
+        {
+            isSendingOtp = true;
+            StateHasChanged();
+
+            // Generate and send OTP
+            var otp = await EmailVerificationService.GenerateOtpAsync(adminEmail);
+            await EmailVerificationService.SendOtpEmailAsync(adminEmail, otp);
+            
+            isOtpSent = true;
+            otpErrorMessage = "";
+        }
+        catch (Exception ex)
+        {
+            otpErrorMessage = $"Error sending verification code: {ex.Message}";
+        }
+        finally
+        {
+            isSendingOtp = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ResendOtp()
+    {
+        await SendOtpEmail();
+    }
+
+    private async Task VerifyOtp()
+    {
+        otpErrorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(otpCode))
+        {
+            otpErrorMessage = "Please enter the verification code";
+            return;
+        }
+
+        if (otpCode.Length != 6)
+        {
+            otpErrorMessage = "Verification code must be 6 digits";
+            return;
+        }
+
+        try
+        {
+            isVerifyingOtp = true;
+            StateHasChanged();
+
+            var isValid = await EmailVerificationService.VerifyOtpAsync(adminEmail, otpCode);
+            
+            if (isValid)
+            {
+                isEmailVerified = true;
+                hospital.AdminEmail = adminEmail;
+                hospital.IsEmailVerified = true;
+                isOtpSent = false;
+                otpCode = "";
+                otpErrorMessage = "";
+            }
+            else
+            {
+                otpErrorMessage = "Invalid or expired verification code. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            otpErrorMessage = $"Error verifying code: {ex.Message}";
+        }
+        finally
+        {
+            isVerifyingOtp = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = "";
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(hospital.Name))
+            {
+                errorMessage = "Hospital name is required";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(hospital.RegistrationNumber))
+            {
+                errorMessage = "Registration number is required";
+                return;
+            }
+
+            if (!isEmailVerified)
+            {
+                errorMessage = "Please verify the administrator email before submitting";
+                return;
+            }
+
+            var result = await HospitalService.RegisterHospitalAsync(hospital);
+            
+            if (result)
+            {
+                showSuccess = true;
+            }
+            else
+            {
+                errorMessage = "Hospital with this registration number already exists";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error registering hospital: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetForm()
+    {
+        hospital = new Hospital();
+        adminEmail = "";
+        otpCode = "";
+        showSuccess = false;
+        errorMessage = "";
+        isOtpSent = false;
+        isEmailVerified = false;
+        otpErrorMessage = "";
+        StateHasChanged();
+    }
+}

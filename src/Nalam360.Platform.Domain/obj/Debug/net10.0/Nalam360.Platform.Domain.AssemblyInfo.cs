@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Domain-Driven Design building blocks including entities, aggregate roots, value o" +
     "bjects, and domain events for the Nalam360 Enterprise Platform."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f80615a8f3132e07e6198c9e41eac6b5c782db60")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65807f347319eea81f22a513836746438b79035f")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360 Enterprise Platform")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

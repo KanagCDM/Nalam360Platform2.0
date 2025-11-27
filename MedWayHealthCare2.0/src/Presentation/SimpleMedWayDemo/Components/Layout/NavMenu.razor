@@ -1,0 +1,87 @@
+﻿@inject AuthService AuthService
+@inject NavigationService NavigationService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">🏥 MedWay Admin</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        @if (isAuthenticated && navigationItems.Any())
+        {
+            @foreach (var item in navigationItems.OrderBy(i => i.Order))
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="@item.Url">
+                        <span class="nav-icon">@item.Icon</span> @item.Name
+                    </NavLink>
+                </div>
+            }
+            
+            <div class="nav-item px-3 mt-auto">
+                <button class="nav-link logout-btn" @onclick="HandleLogout">
+                    <span class="nav-icon">🚪</span> Logout
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="nav-icon">🔐</span> Login
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool isAuthenticated = false;
+    private List<NavigationItem> navigationItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNavigation();
+        
+        AuthService.OnAuthStateChanged += OnAuthenticationStateChanged;
+        NavigationService.OnNavigationChanged += OnNavigationChanged;
+    }
+
+    private async Task LoadNavigation()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        navigationItems = await NavigationService.GetNavigationItemsAsync();
+        StateHasChanged();
+    }
+
+    private async void OnAuthenticationStateChanged()
+    {
+        await LoadNavigation();
+    }
+
+    private async void OnNavigationChanged()
+    {
+        await LoadNavigation();
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        navigationItems.Clear();
+        isAuthenticated = false;
+        Navigation.NavigateTo("/login", forceLoad: false);
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= OnAuthenticationStateChanged;
+        NavigationService.OnNavigationChanged -= OnNavigationChanged;
+    }
+}
+

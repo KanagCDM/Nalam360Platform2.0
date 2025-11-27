@@ -1,0 +1,10 @@
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/EmbeddedAttribute.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/ValidatableTypeAttribute.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.csproj.AssemblyReference.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/rpswa.dswa.cache.json
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.AssemblyInfoInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.AssemblyInfo.cs
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.csproj.CoreCompileInputs.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.MvcApplicationPartsAssemblyInfo.cache
+/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/obj/Debug/net10.0/MedWay.BlazorApp.sourcelink.json

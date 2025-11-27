@@ -1,10 +1,29 @@
 {
   "version": 2,
-  "dgSpecHash": "eGR897IQ1yU=",
+  "dgSpecHash": "cJZ6ngyiuMw=",
   "success": true,
   "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/MedWay.BlazorApp/MedWay.BlazorApp.csproj",
   "expectedPackageFiles": [
-    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.aspnetcore.app.internal.assets/10.0.0/microsoft.aspnetcore.app.internal.assets.10.0.0.nupkg.sha512"
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.aspnetcore.app.internal.assets/10.0.0/microsoft.aspnetcore.app.internal.assets.10.0.0.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.buttons/27.1.48/syncfusion.blazor.buttons.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.calendars/27.1.48/syncfusion.blazor.calendars.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.cards/27.1.48/syncfusion.blazor.cards.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.charts/27.1.48/syncfusion.blazor.charts.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.core/27.1.48/syncfusion.blazor.core.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.data/27.1.48/syncfusion.blazor.data.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.datavizcommon/27.1.48/syncfusion.blazor.datavizcommon.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.dropdowns/27.1.48/syncfusion.blazor.dropdowns.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.grid/27.1.48/syncfusion.blazor.grid.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.inputs/27.1.48/syncfusion.blazor.inputs.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.lists/27.1.48/syncfusion.blazor.lists.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.navigations/27.1.48/syncfusion.blazor.navigations.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.notifications/27.1.48/syncfusion.blazor.notifications.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.popups/27.1.48/syncfusion.blazor.popups.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.spinner/27.1.48/syncfusion.blazor.spinner.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.blazor.splitbuttons/27.1.48/syncfusion.blazor.splitbuttons.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.excelexport.net.core/27.1.48/syncfusion.excelexport.net.core.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.licensing/27.1.48/syncfusion.licensing.27.1.48.nupkg.sha512",
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/syncfusion.pdfexport.net.core/27.1.48/syncfusion.pdfexport.net.core.27.1.48.nupkg.sha512"
   ],
   "logs": []
 }

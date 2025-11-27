@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Core abstractions and foundational types for the Nalam360 Enterprise Platform inc" +
     "luding Result types, time providers, GUID providers, and exception handling."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60f3c35c914c3775e935643b11bbe6ba08f8d37a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65807f347319eea81f22a513836746438b79035f")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360 Enterprise Platform")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

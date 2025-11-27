@@ -7,4 +7,24 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Syncfusion Blazor Components -->
+    <PackageReference Include="Syncfusion.Blazor.Grid" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Spinner" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Cards" Version="27.1.48" />
+    <PackageReference Include="Syncfusion.Blazor.Charts" Version="27.1.48" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project References -->
+    <ProjectReference Include="..\..\Core\MedWay.Contracts\MedWay.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Nalam360.Platform.Core\Nalam360.Platform.Core.csproj" />
+  </ItemGroup>
+
 </Project>

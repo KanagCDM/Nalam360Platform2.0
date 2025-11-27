@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Cloud-agnostic messaging abstractions for Nalam360 Enterprise Platform with Kafka" +
     " (primary), RabbitMQ, and optional Azure Service Bus support."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60f3c35c914c3775e935643b11bbe6ba08f8d37a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65807f347319eea81f22a513836746438b79035f")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Messaging")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

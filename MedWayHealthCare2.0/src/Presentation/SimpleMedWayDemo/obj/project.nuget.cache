@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "IGhskUAw/24=",
+  "success": true,
+  "projectFilePath": "/Users/kanagasubramaniankrishnamurthi/Documents/Nalam360EnterprisePlatform2.0/MedWayHealthCare2.0/src/Presentation/SimpleMedWayDemo/SimpleMedWayDemo.csproj",
+  "expectedPackageFiles": [
+    "/Users/kanagasubramaniankrishnamurthi/.nuget/packages/microsoft.aspnetcore.app.internal.assets/10.0.0/microsoft.aspnetcore.app.internal.assets.10.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,5 +1,3 @@
-@inject ITimeProvider TimeProvider
-
 <div class="trial-countdown @CssClass">
     <div class="countdown-icon">
         <span class="e-icons e-time"></span>
@@ -40,7 +38,7 @@
     public string CssClass { get; set; } = string.Empty;
 
     [Inject]
-    private ITimeProvider TimeProvider { get; set; } = null!;
+    private ITimeProvider TimeProvider { get; set; } = null!
 
     private int DaysRemaining => Math.Max(0, (TrialEndDate - TimeProvider.UtcNow).Days);
     
