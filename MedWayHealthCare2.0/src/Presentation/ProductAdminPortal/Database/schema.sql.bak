@@ -1,0 +1,547 @@
+-- ============================================================================
+-- ProductAdminPortal Database Schema (PostgreSQL)
+-- Domain-Agnostic Product Configuration & Subscription Management System
+-- Version: 1.0.0
+-- Date: November 29, 2025
+-- ============================================================================
+
+-- ============================================================================
+-- 1. MULTI-TENANT & IDENTITY MANAGEMENT
+-- ============================================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Tenants (Organizations using the system)
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    subdomain VARCHAR(100) UNIQUE NOT NULL,
+    database_strategy VARCHAR(20) NOT NULL DEFAULT 'shared' CHECK (database_strategy IN ('shared', 'isolated')),
+    settings JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE NULL
+);
+
+CREATE INDEX idx_tenants_subdomain ON tenants(subdomain) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tenants_active ON tenants(is_active) WHERE is_active = TRUE AND deleted_at IS NULL;
+
+-- Roles (RBAC)
+CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    permissions JSONB NOT NULL DEFAULT '[]',
+    is_system_role BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, name)
+);
+
+CREATE INDEX idx_roles_tenant ON roles(tenant_id);
+
+-- Users
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, email)
+);
+
+CREATE INDEX idx_users_tenant ON users(tenant_id);
+CREATE INDEX idx_users_email ON users(email);
+
+-- User Roles (Many-to-Many)
+CREATE TABLE user_roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    assigned_by UUID REFERENCES users(id),
+    UNIQUE(user_id, role_id)
+);
+
+CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role ON user_roles(role_id);
+
+-- ============================================================================
+-- 2. PRODUCT CATALOG
+-- ============================================================================
+
+-- Products (Top-level offering)
+CREATE TABLE products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    key VARCHAR(100) NOT NULL,
+    description TEXT,
+    metadata JSONB DEFAULT '{}',
+    version INTEGER NOT NULL DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    UNIQUE(tenant_id, key)
+);
+
+CREATE INDEX idx_products_tenant ON products(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_products_key ON products(tenant_id, key);
+CREATE INDEX idx_products_version ON products(tenant_id, version);
+
+-- Modules (Components within a Product)
+CREATE TABLE modules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    metadata JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    UNIQUE(product_id, name)
+);
+
+CREATE INDEX idx_modules_product ON modules(product_id) WHERE is_active = TRUE;
+CREATE INDEX idx_modules_tenant ON modules(tenant_id);
+CREATE INDEX idx_modules_order ON modules(product_id, display_order);
+
+-- Entities (Granular features/resources)
+CREATE TABLE entities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL CHECK (entity_type IN ('resource', 'action', 'report', 'feature', 'integration')),
+    description TEXT,
+    pricing_enabled BOOLEAN DEFAULT TRUE,
+    default_price DECIMAL(12, 4) DEFAULT 0.0000,
+    pricing_unit VARCHAR(50) DEFAULT 'per_transaction' CHECK (pricing_unit IN ('per_transaction', 'per_user', 'per_month', 'per_year', 'per_gb', 'per_api_call', 'flat')),
+    complexity_levels JSONB DEFAULT '["low", "medium", "high"]',
+    metadata JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    UNIQUE(tenant_id, name)
+);
+
+CREATE INDEX idx_entities_tenant ON entities(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_entities_type ON entities(entity_type);
+CREATE INDEX idx_entities_pricing ON entities(pricing_enabled) WHERE pricing_enabled = TRUE;
+
+-- Module-Entity Mapping (Many-to-Many with overrides)
+CREATE TABLE module_entities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    module_id UUID NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_required BOOLEAN DEFAULT FALSE,
+    override_pricing BOOLEAN DEFAULT FALSE,
+    override_price DECIMAL(12, 4) NULL,
+    override_metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    UNIQUE(module_id, entity_id)
+);
+
+CREATE INDEX idx_module_entities_module ON module_entities(module_id);
+CREATE INDEX idx_module_entities_entity ON module_entities(entity_id);
+
+-- ============================================================================
+-- 3. SUBSCRIPTION MANAGEMENT
+-- ============================================================================
+
+-- Subscription Plans
+CREATE TABLE subscription_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    key VARCHAR(100) NOT NULL,
+    description TEXT,
+    billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly', 'quarterly', 'one_time')),
+    base_fee DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    currency_code VARCHAR(3) NOT NULL DEFAULT 'INR',
+    trial_period_days INTEGER DEFAULT 0,
+    is_public BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    version INTEGER NOT NULL DEFAULT 1,
+    effective_from DATE NOT NULL DEFAULT CURRENT_DATE,
+    effective_to DATE NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    UNIQUE(tenant_id, key, version)
+);
+
+CREATE INDEX idx_subscription_plans_tenant ON subscription_plans(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_subscription_plans_key ON subscription_plans(tenant_id, key);
+CREATE INDEX idx_subscription_plans_effective ON subscription_plans(effective_from, effective_to);
+
+-- Subscription-Product Mapping
+CREATE TABLE subscription_products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    subscription_plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    is_included BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(subscription_plan_id, product_id)
+);
+
+CREATE INDEX idx_subscription_products_plan ON subscription_products(subscription_plan_id);
+CREATE INDEX idx_subscription_products_product ON subscription_products(product_id);
+
+-- Subscription-Module Mapping
+CREATE TABLE subscription_modules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    subscription_plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+    module_id UUID NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(subscription_plan_id, module_id)
+);
+
+CREATE INDEX idx_subscription_modules_plan ON subscription_modules(subscription_plan_id);
+CREATE INDEX idx_subscription_modules_module ON subscription_modules(module_id);
+
+-- Subscription-Entity Mapping (with limits)
+CREATE TABLE subscription_entities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    subscription_plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    is_included BOOLEAN DEFAULT TRUE,
+    usage_limit INTEGER NULL, -- NULL = unlimited
+    soft_limit_percentage DECIMAL(5, 2) DEFAULT 80.00, -- Alert at 80%
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(subscription_plan_id, entity_id)
+);
+
+CREATE INDEX idx_subscription_entities_plan ON subscription_entities(subscription_plan_id);
+CREATE INDEX idx_subscription_entities_entity ON subscription_entities(entity_id);
+
+-- ============================================================================
+-- 4. PRICING ENGINE
+-- ============================================================================
+
+-- Pricing Rules (Flexible pricing configuration)
+CREATE TABLE pricing_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    scope VARCHAR(50) NOT NULL CHECK (scope IN ('entity', 'module', 'subscription', 'global')),
+    target_id UUID NULL, -- References entity_id, module_id, or subscription_plan_id based on scope
+    pricing_type VARCHAR(50) NOT NULL CHECK (pricing_type IN ('flat', 'per_unit', 'tiered', 'multiplier', 'percentage', 'bundle')),
+    params JSONB NOT NULL DEFAULT '{}',
+    effective_from DATE NOT NULL DEFAULT CURRENT_DATE,
+    effective_to DATE NULL,
+    priority INTEGER NOT NULL DEFAULT 10, -- Higher priority = applied first
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id)
+);
+
+CREATE INDEX idx_pricing_rules_tenant ON pricing_rules(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_pricing_rules_scope ON pricing_rules(scope, target_id);
+CREATE INDEX idx_pricing_rules_effective ON pricing_rules(effective_from, effective_to);
+CREATE INDEX idx_pricing_rules_priority ON pricing_rules(priority DESC);
+
+-- Pricing Tiers (For tiered pricing models)
+CREATE TABLE pricing_tiers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pricing_rule_id UUID NOT NULL REFERENCES pricing_rules(id) ON DELETE CASCADE,
+    tier_name VARCHAR(100) NOT NULL,
+    min_units INTEGER NOT NULL DEFAULT 0,
+    max_units INTEGER NULL, -- NULL = unlimited
+    unit_price DECIMAL(12, 4) NOT NULL,
+    flat_fee DECIMAL(12, 4) DEFAULT 0.0000,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pricing_tiers_rule ON pricing_tiers(pricing_rule_id, display_order);
+
+-- Complexity Multipliers (Transaction complexity pricing)
+CREATE TABLE complexity_multipliers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    entity_id UUID REFERENCES entities(id) ON DELETE CASCADE,
+    complexity_level VARCHAR(20) NOT NULL CHECK (complexity_level IN ('low', 'medium', 'high', 'critical')),
+    multiplier DECIMAL(6, 3) NOT NULL DEFAULT 1.000,
+    flat_fee DECIMAL(12, 4) DEFAULT 0.0000,
+    effective_from DATE NOT NULL DEFAULT CURRENT_DATE,
+    effective_to DATE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, entity_id, complexity_level, effective_from)
+);
+
+CREATE INDEX idx_complexity_multipliers_entity ON complexity_multipliers(entity_id);
+CREATE INDEX idx_complexity_multipliers_tenant ON complexity_multipliers(tenant_id);
+
+-- Discount Codes (Promo codes and discounts)
+CREATE TABLE discount_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    code VARCHAR(50) NOT NULL,
+    description TEXT,
+    discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('percentage', 'fixed_amount')),
+    discount_value DECIMAL(12, 4) NOT NULL,
+    max_uses INTEGER NULL,
+    current_uses INTEGER DEFAULT 0,
+    valid_from DATE NOT NULL,
+    valid_to DATE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    UNIQUE(tenant_id, code)
+);
+
+CREATE INDEX idx_discount_codes_tenant ON discount_codes(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_discount_codes_code ON discount_codes(code);
+CREATE INDEX idx_discount_codes_validity ON discount_codes(valid_from, valid_to);
+
+-- ============================================================================
+-- 5. CUSTOMER SUBSCRIPTIONS & USAGE
+-- ============================================================================
+
+-- Customers (Entities purchasing subscriptions)
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255),
+    billing_address JSONB,
+    contact_info JSONB,
+    metadata JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, email)
+);
+
+CREATE INDEX idx_customers_tenant ON customers(tenant_id) WHERE is_active = TRUE;
+CREATE INDEX idx_customers_email ON customers(email);
+
+-- Customer Subscriptions (Active subscriptions)
+CREATE TABLE customer_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    subscription_plan_id UUID NOT NULL REFERENCES subscription_plans(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('trial', 'active', 'suspended', 'cancelled', 'expired')),
+    start_date DATE NOT NULL,
+    end_date DATE NULL,
+    trial_end_date DATE NULL,
+    billing_cycle_anchor DATE NOT NULL, -- When billing cycle starts
+    auto_renew BOOLEAN DEFAULT TRUE,
+    discount_code_id UUID REFERENCES discount_codes(id),
+    custom_pricing JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    cancelled_at TIMESTAMP WITH TIME ZONE NULL,
+    cancelled_by UUID REFERENCES users(id)
+);
+
+CREATE INDEX idx_customer_subscriptions_tenant ON customer_subscriptions(tenant_id);
+CREATE INDEX idx_customer_subscriptions_customer ON customer_subscriptions(customer_id);
+CREATE INDEX idx_customer_subscriptions_status ON customer_subscriptions(status);
+CREATE INDEX idx_customer_subscriptions_dates ON customer_subscriptions(start_date, end_date);
+
+-- Usage Records (Track customer usage for billing)
+CREATE TABLE usage_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    customer_subscription_id UUID NOT NULL REFERENCES customer_subscriptions(id) ON DELETE CASCADE,
+    entity_id UUID NOT NULL REFERENCES entities(id),
+    user_id UUID REFERENCES users(id),
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    units INTEGER NOT NULL DEFAULT 1,
+    complexity VARCHAR(20) CHECK (complexity IN ('low', 'medium', 'high', 'critical')),
+    metadata JSONB DEFAULT '{}',
+    billed BOOLEAN DEFAULT FALSE,
+    invoice_id UUID NULL, -- References invoices table
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_usage_records_subscription ON usage_records(customer_subscription_id, timestamp DESC);
+CREATE INDEX idx_usage_records_entity ON usage_records(entity_id);
+CREATE INDEX idx_usage_records_tenant ON usage_records(tenant_id, timestamp DESC);
+CREATE INDEX idx_usage_records_billed ON usage_records(billed) WHERE billed = FALSE;
+CREATE INDEX idx_usage_records_timestamp ON usage_records(timestamp);
+
+-- ============================================================================
+-- 6. BILLING & INVOICING
+-- ============================================================================
+
+-- Invoices
+CREATE TABLE invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    customer_subscription_id UUID NOT NULL REFERENCES customer_subscriptions(id),
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    billing_period_start DATE NOT NULL,
+    billing_period_end DATE NOT NULL,
+    subtotal DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    tax_amount DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    discount_amount DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    total_amount DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    currency_code VARCHAR(3) NOT NULL DEFAULT 'INR',
+    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'paid', 'overdue', 'cancelled')),
+    due_date DATE NOT NULL,
+    paid_at TIMESTAMP WITH TIME ZONE NULL,
+    payment_method VARCHAR(50),
+    notes TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_invoices_tenant ON invoices(tenant_id);
+CREATE INDEX idx_invoices_subscription ON invoices(customer_subscription_id);
+CREATE INDEX idx_invoices_number ON invoices(invoice_number);
+CREATE INDEX idx_invoices_status ON invoices(status);
+CREATE INDEX idx_invoices_period ON invoices(billing_period_start, billing_period_end);
+
+-- Invoice Line Items
+CREATE TABLE invoice_line_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    item_type VARCHAR(50) NOT NULL CHECK (item_type IN ('base_fee', 'usage', 'one_time', 'discount', 'tax', 'adjustment')),
+    entity_id UUID REFERENCES entities(id),
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    total_price DECIMAL(12, 4) NOT NULL DEFAULT 0.0000,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_invoice_line_items_invoice ON invoice_line_items(invoice_id);
+CREATE INDEX idx_invoice_line_items_entity ON invoice_line_items(entity_id);
+
+-- ============================================================================
+-- 7. AUDIT & VERSIONING
+-- ============================================================================
+
+-- Audit Logs (Track all changes)
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    entity_type VARCHAR(100) NOT NULL, -- 'product', 'module', 'entity', 'subscription_plan', etc.
+    entity_id UUID NOT NULL,
+    action VARCHAR(50) NOT NULL CHECK (action IN ('create', 'update', 'delete', 'activate', 'deactivate', 'version')),
+    old_values JSONB,
+    new_values JSONB,
+    changed_fields TEXT[],
+    user_id UUID REFERENCES users(id),
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_logs_tenant ON audit_logs(tenant_id, created_at DESC);
+CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(created_at DESC);
+
+-- Configuration Versions (Snapshot entire configurations)
+CREATE TABLE configuration_versions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    version_number INTEGER NOT NULL,
+    version_name VARCHAR(255),
+    description TEXT,
+    snapshot JSONB NOT NULL, -- Complete configuration snapshot
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id),
+    UNIQUE(tenant_id, version_number)
+);
+
+CREATE INDEX idx_configuration_versions_tenant ON configuration_versions(tenant_id, version_number DESC);
+
+-- ============================================================================
+-- 8. NOTIFICATIONS & ALERTS
+-- ============================================================================
+
+-- Usage Alerts (Triggered when limits are approached)
+CREATE TABLE usage_alerts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    customer_subscription_id UUID NOT NULL REFERENCES customer_subscriptions(id),
+    entity_id UUID REFERENCES entities(id),
+    alert_type VARCHAR(50) NOT NULL CHECK (alert_type IN ('soft_limit', 'hard_limit', 'overage', 'expiry')),
+    current_usage INTEGER NOT NULL,
+    limit_value INTEGER NOT NULL,
+    threshold_percentage DECIMAL(5, 2),
+    is_acknowledged BOOLEAN DEFAULT FALSE,
+    acknowledged_at TIMESTAMP WITH TIME ZONE NULL,
+    acknowledged_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_usage_alerts_subscription ON usage_alerts(customer_subscription_id);
+CREATE INDEX idx_usage_alerts_acknowledged ON usage_alerts(is_acknowledged) WHERE is_acknowledged = FALSE;
+
+-- ============================================================================
+-- 9. TRIGGERS & FUNCTIONS
+-- ============================================================================
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply updated_at trigger to all relevant tables
+CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_modules_updated_at BEFORE UPDATE ON modules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_entities_updated_at BEFORE UPDATE ON entities FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_subscription_plans_updated_at BEFORE UPDATE ON subscription_plans FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_pricing_rules_updated_at BEFORE UPDATE ON pricing_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_customer_subscriptions_updated_at BEFORE UPDATE ON customer_subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================================
+-- 10. INITIAL SYSTEM ROLES (Seed Data)
+-- ============================================================================
+
+-- Note: This would typically be in a separate seed script
+-- Included here for reference
+
+-- System Roles:
+-- 1. Super Admin - Full system access
+-- 2. Product Designer - Create/edit products, modules, entities
+-- 3. Pricing Manager - Manage pricing rules and subscription plans
+-- 4. Subscription Manager - Manage customer subscriptions
+-- 5. Auditor - Read-only access to audit logs
+-- 6. Billing Admin - Manage invoices and billing
+
+-- ============================================================================
+-- END OF SCHEMA
+-- ============================================================================

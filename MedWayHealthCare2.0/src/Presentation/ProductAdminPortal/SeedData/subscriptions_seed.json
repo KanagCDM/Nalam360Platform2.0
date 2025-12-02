@@ -1,0 +1,385 @@
+{
+  "subscription_plans": [
+    {
+      "id": "plan-trial-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Trial Plan",
+      "key": "TRIAL",
+      "description": "14-day trial with limited features for evaluation",
+      "billing_cycle": "one_time",
+      "base_fee": 0.00,
+      "currency_code": "INR",
+      "trial_period_days": 14,
+      "is_public": true,
+      "is_active": true,
+      "version": 1,
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "metadata": {
+        "featured": false,
+        "max_users": 5,
+        "max_patients": 100,
+        "support_level": "community"
+      }
+    },
+    {
+      "id": "plan-standard-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Standard Plan",
+      "key": "STANDARD",
+      "description": "Essential features for small to medium practices",
+      "billing_cycle": "monthly",
+      "base_fee": 499.00,
+      "currency_code": "INR",
+      "trial_period_days": 30,
+      "is_public": true,
+      "is_active": true,
+      "version": 1,
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "metadata": {
+        "featured": false,
+        "max_users": 20,
+        "max_patients": 1000,
+        "support_level": "email"
+      }
+    },
+    {
+      "id": "plan-gold-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Gold Plan",
+      "key": "GOLD",
+      "description": "Full-featured plan for medium to large organizations",
+      "billing_cycle": "monthly",
+      "base_fee": 1000.00,
+      "currency_code": "INR",
+      "trial_period_days": 30,
+      "is_public": true,
+      "is_active": true,
+      "version": 1,
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "metadata": {
+        "featured": true,
+        "popular": true,
+        "max_users": 50,
+        "max_patients": 5000,
+        "support_level": "phone_email",
+        "api_access": true
+      }
+    },
+    {
+      "id": "plan-platinum-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Platinum Plan",
+      "key": "PLATINUM",
+      "description": "Enterprise plan with unlimited access and premium support",
+      "billing_cycle": "monthly",
+      "base_fee": 2500.00,
+      "currency_code": "INR",
+      "trial_period_days": 30,
+      "is_public": true,
+      "is_active": true,
+      "version": 1,
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "metadata": {
+        "featured": true,
+        "max_users": null,
+        "max_patients": null,
+        "support_level": "24x7_dedicated",
+        "api_access": true,
+        "white_label": true,
+        "sla_guaranteed": true
+      }
+    }
+  ],
+  "pricing_rules": [
+    {
+      "id": "rule-tiered-patient-reg",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Tiered Patient Registration Pricing",
+      "description": "Tiered pricing for patient registration with volume discounts",
+      "scope": "entity",
+      "target_id": "entity-pat-001",
+      "pricing_type": "tiered",
+      "params": {
+        "tiers": [
+          {
+            "min_units": 0,
+            "max_units": 1000,
+            "unit_price": 0.00,
+            "flat_fee": 0.00,
+            "tier_name": "Included"
+          },
+          {
+            "min_units": 1001,
+            "max_units": 10000,
+            "unit_price": 0.10,
+            "flat_fee": 0.00,
+            "tier_name": "Standard"
+          },
+          {
+            "min_units": 10001,
+            "max_units": null,
+            "unit_price": 0.07,
+            "flat_fee": 0.00,
+            "tier_name": "Volume"
+          }
+        ]
+      },
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "priority": 10,
+      "is_active": true
+    },
+    {
+      "id": "rule-complexity-multiplier",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Complexity-Based Pricing Multipliers",
+      "description": "Apply multipliers based on transaction complexity",
+      "scope": "entity",
+      "target_id": "entity-pat-001",
+      "pricing_type": "multiplier",
+      "params": {
+        "base_price": 0.10,
+        "complexity_multipliers": {
+          "low": 1.0,
+          "medium": 2.0,
+          "high": 4.0,
+          "critical": 6.0
+        }
+      },
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "priority": 20,
+      "is_active": true
+    },
+    {
+      "id": "rule-per-user-base",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Per-User Seat Pricing",
+      "description": "Additional charge per user beyond included seats",
+      "scope": "subscription",
+      "target_id": "plan-gold-001",
+      "pricing_type": "per_unit",
+      "params": {
+        "unit_price": 50.00,
+        "included_units": 10,
+        "unit_name": "user_seat"
+      },
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "priority": 10,
+      "is_active": true
+    },
+    {
+      "id": "rule-setup-fee",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "One-Time Setup Fee",
+      "description": "Setup and onboarding fee for new subscriptions",
+      "scope": "subscription",
+      "target_id": "plan-gold-001",
+      "pricing_type": "flat",
+      "params": {
+        "amount": 5000.00,
+        "one_time": true,
+        "applies_to": "new_subscriptions"
+      },
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "priority": 5,
+      "is_active": true
+    },
+    {
+      "id": "rule-report-high-volume",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Analytics Report Tiered Pricing",
+      "description": "Volume-based pricing for report generation",
+      "scope": "entity",
+      "target_id": "entity-rep-001",
+      "pricing_type": "tiered",
+      "params": {
+        "tiers": [
+          {
+            "min_units": 0,
+            "max_units": 100,
+            "unit_price": 1.00,
+            "flat_fee": 0.00
+          },
+          {
+            "min_units": 101,
+            "max_units": 500,
+            "unit_price": 0.75,
+            "flat_fee": 0.00
+          },
+          {
+            "min_units": 501,
+            "max_units": null,
+            "unit_price": 0.50,
+            "flat_fee": 0.00
+          }
+        ]
+      },
+      "effective_from": "2025-11-01",
+      "effective_to": null,
+      "priority": 10,
+      "is_active": true
+    }
+  ],
+  "subscription_entities": [
+    {
+      "subscription_plan_id": "plan-trial-001",
+      "entity_id": "entity-pat-001",
+      "is_included": true,
+      "usage_limit": 50,
+      "soft_limit_percentage": 80.00
+    },
+    {
+      "subscription_plan_id": "plan-trial-001",
+      "entity_id": "entity-pat-002",
+      "is_included": true,
+      "usage_limit": 500,
+      "soft_limit_percentage": 80.00
+    },
+    {
+      "subscription_plan_id": "plan-standard-001",
+      "entity_id": "entity-pat-001",
+      "is_included": true,
+      "usage_limit": 500,
+      "soft_limit_percentage": 80.00
+    },
+    {
+      "subscription_plan_id": "plan-standard-001",
+      "entity_id": "entity-pat-002",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-standard-001",
+      "entity_id": "entity-apt-001",
+      "is_included": true,
+      "usage_limit": 1000,
+      "soft_limit_percentage": 80.00
+    },
+    {
+      "subscription_plan_id": "plan-gold-001",
+      "entity_id": "entity-pat-001",
+      "is_included": true,
+      "usage_limit": 1000,
+      "soft_limit_percentage": 80.00
+    },
+    {
+      "subscription_plan_id": "plan-gold-001",
+      "entity_id": "entity-pat-002",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-gold-001",
+      "entity_id": "entity-pat-003",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-gold-001",
+      "entity_id": "entity-apt-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-gold-001",
+      "entity_id": "entity-bill-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-pat-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-pat-002",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-pat-003",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-apt-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-bill-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-clin-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    },
+    {
+      "subscription_plan_id": "plan-platinum-001",
+      "entity_id": "entity-rep-001",
+      "is_included": true,
+      "usage_limit": null,
+      "soft_limit_percentage": null
+    }
+  ],
+  "discount_codes": [
+    {
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "code": "LAUNCH20",
+      "description": "20% off for launch customers",
+      "discount_type": "percentage",
+      "discount_value": 20.00,
+      "max_uses": 100,
+      "current_uses": 0,
+      "valid_from": "2025-11-01",
+      "valid_to": "2025-12-31",
+      "is_active": true,
+      "metadata": {
+        "campaign": "launch",
+        "applicable_plans": ["plan-standard-001", "plan-gold-001"]
+      }
+    },
+    {
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "code": "PLATINUM500",
+      "description": "₹500 off Platinum plan",
+      "discount_type": "fixed_amount",
+      "discount_value": 500.00,
+      "max_uses": 50,
+      "current_uses": 0,
+      "valid_from": "2025-11-01",
+      "valid_to": "2026-01-31",
+      "is_active": true,
+      "metadata": {
+        "campaign": "enterprise",
+        "applicable_plans": ["plan-platinum-001"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,335 @@
+{
+  "products": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Hospital Management System",
+      "key": "HMS_CORE",
+      "description": "Complete hospital management platform with patient management, appointments, billing, and clinical workflows",
+      "metadata": {
+        "industry": "healthcare",
+        "target_market": "enterprise",
+        "min_users": 10,
+        "recommended_users": 50
+      },
+      "version": 1,
+      "is_active": true
+    },
+    {
+      "id": "650e9500-f39c-51e5-b827-557766551111",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "E-Commerce Platform",
+      "key": "ECOM_PRO",
+      "description": "Full-featured e-commerce platform with inventory, orders, payments, and analytics",
+      "metadata": {
+        "industry": "retail",
+        "target_market": "smb_enterprise",
+        "supports_multi_currency": true
+      },
+      "version": 1,
+      "is_active": true
+    }
+  ],
+  "modules": [
+    {
+      "id": "abc12300-0001-0000-0000-000000000001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Patient Management",
+      "description": "Complete patient registration, demographics, medical history, and records management",
+      "display_order": 1,
+      "metadata": {
+        "icon": "users",
+        "color": "#3498db"
+      },
+      "is_active": true
+    },
+    {
+      "id": "abc12300-0002-0000-0000-000000000002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Appointment Scheduling",
+      "description": "Appointment booking, scheduling, calendar management, and reminders",
+      "display_order": 2,
+      "metadata": {
+        "icon": "calendar",
+        "color": "#e74c3c"
+      },
+      "is_active": true
+    },
+    {
+      "id": "abc12300-0003-0000-0000-000000000003",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Billing & Invoicing",
+      "description": "Billing, invoicing, insurance claims, and payment processing",
+      "display_order": 3,
+      "metadata": {
+        "icon": "dollar-sign",
+        "color": "#27ae60"
+      },
+      "is_active": true
+    },
+    {
+      "id": "abc12300-0004-0000-0000-000000000004",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Clinical Workflows",
+      "description": "Doctor notes, prescriptions, lab orders, and clinical documentation",
+      "display_order": 4,
+      "metadata": {
+        "icon": "stethoscope",
+        "color": "#9b59b6"
+      },
+      "is_active": true
+    },
+    {
+      "id": "ecom1000-0001-0000-0000-000000000001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "650e9500-f39c-51e5-b827-557766551111",
+      "name": "Product Catalog",
+      "description": "Product management, categories, variants, and inventory tracking",
+      "display_order": 1,
+      "metadata": {
+        "icon": "box",
+        "color": "#f39c12"
+      },
+      "is_active": true
+    },
+    {
+      "id": "ecom1000-0002-0000-0000-000000000002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "product_id": "650e9500-f39c-51e5-b827-557766551111",
+      "name": "Order Management",
+      "description": "Order processing, fulfillment, shipping, and tracking",
+      "display_order": 2,
+      "metadata": {
+        "icon": "shopping-cart",
+        "color": "#1abc9c"
+      },
+      "is_active": true
+    }
+  ],
+  "entities": [
+    {
+      "id": "entity-pat-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Patient Registration",
+      "entity_type": "action",
+      "description": "Register a new patient in the system",
+      "pricing_enabled": true,
+      "default_price": 0.50,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium", "high"],
+      "metadata": {
+        "complexity": ["low", "medium", "high"],
+        "notes": "Complexity based on data validation and verification requirements",
+        "tags": ["patient", "registration", "core"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-pat-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Patient Record Access",
+      "entity_type": "resource",
+      "description": "Access and view patient medical records",
+      "pricing_enabled": true,
+      "default_price": 0.02,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low"],
+      "metadata": {
+        "complexity": ["low"],
+        "notes": "Simple read operation",
+        "tags": ["patient", "records", "view"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-pat-003",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Patient Record Update",
+      "entity_type": "action",
+      "description": "Update patient medical records",
+      "pricing_enabled": true,
+      "default_price": 0.15,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium"],
+      "metadata": {
+        "complexity": ["low", "medium"],
+        "notes": "Complexity based on number of fields updated",
+        "tags": ["patient", "records", "update"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-apt-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Appointment Booking",
+      "entity_type": "action",
+      "description": "Create new appointment",
+      "pricing_enabled": true,
+      "default_price": 0.25,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium"],
+      "metadata": {
+        "complexity": ["low", "medium"],
+        "notes": "Complexity based on calendar conflicts and resource allocation",
+        "tags": ["appointment", "booking", "scheduling"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-apt-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Appointment Reminder",
+      "entity_type": "action",
+      "description": "Send appointment reminder (SMS/Email)",
+      "pricing_enabled": true,
+      "default_price": 0.05,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low"],
+      "metadata": {
+        "tags": ["appointment", "reminder", "notification"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-bill-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Invoice Generation",
+      "entity_type": "action",
+      "description": "Generate patient invoice",
+      "pricing_enabled": true,
+      "default_price": 0.30,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium", "high"],
+      "metadata": {
+        "complexity": ["low", "medium", "high"],
+        "notes": "Complexity based on line items and insurance claims",
+        "tags": ["billing", "invoice", "generation"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-bill-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Payment Processing",
+      "entity_type": "action",
+      "description": "Process patient payment",
+      "pricing_enabled": true,
+      "default_price": 0.10,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium"],
+      "metadata": {
+        "tags": ["billing", "payment", "processing"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-clin-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Clinical Note Creation",
+      "entity_type": "action",
+      "description": "Create clinical documentation",
+      "pricing_enabled": true,
+      "default_price": 0.20,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["low", "medium", "high"],
+      "metadata": {
+        "complexity": ["low", "medium", "high"],
+        "notes": "Complexity based on note length and attachments",
+        "tags": ["clinical", "documentation", "notes"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-clin-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Lab Order Processing",
+      "entity_type": "action",
+      "description": "Process laboratory test order",
+      "pricing_enabled": true,
+      "default_price": 0.40,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["medium", "high"],
+      "metadata": {
+        "tags": ["clinical", "lab", "orders"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "entity-rep-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Analytics Report Generation",
+      "entity_type": "report",
+      "description": "Generate analytics and business intelligence reports",
+      "pricing_enabled": true,
+      "default_price": 1.00,
+      "pricing_unit": "per_transaction",
+      "complexity_levels": ["medium", "high", "critical"],
+      "metadata": {
+        "complexity": ["medium", "high", "critical"],
+        "notes": "Complexity based on data volume and computation requirements",
+        "tags": ["analytics", "reports", "bi"]
+      },
+      "is_active": true
+    }
+  ],
+  "module_entities": [
+    {
+      "module_id": "abc12300-0001-0000-0000-000000000001",
+      "entity_id": "entity-pat-001",
+      "display_order": 1,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0001-0000-0000-000000000001",
+      "entity_id": "entity-pat-002",
+      "display_order": 2,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0001-0000-0000-000000000001",
+      "entity_id": "entity-pat-003",
+      "display_order": 3,
+      "is_required": false
+    },
+    {
+      "module_id": "abc12300-0002-0000-0000-000000000002",
+      "entity_id": "entity-apt-001",
+      "display_order": 1,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0002-0000-0000-000000000002",
+      "entity_id": "entity-apt-002",
+      "display_order": 2,
+      "is_required": false
+    },
+    {
+      "module_id": "abc12300-0003-0000-0000-000000000003",
+      "entity_id": "entity-bill-001",
+      "display_order": 1,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0003-0000-0000-000000000003",
+      "entity_id": "entity-bill-002",
+      "display_order": 2,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0004-0000-0000-000000000004",
+      "entity_id": "entity-clin-001",
+      "display_order": 1,
+      "is_required": true
+    },
+    {
+      "module_id": "abc12300-0004-0000-0000-000000000004",
+      "entity_id": "entity-clin-002",
+      "display_order": 2,
+      "is_required": false
+    }
+  ]
+}

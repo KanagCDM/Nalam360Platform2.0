@@ -1,0 +1,307 @@
+{
+  "customers": [
+    {
+      "id": "cust-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "City General Hospital",
+      "email": "admin@citygeneralhospital.com",
+      "company_name": "City General Hospital Pvt Ltd",
+      "billing_address": {
+        "street": "123 Medical Center Drive",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postal_code": "400001",
+        "country": "India"
+      },
+      "contact_info": {
+        "phone": "+91-22-12345678",
+        "mobile": "+91-98765-43210"
+      },
+      "metadata": {
+        "hospital_beds": 250,
+        "specializations": ["cardiology", "orthopedics", "pediatrics"]
+      },
+      "is_active": true
+    },
+    {
+      "id": "cust-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Green Valley Clinic",
+      "email": "contact@greenvalleyclinic.com",
+      "company_name": "Green Valley Healthcare Services",
+      "billing_address": {
+        "street": "456 Wellness Road",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "postal_code": "560001",
+        "country": "India"
+      },
+      "contact_info": {
+        "phone": "+91-80-87654321"
+      },
+      "metadata": {
+        "clinic_type": "multi_specialty",
+        "doctors": 15
+      },
+      "is_active": true
+    }
+  ],
+  "customer_subscriptions": [
+    {
+      "id": "cust-sub-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_id": "cust-001",
+      "subscription_plan_id": "plan-gold-001",
+      "status": "active",
+      "start_date": "2025-11-01",
+      "end_date": null,
+      "trial_end_date": "2025-11-30",
+      "billing_cycle_anchor": "2025-11-01",
+      "auto_renew": true,
+      "discount_code_id": null,
+      "custom_pricing": {},
+      "metadata": {
+        "sales_rep": "John Doe",
+        "contract_number": "CGH-2025-001"
+      }
+    },
+    {
+      "id": "cust-sub-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_id": "cust-002",
+      "subscription_plan_id": "plan-standard-001",
+      "status": "active",
+      "start_date": "2025-11-15",
+      "end_date": null,
+      "trial_end_date": "2025-12-14",
+      "billing_cycle_anchor": "2025-11-15",
+      "auto_renew": true,
+      "discount_code_id": null,
+      "custom_pricing": {},
+      "metadata": {
+        "sales_rep": "Jane Smith"
+      }
+    }
+  ],
+  "usage_records": [
+    {
+      "id": "usage-001",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-pat-001",
+      "user_id": "user-123",
+      "timestamp": "2025-11-05T09:15:00Z",
+      "units": 1,
+      "complexity": "low",
+      "metadata": {
+        "patient_id": "PAT-001",
+        "department": "outpatient"
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-002",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-pat-001",
+      "user_id": "user-124",
+      "timestamp": "2025-11-05T10:30:00Z",
+      "units": 1,
+      "complexity": "medium",
+      "metadata": {
+        "patient_id": "PAT-002",
+        "department": "emergency",
+        "insurance_verification_required": true
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-003",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-pat-001",
+      "user_id": "user-123",
+      "timestamp": "2025-11-05T11:45:00Z",
+      "units": 1,
+      "complexity": "high",
+      "metadata": {
+        "patient_id": "PAT-003",
+        "department": "icu",
+        "insurance_verification_required": true,
+        "complex_medical_history": true
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-004",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-apt-001",
+      "user_id": "user-125",
+      "timestamp": "2025-11-05T14:00:00Z",
+      "units": 1,
+      "complexity": "low",
+      "metadata": {
+        "patient_id": "PAT-001",
+        "doctor_id": "DOC-123",
+        "appointment_type": "follow_up"
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-005",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-bill-001",
+      "user_id": "user-126",
+      "timestamp": "2025-11-05T16:30:00Z",
+      "units": 1,
+      "complexity": "medium",
+      "metadata": {
+        "patient_id": "PAT-002",
+        "line_items": 5,
+        "insurance_claim": true
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-006",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-clin-001",
+      "user_id": "user-127",
+      "timestamp": "2025-11-06T10:00:00Z",
+      "units": 1,
+      "complexity": "high",
+      "metadata": {
+        "patient_id": "PAT-003",
+        "note_length": 2500,
+        "attachments": 3,
+        "doctor_id": "DOC-124"
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-007",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-rep-001",
+      "user_id": "user-128",
+      "timestamp": "2025-11-07T09:00:00Z",
+      "units": 1,
+      "complexity": "critical",
+      "metadata": {
+        "report_type": "financial_analytics",
+        "data_points": 50000,
+        "time_range_days": 90
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-008",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-002",
+      "entity_id": "entity-pat-001",
+      "user_id": "user-201",
+      "timestamp": "2025-11-16T08:30:00Z",
+      "units": 1,
+      "complexity": "low",
+      "metadata": {
+        "patient_id": "GVC-PAT-001",
+        "department": "general"
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-009",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-002",
+      "entity_id": "entity-apt-001",
+      "user_id": "user-202",
+      "timestamp": "2025-11-16T11:15:00Z",
+      "units": 1,
+      "complexity": "medium",
+      "metadata": {
+        "patient_id": "GVC-PAT-001",
+        "doctor_id": "GVC-DOC-01",
+        "resource_conflicts_checked": true
+      },
+      "billed": false,
+      "invoice_id": null
+    },
+    {
+      "id": "usage-010",
+      "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "customer_subscription_id": "cust-sub-001",
+      "entity_id": "entity-pat-002",
+      "user_id": "user-123",
+      "timestamp": "2025-11-08T13:20:00Z",
+      "units": 1,
+      "complexity": "low",
+      "metadata": {
+        "patient_id": "PAT-001",
+        "access_type": "read_only"
+      },
+      "billed": false,
+      "invoice_id": null
+    }
+  ],
+  "usage_summary_for_gold_plan_example": {
+    "customer_subscription_id": "cust-sub-001",
+    "subscription_plan": "Gold Plan",
+    "billing_period": "2025-11-01 to 2025-11-30",
+    "entity_usage_breakdown": [
+      {
+        "entity_id": "entity-pat-001",
+        "entity_name": "Patient Registration",
+        "total_units": 12500,
+        "complexity_breakdown": {
+          "low": 8000,
+          "medium": 3000,
+          "high": 1500,
+          "critical": 0
+        },
+        "estimated_cost": 1660.00,
+        "notes": "This matches the fully worked pricing example in documentation"
+      },
+      {
+        "entity_id": "entity-apt-001",
+        "entity_name": "Appointment Booking",
+        "total_units": 5000,
+        "complexity_breakdown": {
+          "low": 3000,
+          "medium": 2000,
+          "high": 0
+        },
+        "estimated_cost": 750.00
+      },
+      {
+        "entity_id": "entity-bill-001",
+        "entity_name": "Invoice Generation",
+        "total_units": 3000,
+        "complexity_breakdown": {
+          "low": 1000,
+          "medium": 1500,
+          "high": 500
+        },
+        "estimated_cost": 900.00
+      }
+    ],
+    "total_estimated_monthly_cost": {
+      "base_fee": 1000.00,
+      "usage_charges": 3310.00,
+      "subtotal": 4310.00,
+      "tax_18_percent": 775.80,
+      "total": 5085.80,
+      "currency": "INR"
+    }
+  }
+}

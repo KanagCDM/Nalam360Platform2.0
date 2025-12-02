@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Data access layer for Nalam360 Enterprise Platform with Repository, UnitOfWork, a" +
     "nd Specification patterns."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+414b9f0b2ede9a05c45e5132c1cf96d2d081e7c7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b25fcd1ca116313f50fc509ca00d78546fb6d296")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Data")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Data")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

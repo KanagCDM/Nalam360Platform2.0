@@ -1,0 +1,271 @@
+-- ProductAdminPortal Seed Data
+-- This file populates the database with initial data for development and testing
+
+-- Enable UUID extension (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Clear existing data (in reverse dependency order)
+TRUNCATE TABLE usage_alerts CASCADE;
+TRUNCATE TABLE configuration_versions CASCADE;
+TRUNCATE TABLE audit_logs CASCADE;
+TRUNCATE TABLE invoice_line_items CASCADE;
+TRUNCATE TABLE invoices CASCADE;
+TRUNCATE TABLE usage_records CASCADE;
+TRUNCATE TABLE customer_subscriptions CASCADE;
+TRUNCATE TABLE customers CASCADE;
+TRUNCATE TABLE discount_codes CASCADE;
+TRUNCATE TABLE pricing_tiers CASCADE;
+TRUNCATE TABLE pricing_rules CASCADE;
+TRUNCATE TABLE subscription_entities CASCADE;
+TRUNCATE TABLE subscription_modules CASCADE;
+TRUNCATE TABLE subscription_products CASCADE;
+TRUNCATE TABLE subscription_plans CASCADE;
+TRUNCATE TABLE module_entities CASCADE;
+TRUNCATE TABLE entities CASCADE;
+TRUNCATE TABLE modules CASCADE;
+TRUNCATE TABLE products CASCADE;
+TRUNCATE TABLE user_roles CASCADE;
+TRUNCATE TABLE users CASCADE;
+TRUNCATE TABLE roles CASCADE;
+TRUNCATE TABLE tenants CASCADE;
+
+-- Insert Tenants
+INSERT INTO tenants (id, name, subdomain, status, created_at, updated_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'System Admin', 'admin', 'active', NOW(), NOW()),
+('00000000-0000-0000-0000-000000000002', 'Demo Tenant', 'demo', 'active', NOW(), NOW());
+
+-- Insert Roles
+INSERT INTO roles (id, tenant_id, name, description, created_at, updated_at) VALUES
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'SuperAdmin', 'Full system access', NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'PlatformAdmin', 'Platform configuration management', NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'ProductDesigner', 'Design products and modules', NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'BillingManager', 'Manage subscriptions and billing', NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'SupportAgent', 'Customer support access', NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000001', 'Viewer', 'Read-only access', NOW(), NOW());
+
+-- Insert Products
+INSERT INTO products (id, tenant_id, name, code, description, industry, version, is_active, created_at, updated_at) VALUES
+('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Hospital Management System', 'HMS_CORE', 'Complete hospital management solution', 'Healthcare', '2.0.0', true, NOW(), NOW()),
+('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'E-Commerce Platform', 'ECOM_PRO', 'Enterprise e-commerce platform', 'Retail', '1.5.0', true, NOW(), NOW());
+
+-- Insert Modules for HMS
+INSERT INTO modules (id, tenant_id, product_id, name, code, description, display_order, is_required, created_at, updated_at) VALUES
+('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Patient Management', 'PATIENT_MGMT', 'Patient registration and records', 1, true, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Appointment Scheduling', 'APPOINTMENTS', 'Appointment booking and scheduling', 2, false, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Billing & Invoicing', 'BILLING', 'Patient billing and insurance', 3, true, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Clinical Workflows', 'CLINICAL', 'Clinical notes and lab orders', 4, false, NOW(), NOW());
+
+-- Insert Modules for E-Commerce
+INSERT INTO modules (id, tenant_id, product_id, name, code, description, display_order, is_required, created_at, updated_at) VALUES
+('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'Product Catalog', 'CATALOG', 'Product and inventory management', 1, true, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'Order Management', 'ORDERS', 'Order processing and fulfillment', 2, true, NOW(), NOW());
+
+-- Insert Entities
+INSERT INTO entities (id, tenant_id, name, code, type, description, base_pricing, complexity_levels, created_at, updated_at) VALUES
+-- HMS Entities
+('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Patient Registration', 'PATIENT_REG', 'transaction', 'Patient registration transaction', 
+ '{"pricing_type": "per_unit", "unit_price": 0.50, "currency": "INR"}'::jsonb, 
+ '["low", "medium", "high"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Patient Record Access', 'PATIENT_ACCESS', 'transaction', 'Patient record read access', 
+ '{"pricing_type": "per_unit", "unit_price": 0.02, "currency": "INR"}'::jsonb, 
+ '["low"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Appointment Booking', 'APPT_BOOK', 'transaction', 'Appointment creation', 
+ '{"pricing_type": "per_unit", "unit_price": 0.25, "currency": "INR"}'::jsonb, 
+ '["low", "medium"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'Invoice Generation', 'INVOICE_GEN', 'transaction', 'Generate patient invoice', 
+ '{"pricing_type": "per_unit", "unit_price": 0.30, "currency": "INR"}'::jsonb, 
+ '["low", "medium", "high"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'Clinical Note Creation', 'CLINICAL_NOTE', 'transaction', 'Create clinical note', 
+ '{"pricing_type": "per_unit", "unit_price": 0.20, "currency": "INR"}'::jsonb, 
+ '["low", "medium", "high"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'Lab Order Processing', 'LAB_ORDER', 'transaction', 'Process lab order', 
+ '{"pricing_type": "per_unit", "unit_price": 0.40, "currency": "INR"}'::jsonb, 
+ '["medium", "high"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', 'Active Users', 'ACTIVE_USERS', 'seat', 'Monthly active user', 
+ '{"pricing_type": "per_seat", "seat_price": 50.00, "currency": "INR"}'::jsonb, 
+ '[]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000002', 'Patient Records Storage', 'PATIENT_STORAGE', 'storage', 'Patient data storage (GB)', 
+ '{"pricing_type": "per_gb", "gb_price": 2.00, "currency": "INR"}'::jsonb, 
+ '[]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000002', 'Analytics Report Generation', 'ANALYTICS_REPORT', 'transaction', 'Generate analytics report', 
+ '{"pricing_type": "per_unit", "unit_price": 1.00, "currency": "INR"}'::jsonb, 
+ '["medium", "high", "critical"]'::jsonb, NOW(), NOW()),
+ 
+('30000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000002', 'API Calls', 'API_CALL', 'api_request', 'External API call', 
+ '{"pricing_type": "per_unit", "unit_price": 0.01, "currency": "INR"}'::jsonb, 
+ '["low"]'::jsonb, NOW(), NOW());
+
+-- Insert Module-Entity Mappings
+INSERT INTO module_entities (module_id, entity_id, display_order, is_required) VALUES
+-- Patient Management
+('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 1, true),
+('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002', 2, true),
+('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000008', 3, false),
+-- Appointments
+('20000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000003', 1, true),
+-- Billing
+('20000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000004', 1, true),
+-- Clinical
+('20000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000005', 1, true),
+('20000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000006', 2, false),
+('20000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000009', 3, false);
+
+-- Insert Subscription Plans
+INSERT INTO subscription_plans (id, tenant_id, name, code, description, price, billing_cycle, trial_days, is_active, created_at, updated_at) VALUES
+('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Trial Plan', 'TRIAL', '14-day free trial with limited features', 0.00, 'monthly', 14, true, NOW(), NOW()),
+('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Standard Plan', 'STANDARD', 'Standard features for small clinics', 499.00, 'monthly', 0, true, NOW(), NOW()),
+('40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Gold Plan', 'GOLD', 'Advanced features for medium hospitals', 1000.00, 'monthly', 0, true, NOW(), NOW()),
+('40000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'Platinum Plan', 'PLATINUM', 'Enterprise features with priority support', 2500.00, 'monthly', 0, true, NOW(), NOW());
+
+-- Insert Subscription-Product Mappings
+INSERT INTO subscription_products (subscription_plan_id, product_id) VALUES
+('40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001');
+
+-- Insert Subscription-Module Mappings (all plans get all modules for simplicity)
+INSERT INTO subscription_modules (subscription_plan_id, module_id) VALUES
+('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000003'),
+('40000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002'),
+('40000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000003'),
+('40000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000002'),
+('40000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003'),
+('40000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000004'),
+('40000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001'),
+('40000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000002'),
+('40000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003'),
+('40000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004');
+
+-- Insert Pricing Rules
+INSERT INTO pricing_rules (id, tenant_id, name, rule_type, configuration, display_order, is_active, created_at, updated_at) VALUES
+-- Tiered pricing for patient registrations
+('50000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Patient Registration Tiered Pricing', 'tiered', 
+ '{"entity_id": "30000000-0000-0000-0000-000000000001", "currency": "INR"}'::jsonb, 1, true, NOW(), NOW()),
+ 
+-- Complexity multipliers
+('50000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Complexity Multipliers', 'multiplier', 
+ '{}'::jsonb, 2, true, NOW(), NOW()),
+ 
+-- Per-user seat pricing
+('50000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Per-User Seat Pricing', 'per_unit', 
+ '{"entity_id": "30000000-0000-0000-0000-000000000007", "base_price": 50.00, "included_units": 10, "currency": "INR"}'::jsonb, 3, true, NOW(), NOW()),
+ 
+-- One-time setup fee
+('50000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'One-Time Setup Fee', 'flat', 
+ '{"amount": 5000.00, "currency": "INR", "applies_once": true}'::jsonb, 4, true, NOW(), NOW()),
+ 
+-- Analytics report tiered pricing
+('50000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'Analytics Report Tiered Pricing', 'tiered', 
+ '{"entity_id": "30000000-0000-0000-0000-000000000009", "currency": "INR"}'::jsonb, 5, true, NOW(), NOW());
+
+-- Insert Pricing Tiers
+INSERT INTO pricing_tiers (id, pricing_rule_id, min_units, max_units, unit_price, created_at, updated_at) VALUES
+-- Tiered pricing for patient registrations (rule 1)
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000001', 0, 1000, 0.00, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000001', 1001, 10000, 0.10, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000001', 10001, NULL, 0.07, NOW(), NOW()),
+-- Analytics report tiered pricing (rule 5)
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000005', 0, 100, 1.00, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000005', 101, 500, 0.75, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000005', 501, NULL, 0.50, NOW(), NOW());
+
+-- Insert Complexity Multipliers
+INSERT INTO complexity_multipliers (id, pricing_rule_id, complexity_level, multiplier, created_at, updated_at) VALUES
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000002', 'low', 1.0, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000002', 'medium', 2.0, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000002', 'high', 4.0, NOW(), NOW()),
+(uuid_generate_v4(), '50000000-0000-0000-0000-000000000002', 'critical', 6.0, NOW(), NOW());
+
+-- Insert Subscription-Entity Mappings with Limits
+INSERT INTO subscription_entities (subscription_plan_id, entity_id, usage_limit, soft_limit_threshold) VALUES
+-- Trial Plan (limited)
+('40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 100, 80),
+('40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002', 500, 400),
+('40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000007', 5, 4),
+-- Standard Plan
+('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 1000, 800),
+('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', 5000, 4000),
+('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000003', 500, 400),
+('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000004', 1000, 800),
+('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000007', 20, 16),
+-- Gold Plan
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000001', 5000, 4000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000002', 25000, 20000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000003', 2500, 2000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000004', 5000, 4000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000005', 5000, 4000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000006', 2500, 2000),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000007', 50, 40),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000009', 100, 80),
+('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000010', 10000, 8000);
+
+-- Insert Discount Codes
+INSERT INTO discount_codes (id, tenant_id, code, discount_type, discount_value, valid_from, valid_until, usage_limit, usage_count, is_active, created_at, updated_at) VALUES
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', 'LAUNCH20', 'percentage', 20.00, NOW(), NOW() + INTERVAL '3 months', 100, 0, true, NOW(), NOW()),
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', 'PLATINUM500', 'fixed', 500.00, NOW(), NOW() + INTERVAL '6 months', 50, 0, true, NOW(), NOW());
+
+-- Insert Sample Customers
+INSERT INTO customers (id, tenant_id, name, email, phone, company_name, billing_address, status, created_at, updated_at) VALUES
+('60000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Dr. Rajesh Kumar', 'rajesh.kumar@cityhospital.com', '+91-9876543210', 'City General Hospital', 
+ '{"street": "123 MG Road", "city": "Mumbai", "state": "Maharashtra", "postal_code": "400001", "country": "India"}'::jsonb, 'active', NOW(), NOW()),
+ 
+('60000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Dr. Priya Sharma', 'priya@greenvalley.com', '+91-9876543211', 'Green Valley Clinic', 
+ '{"street": "456 Brigade Road", "city": "Bangalore", "state": "Karnataka", "postal_code": "560001", "country": "India"}'::jsonb, 'active', NOW(), NOW());
+
+-- Insert Customer Subscriptions
+INSERT INTO customer_subscriptions (id, customer_id, subscription_plan_id, start_date, end_date, status, auto_renew, created_at, updated_at) VALUES
+('70000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000003', 
+ NOW() - INTERVAL '15 days', NOW() + INTERVAL '15 days', 'active', true, NOW(), NOW()),
+ 
+('70000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000002', '40000000-0000-0000-0000-000000000002', 
+ NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', 'active', true, NOW(), NOW());
+
+-- Insert Sample Usage Records (matching the pricing calculation example)
+INSERT INTO usage_records (id, tenant_id, customer_subscription_id, entity_id, units, complexity, billing_status, recorded_at, metadata, created_at, updated_at) VALUES
+-- City General Hospital (Gold Plan) - Total 12,500 patient registrations
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 8000, 'low', 'unbilled', NOW() - INTERVAL '25 days', 
+ '{"department": "General", "shift": "day"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 3000, 'medium', 'unbilled', NOW() - INTERVAL '20 days', 
+ '{"department": "Emergency", "shift": "night"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 1500, 'high', 'unbilled', NOW() - INTERVAL '15 days', 
+ '{"department": "ICU", "shift": "emergency"}'::jsonb, NOW(), NOW()),
+
+-- Additional usage records
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 2500, 'low', 'unbilled', NOW() - INTERVAL '10 days', 
+ '{"appointment_type": "routine"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000004', 1200, 'medium', 'unbilled', NOW() - INTERVAL '8 days', 
+ '{"invoice_type": "standard"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000005', 800, 'high', 'unbilled', NOW() - INTERVAL '5 days', 
+ '{"note_type": "specialist"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000009', 45, 'critical', 'unbilled', NOW() - INTERVAL '3 days', 
+ '{"report_type": "advanced_analytics"}'::jsonb, NOW(), NOW()),
+
+-- Green Valley Clinic (Standard Plan)
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 450, 'low', 'unbilled', NOW() - INTERVAL '7 days', 
+ '{"department": "General", "shift": "day"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000003', 180, 'low', 'unbilled', NOW() - INTERVAL '5 days', 
+ '{"appointment_type": "routine"}'::jsonb, NOW(), NOW()),
+ 
+(uuid_generate_v4(), '00000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000004', 300, 'low', 'unbilled', NOW() - INTERVAL '3 days', 
+ '{"invoice_type": "standard"}'::jsonb, NOW(), NOW());
+
+-- Success message
+SELECT 'Seed data inserted successfully!' AS status;
