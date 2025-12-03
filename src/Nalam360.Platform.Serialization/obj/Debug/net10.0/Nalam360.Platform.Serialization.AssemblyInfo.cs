@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Serialization abstractions for Nalam360 Enterprise Platform with JSON, XML, and P" +
     "rotobuf support."))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b25fcd1ca116313f50fc509ca00d78546fb6d296")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5cc9c5e33ea2b1171bfb9ab8bd16a480cbbe6581")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nalam360.Platform.Serialization")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nalam360.Platform.Serialization")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
